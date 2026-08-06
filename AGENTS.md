@@ -13,6 +13,7 @@
 - `npm run start`: Run the production server (after build).
 - `npm run lint`: Run ESLint.
 - `npx prisma migrate dev`: Apply schema changes to the local SQLite DB.
+- `npm run worktree:setup` / `bash scripts/setup-worktree.sh`: Bootstrap a git worktree (env copy, npm ci, Prisma). Prefer isolated worktrees for multi-step agent work; see `developer.md`.
 
 ## Coding Style & Naming Conventions
 - Language: TypeScript with Next.js App Router.

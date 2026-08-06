@@ -73,3 +73,7 @@ src-tauri/resources/
 .antigravitycli/
 .gemini/
 /AI_SUPPORT/
+
+# Local git worktrees (agent isolation)
+.worktrees/
+worktrees/

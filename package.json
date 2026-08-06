@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:crap": "npx tsx scripts/crap-report.ts",
     "test:e2e": "playwright test",
+    "worktree:setup": "bash scripts/setup-worktree.sh",
     "postinstall": "prisma generate"
   },
   "dependencies": {

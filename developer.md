@@ -32,6 +32,23 @@ npx prisma migrate dev
 
 After setup, run the app with the commands below and configure credentials at `/settings`.
 
+### Agent / parallel worktrees
+
+Keep `main` as the integration checkout. For multi-step agent work, use a linked worktree and bootstrap it:
+
+```bash
+# from primary checkout on main
+git worktree add -b feat-my-task ../xbook-feat-my-task main
+cd ../xbook-feat-my-task
+bash scripts/setup-worktree.sh
+# optional: COPY_DB=1 bash scripts/setup-worktree.sh  # copy primary SQLite
+npm run dev   # or PORT=3001 npm run dev if :3000 is taken
+```
+
+Cursor Agents run `scripts/setup-worktree.sh` automatically via `.cursor/worktrees.json`.
+
+Do not commit worktree folders; `.worktrees/` is gitignored. Merge the feature branch back into `main` from the primary checkout after review, then `git worktree remove ../xbook-feat-my-task`.
+
 ## Run the App
 
 Development:
