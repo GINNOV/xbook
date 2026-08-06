@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useActions } from "../hooks/useActions";
 import { HelpTooltip } from "./settings/SharedFields";
+import type { SetupReadiness } from "@/lib/setup-readiness";
 
 type Props = {
   enrichBatchSize: number;
@@ -11,6 +13,8 @@ type Props = {
   totalCount?: number;
   soundOnComplete?: boolean;
   soundOnError?: boolean;
+  /** When set, soft-disables Process inbox / Sync until OAuth (+ chat model) are ready. */
+  readiness?: SetupReadiness;
 };
 
 export default function Actions({
@@ -20,6 +24,7 @@ export default function Actions({
   totalCount = 0,
   soundOnComplete,
   soundOnError,
+  readiness,
 }: Props) {
   const [reprocessAll, setReprocessAll] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -38,6 +43,10 @@ export default function Actions({
   const isInbox = source === "x" ? loading.inboxX : loading.inboxYt;
   const busy = isEnriching || isSyncing || isInbox;
 
+  const canSync = readiness?.canSync ?? true;
+  const canProcessInbox = readiness?.canProcessInbox ?? true;
+  const canEnrich = readiness?.chatModelSet ?? true;
+
   const activeCount = reprocessAll ? totalCount : pendingCount;
   const primaryClass =
     source === "x"
@@ -52,13 +61,29 @@ export default function Actions({
         ? "Syncing…"
         : null;
 
+  const processTitle = !canProcessInbox
+    ? (readiness?.blockers.filter((b) => !b.includes("embedding")).join(". ") ||
+        "Finish setup in Settings first.")
+    : undefined;
+  const syncTitle = !canSync
+    ? source === "x"
+      ? "Connect X OAuth in Settings first."
+      : "Connect YouTube OAuth in Settings first."
+    : undefined;
+  const enrichTitle = !canEnrich
+    ? "Set a chat model in Settings → AI first."
+    : activeCount === 0
+      ? "Nothing pending to enrich."
+      : undefined;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => void runProcessInbox()}
-          disabled={busy}
+          disabled={busy || !canProcessInbox}
+          title={processTitle}
           className={`rounded-full px-5 py-2 text-sm font-semibold transition disabled:opacity-60 ${primaryClass}`}
         >
           {isInbox ? "Processing…" : "Process inbox"}
@@ -76,6 +101,18 @@ export default function Actions({
         )}
         <HelpTooltip text="Import new bookmarks, enrich items that still need a summary, then index missing embeddings for search. The day-to-day path. Use Stop if you need to switch to another operation mid-run." />
       </div>
+      {!canProcessInbox && readiness && (
+        <p className="text-xs leading-5 text-on-surface-variant">
+          Finish setup before processing.{" "}
+          <Link href="/settings" className="font-semibold text-primary hover:underline">
+            Open Settings
+          </Link>
+          {" · "}
+          <Link href="/docs" className="font-semibold text-primary hover:underline">
+            Docs
+          </Link>
+        </p>
+      )}
       {busy && busyLabel && (
         <p className="text-xs font-medium text-on-surface-variant">
           {busyLabel} Stop to free the queue and start a different operation.
@@ -99,7 +136,8 @@ export default function Actions({
               <button
                 type="button"
                 onClick={runImport}
-                disabled={busy}
+                disabled={busy || !canSync}
+                title={syncTitle}
                 className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-60 ${
                   source === "x" ? "bg-black" : "bg-red-700"
                 }`}
@@ -109,7 +147,8 @@ export default function Actions({
               <button
                 type="button"
                 onClick={() => runEnrich(true, reprocessAll)}
-                disabled={busy || activeCount === 0}
+                disabled={busy || activeCount === 0 || !canEnrich}
+                title={enrichTitle}
                 className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-60 ${
                   source === "x" ? "bg-black" : "bg-primary"
                 }`}
@@ -123,7 +162,8 @@ export default function Actions({
               <button
                 type="button"
                 onClick={() => runEnrich(false, reprocessAll)}
-                disabled={busy || activeCount === 0}
+                disabled={busy || activeCount === 0 || !canEnrich}
+                title={enrichTitle}
                 className="rounded-full border border-black/20 px-5 py-2 text-sm font-semibold text-black transition disabled:opacity-60"
               >
                 {`Batch (${source === "yt" ? 200 : enrichBatchSize})`}

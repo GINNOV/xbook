@@ -1,6 +1,7 @@
 import { AccountStats } from "./AccountStats";
 import { SyncCard } from "./SyncCard";
 import { EnrichmentSummary } from "./EnrichmentSummary";
+import type { SetupReadiness } from "@/lib/setup-readiness";
 
 type Props = {
   tab: "x" | "yt";
@@ -22,6 +23,7 @@ type Props = {
   indexedCount?: number;
   unindexedCount?: number;
   settings: { soundOnComplete: boolean | null; soundOnError: boolean | null } | null;
+  readiness?: SetupReadiness;
 };
 
 export function StatsGrid({
@@ -42,6 +44,7 @@ export function StatsGrid({
   indexedCount = 0,
   unindexedCount = 0,
   settings,
+  readiness,
 }: Props) {
   return (
     <section className="grid gap-6 lg:grid-cols-3">
@@ -64,6 +67,7 @@ export function StatsGrid({
         total={total}
         last={lastSync}
         settings={settings}
+        readiness={readiness}
       />
       <EnrichmentSummary
         source={tab}

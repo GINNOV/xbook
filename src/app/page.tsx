@@ -2,8 +2,10 @@ import { DashboardHeader } from "./components/dashboard/DashboardHeader";
 import { StatsGrid } from "./components/dashboard/StatsGrid";
 import { RecentActivity } from "./components/dashboard/RecentActivity";
 import { RecentImports } from "./components/dashboard/RecentImports";
+import { SetupBanner } from "./components/dashboard/SetupBanner";
 import { formatDateShort, getYouTubeTitle, getYouTubeFolder } from "./lib/dashboard";
 import { getDashboardStats, getLiveXStats } from "./lib/dashboard-fetcher";
+import { getSetupReadiness } from "@/lib/setup-readiness";
 
 export default async function Home({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const p = await searchParams;
@@ -12,11 +14,13 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
   const stats = await getDashboardStats(tab);
   const live = await getLiveXStats(tab, stats.usage, stats.settings);
   const lastSync = stats.lastRun?.finishedAt ?? stats.lastRun?.startedAt ?? null;
+  const readiness = getSetupReadiness(tab, stats.settings);
 
   return (
     <main className="min-h-screen bg-surface-container-low px-4 py-6 lg:px-8 lg:py-8">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-8">
         <DashboardHeader tab={tab} />
+        <SetupBanner tab={tab} total={stats.total} readiness={readiness} />
         <StatsGrid
           tab={tab}
           total={stats.total}
@@ -35,9 +39,10 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
           indexedCount={stats.indexHealth?.withEmbedding ?? 0}
           unindexedCount={stats.indexHealth?.unindexed ?? 0}
           settings={stats.settings}
+          readiness={readiness}
         />
         <RecentActivity operationRuns={stats.operationRuns} />
-        <RecentImports tab={tab} recent={stats.recent} getYouTubeTitle={getYouTubeTitle} 
+        <RecentImports tab={tab} recent={stats.recent} getYouTubeTitle={getYouTubeTitle}
           getYouTubeFolder={getYouTubeFolder} formatDateShort={formatDateShort} />
       </div>
     </main>

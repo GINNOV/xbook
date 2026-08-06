@@ -69,6 +69,16 @@ async function updateTokens(json: any, refreshToken: string) {
   return json.access_token;
 }
 
+async function clearInvalidXTokens() {
+  await updateSettings({
+    xAccessToken: null,
+    xRefreshToken: null,
+    xTokenExpiresAt: null,
+    xScope: null,
+    xTokenType: null,
+  });
+}
+
 async function refreshAccessToken(input: {
   apiBase: string; clientId: string; clientSecret?: string | null; refreshToken: string;
 }) {
@@ -79,7 +89,20 @@ async function refreshAccessToken(input: {
     headers.Authorization = `Basic ${basic}`;
   }
   const res = await fetch(`${input.apiBase}/oauth2/token`, { method: "POST", headers, body, cache: "no-store" });
-  if (!res.ok) throw new Error(`Token refresh failed: ${await res.text()}`);
+  if (!res.ok) {
+    const text = await res.text();
+    // Stale/revoked refresh tokens leave Settings looking "connected" while every
+    // import fails. Clear them so Setup status / soft-disable ask for reconnect.
+    const invalid =
+      text.includes("invalid_request") ||
+      text.includes("invalid_grant") ||
+      text.includes("Value passed for the token was invalid");
+    if (invalid) {
+      await clearInvalidXTokens();
+      throw new Error("X authorization expired. Reconnect X OAuth in Settings → Connections.");
+    }
+    throw new Error(`Token refresh failed: ${text}`);
+  }
   return updateTokens(await res.json(), input.refreshToken);
 }
 

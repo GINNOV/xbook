@@ -88,56 +88,74 @@ export function RecentImports({
           <span>Date</span>
           <span className="text-right">Action</span>
         </div>
-        {recent.slice(0, 8).map((bookmark) => {
-          const origin = getImportOrigin(bookmark);
-          const youtubeTitle =
-            bookmark.source === "yt"
-              ? getYouTubeTitle(bookmark.rawJson, bookmark.text)
-              : null;
-          const folderName =
-            bookmark.source === "yt"
-              ? getYouTubeFolder(bookmark.rawJson, bookmark.folder?.name ?? null)
-              : bookmark.folder?.name ?? null;
-          return (
-            <div
-              key={bookmark.id}
-              className="grid grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_0.8fr_0.5fr] px-4 py-3 text-sm hover:bg-surface-container-low transition-colors items-center border-t border-outline-variant/20 first:border-t-0"
-            >
-              <span className="text-xs font-semibold">{bookmark.category ?? "Uncategorized"}</span>
-              <span className="truncate font-medium pr-4">
-                {youtubeTitle ?? bookmark.summary ?? bookmark.text ?? "Untitled"}
-              </span>
-              <span className="truncate text-on-surface-variant text-xs">
-                {bookmark.source === "x"
-                  ? bookmark.authorUsername
-                    ? `@${bookmark.authorUsername}`
-                    : "Unknown"
-                  : bookmark.source === "yt"
-                    ? folderName ?? "No playlist"
-                    : folderName ?? origin.detail}
-              </span>
-              <span className="flex min-w-0 flex-col items-start gap-1">
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${origin.className}`}>
-                  {origin.label}
-                </span>
-                <span className="max-w-full truncate text-[10px] text-on-surface-variant">
-                  {origin.detail}
-                </span>
-              </span>
-              <span className="text-xs text-on-surface-variant">
-                {formatDateShort(bookmark.importedAt)}
-              </span>
-              <a
-                href={bookmark.tweetUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-right text-xs font-bold uppercase text-primary hover:underline"
+        {recent.length === 0 ? (
+          <div className="border-t border-outline-variant/20 px-4 py-8 text-center">
+            <p className="text-sm text-on-surface-variant">
+              No imports yet. Finish setup in{" "}
+              <Link href="/settings" className="font-semibold text-primary hover:underline">
+                Settings
+              </Link>
+              , then run{" "}
+              <strong className="font-semibold text-on-surface">Process inbox</strong> on the Dashboard.
+            </p>
+            <p className="mt-2 text-xs text-on-surface-variant">
+              <Link href="/docs/process-inbox" className="text-primary hover:underline">
+                How Process inbox works
+              </Link>
+            </p>
+          </div>
+        ) : (
+          recent.slice(0, 8).map((bookmark) => {
+            const origin = getImportOrigin(bookmark);
+            const youtubeTitle =
+              bookmark.source === "yt"
+                ? getYouTubeTitle(bookmark.rawJson, bookmark.text)
+                : null;
+            const folderName =
+              bookmark.source === "yt"
+                ? getYouTubeFolder(bookmark.rawJson, bookmark.folder?.name ?? null)
+                : bookmark.folder?.name ?? null;
+            return (
+              <div
+                key={bookmark.id}
+                className="grid grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_0.8fr_0.5fr] px-4 py-3 text-sm hover:bg-surface-container-low transition-colors items-center border-t border-outline-variant/20 first:border-t-0"
               >
-                Open
-              </a>
-            </div>
-          );
-        })}
+                <span className="text-xs font-semibold">{bookmark.category ?? "Uncategorized"}</span>
+                <span className="truncate font-medium pr-4">
+                  {youtubeTitle ?? bookmark.summary ?? bookmark.text ?? "Untitled"}
+                </span>
+                <span className="truncate text-on-surface-variant text-xs">
+                  {bookmark.source === "x"
+                    ? bookmark.authorUsername
+                      ? `@${bookmark.authorUsername}`
+                      : "Unknown"
+                    : bookmark.source === "yt"
+                      ? folderName ?? "No playlist"
+                      : folderName ?? origin.detail}
+                </span>
+                <span className="flex min-w-0 flex-col items-start gap-1">
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${origin.className}`}>
+                    {origin.label}
+                  </span>
+                  <span className="max-w-full truncate text-[10px] text-on-surface-variant">
+                    {origin.detail}
+                  </span>
+                </span>
+                <span className="text-xs text-on-surface-variant">
+                  {formatDateShort(bookmark.importedAt)}
+                </span>
+                <a
+                  href={bookmark.tweetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-right text-xs font-bold uppercase text-primary hover:underline"
+                >
+                  Open
+                </a>
+              </div>
+            );
+          })
+        )}
       </div>
     </section>
   );

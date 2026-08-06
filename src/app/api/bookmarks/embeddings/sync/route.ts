@@ -52,6 +52,8 @@ export async function POST(request: Request) {
 
   let updated = 0;
   let failed = 0;
+  let abortedForConfig = false;
+  let configError: string | null = null;
 
   for (const bookmark of pending) {
     try {
@@ -73,27 +75,60 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       failed += 1;
+      const message = error instanceof Error ? error.message : "Embedding failed";
       await logProcessingEvent({
         runId: run.id,
         bookmarkId: bookmark.id,
         type: "system",
         status: "failed",
-        message: error instanceof Error ? error.message : "Embedding failed",
+        message,
       });
       await incrementOperationRun(run.id, {
         status: "running",
         processed: 1,
         failed: 1,
       });
+
+      // Misconfigured endpoint/model fails the same way for every row — stop the batch
+      // so the UI reports one clear error instead of "100 failed".
+      if (
+        /endpoint not found|not found at|Connection refused|ECONNREFUSED|Missing|is not currently available/i.test(
+          message
+        )
+      ) {
+        abortedForConfig = true;
+        configError = message;
+        break;
+      }
     }
   }
 
   const remaining = await prisma.bookmark.count({ where });
 
   await updateOperationRun(run.id, {
-    status: "completed",
+    status: abortedForConfig && updated === 0 ? "failed" : "completed",
+    notes: configError
+      ? configError
+      : failed > 0 && updated === 0
+        ? `All ${failed} embedding attempts failed.`
+        : undefined,
     finish: true,
   });
+
+  if (abortedForConfig && updated === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        updated,
+        failed,
+        remaining,
+        source: source ?? "all",
+        runId: run.id,
+        error: configError,
+      },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({
     ok: true,
