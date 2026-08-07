@@ -206,6 +206,7 @@ Keep these three version fields in lockstep when cutting a release.
   2. `https://raw.githubusercontent.com/GINNOV/xbook/main/update.json` (fallback)
 - Updates are minisign-verified with the public key in `plugins.updater.pubkey`.
 - Private key lives only on the maintainer machine / CI secret (`~/.tauri/xbook.key` locally). **Never commit it.** Losing it requires a new keypair, a pubkey bump in config, and a manual reinstall for existing users.
+- **Private GitHub repos block in-app updates:** unauthenticated requests to Releases and `raw.githubusercontent.com` return 404, so the Tauri updater cannot fetch `latest.json` / the tarball. While the repo is private, install new builds manually (`gh release download` or the Releases UI). To enable auto-update, either make the repo public or host `latest.json` + `xbook.app.tar.gz` on a public HTTPS URL and point `plugins.updater.endpoints` there.
 
 ### Cutting a desktop release (local)
 
