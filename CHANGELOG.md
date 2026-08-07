@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-07
+
 ### Added
 
 - Dedicated **embedding model** and **embedding base URL** settings so chat (e.g. vLLM) and embeddings (e.g. Ollama `nomic-embed-text`) can run on different hosts.
@@ -15,6 +17,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Advanced dashboard actions (sync-only, enrich pending, batch, force reprocess) behind a collapsible section.
 - In-app docs coverage for the process-inbox and embedding-index workflows.
 - Prisma fields / migrations: `llmEmbeddingModel`, `llmEmbeddingBaseUrl`.
+- Signed desktop **auto-updater artifacts** (`createUpdaterArtifacts`), release packaging scripts, and a published `update.json` / `latest.json` manifest.
 
 ### Fixed
 
@@ -24,6 +27,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Index health **missing** count no longer disagreed with sync progress: both use the same “needs embedding” rule, dashboard sync is **tab-scoped**, and progress shows `N of T · remaining` while live missing/indexed counters update during the run.
 - **X sync burned API spend re-fetching immutable tweets**: delta sync no longer re-hydrates the whole library (was “0 new, refreshed 368”). With a baseline it only walks new global bookmarks and only advances `lastBookmarkId` from the global feed (folder tweets no longer corrupt the baseline).
 - **X folder column empty / “No folder”**: folder membership is restored by walking folder **ID lists** (cheap) and `UPDATE`ing `folderId` on known tweets without re-fetching tweet bodies; only unknown tweets are hydrated.
+- Auto-updater endpoint no longer 404s: dual endpoints (GitHub Releases `latest.json` + `main` branch `update.json`).
 
 ### Changed
 
@@ -33,6 +37,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Ollama and vLLM presets seed sensible embedding defaults (Ollama-compatible embeddings host + `nomic-embed-text` when unset).
 - Embedding generation no longer falls back to the chat model id (chat models are usually unsupported by embeddings APIs).
 - Settings → **Sync all missing embeddings** remains global; the dashboard button only indexes the active tab (X or YouTube).
+- Desktop updater signing key rotated (0.3.0 never shipped signed updater payloads). Install 0.4.0 manually once; later updates use auto-update again.
 
 ## [0.3.0] - 2026-06-23
 
@@ -85,6 +90,7 @@ Initial product foundation (pre-0.2 packaging polish).
 
 | Version | Git tag       |
 | ------- | ------------- |
+| 0.4.0   | `xbook-v0.4.0` |
 | 0.3.0   | `xbook-v0.3.0` |
 | 0.2.0   | `xbook-v0.2.0` |
 

@@ -1,0 +1,11 @@
+{
+  "version": "0.4.0",
+  "notes": "- Dedicated **embedding model** and **embedding base URL** settings so chat (e.g. vLLM) and embeddings (e.g. Ollama `nomic-embed-text`) can run on different hosts.\n- Dashboard **index health** panel: indexed vs missing embeddings, coverage bar, and **Sync embeddings** action.\n- One-click **Process inbox** flow: import new items, enrich pending, then backfill embeddings.\n- Advanced dashboard actions (sync-only, enrich pending, batch, force reprocess) behind a collapsible section.\n- In-app docs coverage for the process-inbox and embedding-index workflows.\n- Prisma fields / migrations: `llmEmbeddingModel`, `llmEmbeddingBaseUrl`.\n- Signed desktop **auto-updater artifacts** (`createUpdaterArtifacts`), release packaging scripts, and a published `update.json` / `latest.json` manifest.\n- **Sync embeddings** failed with HTTP 404 when the chat LLM server had no `/v1/embeddings` endpoint. Embedding generation now uses the embedding model (and optional embedding base URL) instead of the chat model URL.\n- Clearer embedding error messages when the embeddings endpoint or model is misconfigured.\n- Embedding sync query only selects bookmarks with a non-empty summary.\n- Index health **missing** count no longer disagreed with sync progress: both use the same “needs embedding” rule, dashboard sync is **tab-scoped**, and progress shows `N of T · remaining` while live missing/indexed counters update during the run.\n- **X sync burned API spend re-fetching immutable tweets**: delta sync no\n…",
+  "pub_date": "2026-08-07T16:05:18.769Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQmdPUWdqWGdmN2phellTL1hSRFdLeGlvQ1NKVmZJOVlIT2RKRml5RzhMQ1N5S2wwY3d2ajlHZHMxU0JWc0hVd2pFQUhaUFA1dkt2V1UyNmNaNG9jUGs4OEVpVXdvYndJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MTE4NjgyCWZpbGU6eGJvb2suYXBwLnRhci5negpIRnFabXNSTWZQRmVaZ0t4VDFtQWUvUTZKb3lBTWYwZkhQM2dsOWpSK0VhRFRabGlyNW1NbUFBeDRWMjdFanBXTmhuYXpUbDZ2RkdqMFZXZ1V1MFNDZz09Cg==",
+      "url": "https://github.com/GINNOV/xbook/releases/download/xbook-v0.4.0/xbook.app.tar.gz"
+    }
+  }
+}

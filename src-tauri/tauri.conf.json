@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "xbook",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "identifier": "com.blife.xbook",
   "build": {
     "frontendDist": "../tauri-dist",
@@ -26,7 +26,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app"],
+    "targets": [
+      "app"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -39,14 +41,16 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
-    }
+    },
+    "createUpdaterArtifacts": true
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY2ODg0RUFDNkI5MDUwMkYKUldRdlVKQnJyRTZJWmxRd2lJanppWFplV0pDMXdyaFdCZm1vaDhLd2pIcFRlcU5EWVZLVmF1NGsK",
       "endpoints": [
+        "https://github.com/GINNOV/xbook/releases/latest/download/latest.json",
         "https://raw.githubusercontent.com/GINNOV/xbook/main/update.json"
-      ]
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVFMUY3ODhEMjBFNDgwNDEKUldSQmdPUWdqWGdmN3ZwTE0yUkQyOEg4eFIrTlNrUkViUXJ6WXBvZ2IzaXg0SUlBZHByUXp4VnYK"
     }
   }
 }
