@@ -205,8 +205,14 @@ Keep these three version fields in lockstep when cutting a release.
   1. `https://github.com/GINNOV/xbook/releases/latest/download/latest.json`
   2. `https://raw.githubusercontent.com/GINNOV/xbook/main/update.json` (fallback)
 - Updates are minisign-verified with the public key in `plugins.updater.pubkey`.
-- Private key lives only on the maintainer machine / CI secret (`~/.tauri/xbook.key` locally). **Never commit it.** Losing it requires a new keypair, a pubkey bump in config, and a manual reinstall for existing users.
-- **Private GitHub repos block in-app updates:** unauthenticated requests to Releases and `raw.githubusercontent.com` return 404, so the Tauri updater cannot fetch `latest.json` / the tarball. While the repo is private, install new builds manually (`gh release download` or the Releases UI). To enable auto-update, either make the repo public or host `latest.json` + `xbook.app.tar.gz` on a public HTTPS URL and point `plugins.updater.endpoints` there.
+- The repo is **public** so those HTTPS endpoints work unauthenticated (required for in-app updates).
+- **Signing private key** (never commit):
+  - 1Password: vault **GI Business**, item **XBook Console Tauri Update Keys**, tag `development`
+  - Local mirror: `~/.tauri/xbook.key` (pubkey: `~/.tauri/xbook.key.pub`)
+  - Load for builds:  
+    `export TAURI_SIGNING_PRIVATE_KEY="$(op read 'op://GI Business/XBook Console Tauri Update Keys/Private key')"`
+  - Losing the private key requires a new keypair, a pubkey bump in config, and a manual reinstall for existing users.
+- Users on **0.3.0 or earlier** must install **0.4.0** once manually (signing key was rotated). From 0.4.0 onward, signed releases auto-update on Apple Silicon (`darwin-aarch64`).
 
 ### Cutting a desktop release (local)
 
