@@ -168,6 +168,19 @@ npx prisma migrate dev
 
 Playwright starts its own dev server on `http://localhost:3100`.
 
+## Product promo video (Remotion)
+
+Programmatic product trailer lives in **`promo/trailer/`** (separate npm package, ~58s 1080p).
+
+```bash
+npm run promo:install   # once
+npm run promo:studio    # visual editor / timeline
+npm run promo:render    # out/xbook-trailer.mp4
+```
+
+Scenes and storyboard: [promo/trailer/README.md](promo/trailer/README.md).  
+Composition ID: `XBookTrailer`. Optional real screenshots go in `promo/trailer/public/`.
+
 ## Desktop Application (Tauri)
 
 XBook Console can be packaged as a standalone macOS desktop application using Tauri.

@@ -15,7 +15,11 @@
     "worktree:setup": "bash scripts/setup-worktree.sh",
     "postinstall": "prisma generate",
     "package:desktop": "bash scripts/package-desktop-release.sh",
-    "release:manifest": "node scripts/write-update-manifest.js"
+    "release:manifest": "node scripts/write-update-manifest.js",
+    "promo:install": "npm install --prefix promo/trailer",
+    "promo:studio": "npm run dev --prefix promo/trailer",
+    "promo:render": "npm run render --prefix promo/trailer",
+    "promo:still": "npm run still --prefix promo/trailer"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.1",

@@ -26,6 +26,17 @@ When the user says **cut a desktop release**, **ship desktop**, **release the ap
 
 Details (auto-updater endpoints, key rotation, platform notes): [developer.md](developer.md#versioning-and-releases).
 
+## Product promo video (Remotion)
+
+When the user asks to **update the trailer**, **re-render promo**, or **edit the product video**:
+
+1. Work in `promo/trailer/` (Remotion composition `XBookTrailer`).
+2. Preview: `npm run promo:studio` (after `npm run promo:install` once).
+3. Render MP4: `npm run promo:render` → `promo/trailer/out/xbook-trailer.mp4`.
+4. See [promo/trailer/README.md](promo/trailer/README.md) for scene list and screenshot hooks.
+
+Do not confuse this with a desktop release — the trailer is marketing source code, not the Tauri app.
+
 ## Coding Style & Naming Conventions
 - Language: TypeScript with Next.js App Router.
 - Indentation: 2 spaces; use double quotes in TS/TSX (matches existing code).
