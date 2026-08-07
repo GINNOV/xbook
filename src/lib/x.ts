@@ -279,8 +279,8 @@ export async function fetchBookmarksWithMeta(options: FetchOptions = {}) {
       ? await processFolderPage(apiBase, token, json, folderId, folderName, options, remaining)
       : await processStandardPage(json, folderId, folderName, options, remaining);
     
-    if (folderId && "pageIds" in pageResult && pageResult.pageIds) {
-      membershipIds.push(...pageResult.pageIds);
+    if (folderId && "pageIds" in pageResult && Array.isArray(pageResult.pageIds)) {
+      membershipIds.push(...(pageResult.pageIds as string[]));
     }
 
     allItems.push(...pageResult.items);

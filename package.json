@@ -1,6 +1,6 @@
 {
   "name": "xbook",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,9 @@
     "test:crap": "npx tsx scripts/crap-report.ts",
     "test:e2e": "playwright test",
     "worktree:setup": "bash scripts/setup-worktree.sh",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "package:desktop": "bash scripts/package-desktop-release.sh",
+    "release:manifest": "node scripts/write-update-manifest.js"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.1",

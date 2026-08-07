@@ -191,27 +191,47 @@ This will compile the Next.js production build, copy all backend assets (includi
 ## Versioning and Releases
 
 XBook Console versions are defined in:
-1. `package.json` (`"version": "0.3.0"`)
-2. `src-tauri/tauri.conf.json` (`"version": "0.3.0"`)
-3. `src-tauri/Cargo.toml` (`version = "0.3.0"`)
+1. `package.json` (`"version": "0.4.0"`)
+2. `src-tauri/tauri.conf.json` (`"version": "0.4.0"`)
+3. `src-tauri/Cargo.toml` (`version = "0.4.0"`)
 
 User-facing history lives in [CHANGELOG.md](CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/) style). Update the **Unreleased** section as you land work; fold it into a dated version heading when you cut a release.
 
-Tauri does not auto-increment these versions during compilation. To manage versioning and updates:
+Keep these three version fields in lockstep when cutting a release.
 
-### Bumping Versions
-- **Manual Syncing:** You can configure `tauri.conf.json` to read the version dynamically from `package.json` by updating its version configuration to:
-  ```json
-  "version": "../package.json"
-  ```
-  This allows you to bump both frontend and Tauri package versions simultaneously using standard package manager tools, e.g., `npm version patch`.
+### Auto-updater
 
-- **Release Automation:** Use tools like `standard-version` or `release-it` to auto-bump configs, draft logs, and create git tags based on conventional commits.
+- `tauri.conf.json` has `bundle.createUpdaterArtifacts: true` and dual endpoints:
+  1. `https://github.com/GINNOV/xbook/releases/latest/download/latest.json`
+  2. `https://raw.githubusercontent.com/GINNOV/xbook/main/update.json` (fallback)
+- Updates are minisign-verified with the public key in `plugins.updater.pubkey`.
+- Private key lives only on the maintainer machine / CI secret (`~/.tauri/xbook.key` locally). **Never commit it.** Losing it requires a new keypair, a pubkey bump in config, and a manual reinstall for existing users.
+
+### Cutting a desktop release (local)
+
+```bash
+# 1. Bump versions in package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml
+# 2. Fold CHANGELOG [Unreleased] into [X.Y.Z] - YYYY-MM-DD
+# 3. Build + package (uses ~/.tauri/xbook.key or TAURI_SIGNING_PRIVATE_KEY)
+bash scripts/package-desktop-release.sh
+
+# 4. Commit update.json + version bumps, then:
+VERSION=$(node -p "require('./package.json').version")
+gh release create "xbook-v${VERSION}" \
+  dist-release/xbook.zip \
+  dist-release/xbook.app.tar.gz \
+  dist-release/xbook.app.tar.gz.sig \
+  dist-release/latest.json \
+  --title "xbook v${VERSION}" \
+  --notes "See CHANGELOG.md for ${VERSION}."
+```
+
+`scripts/write-update-manifest.js` alone regenerates `update.json` / `dist-release/latest.json` from an existing signed build.
 
 ### Building and Signing Releases (CI/CD)
-When deploying a production version of the desktop application, you must sign the update package using your generated private key:
-1. Configure `TAURI_SIGNING_PRIVATE_KEY` as a secret environment variable in your build pipeline.
-2. Use the official `tauri-apps/tauri-action` GitHub Action to automate building, signing, and uploading macOS `.app` bundles directly to GitHub Releases.
+When deploying from CI:
+1. Store the private key as `TAURI_SIGNING_PRIVATE_KEY` (and optional `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`).
+2. Prefer the official `tauri-apps/tauri-action` GitHub Action to build, sign, and upload macOS artifacts to GitHub Releases, including `latest.json`.
 
 ## Troubleshooting
 

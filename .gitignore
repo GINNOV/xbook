@@ -77,3 +77,6 @@ src-tauri/resources/
 # Local git worktrees (agent isolation)
 .worktrees/
 worktrees/
+
+# Desktop release packaging output
+dist-release/
