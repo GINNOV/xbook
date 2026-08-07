@@ -5,9 +5,14 @@
 #   - Rust + Node toolchains
 #   - TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PATH (or ~/.tauri/xbook.key)
 #   - Optional: TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+#   - Preferred key source (agents): 1Password GI Business item
+#       op read 'op://GI Business/XBook Console Tauri Update Keys/Private key'
+#   - Full release process: developer.md → "Cutting a desktop release (agent checklist)"
+#     and AGENTS.md → "Desktop releases (agent trigger)"
 #
 # Usage:
 #   bash scripts/package-desktop-release.sh
+#   # after version bump + CHANGELOG fold; this only packages — still publish + merge main
 #
 # Outputs under dist-release/:
 #   - xbook.app.tar.gz (+ .sig)

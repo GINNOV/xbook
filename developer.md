@@ -214,26 +214,73 @@ Keep these three version fields in lockstep when cutting a release.
   - Losing the private key requires a new keypair, a pubkey bump in config, and a manual reinstall for existing users.
 - Users on **0.3.0 or earlier** must install **0.4.0** once manually (signing key was rotated). From 0.4.0 onward, signed releases auto-update on Apple Silicon (`darwin-aarch64`).
 
-### Cutting a desktop release (local)
+### Cutting a desktop release (agent checklist)
 
-```bash
-# 1. Bump versions in package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml
-# 2. Fold CHANGELOG [Unreleased] into [X.Y.Z] - YYYY-MM-DD
-# 3. Build + package (uses ~/.tauri/xbook.key or TAURI_SIGNING_PRIVATE_KEY)
-bash scripts/package-desktop-release.sh
+**Triggers:** user says *cut a desktop release*, *ship desktop*, *release the app*, *publish desktop update*, or similar.
 
-# 4. Commit update.json + version bumps, then:
-VERSION=$(node -p "require('./package.json').version")
-gh release create "xbook-v${VERSION}" \
-  dist-release/xbook.zip \
-  dist-release/xbook.app.tar.gz \
-  dist-release/xbook.app.tar.gz.sig \
-  dist-release/latest.json \
-  --title "xbook v${VERSION}" \
-  --notes "See CHANGELOG.md for ${VERSION}."
-```
+Do **not** only rebuild locally and stop. A release means: version bump → signed package → GitHub Release assets → `update.json` on `main` so installed apps can auto-update.
 
-`scripts/write-update-manifest.js` alone regenerates `update.json` / `dist-release/latest.json` from an existing signed build.
+#### Prerequisites
+- macOS Apple Silicon host (current updater manifest is `darwin-aarch64`).
+- Isolated **worktree** for the release branch (see git-worktree rules); bootstrap with `bash scripts/setup-worktree.sh`.
+- Signing key from 1Password (preferred) or `~/.tauri/xbook.key`:
+  ```bash
+  export TAURI_SIGNING_PRIVATE_KEY="$(op read 'op://GI Business/XBook Console Tauri Update Keys/Private key')"
+  export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+  ```
+- Never commit the private key. Never regenerate/replace the pubkey unless the user explicitly rotates keys (would force a manual reinstall for all users).
+
+#### Steps (in order)
+1. **Choose version** (semver):
+   - patch (`0.4.x`) for fixes / small changes
+   - minor (`0.x.0`) for user-facing features
+   - major only if breaking
+   - Must be **greater** than the last GitHub release tag (`xbook-v*`) and greater than `package.json` if already bumped.
+2. **Bump in lockstep:**
+   - `package.json` / `package-lock.json` root `version`
+   - `src-tauri/tauri.conf.json` → `version`
+   - `src-tauri/Cargo.toml` → `version` (and `Cargo.lock` app entry if present after build)
+3. **CHANGELOG.md:** move `## [Unreleased]` bullets into `## [X.Y.Z] - YYYY-MM-DD`, add empty `## [Unreleased]`, add row to the release-tags table (`xbook-vX.Y.Z`).
+4. **Build + sign + package:**
+   ```bash
+   npm run package:desktop
+   # or: bash scripts/package-desktop-release.sh
+   ```
+   Expect under `dist-release/` (gitignored): `xbook.zip`, `xbook.app.tar.gz`, `xbook.app.tar.gz.sig`, `latest.json`.  
+   Also writes repo-root **`update.json`** (commit this).
+5. **Commit** on the release branch: version bumps, CHANGELOG, `update.json`, any packaging script fixes. Do not commit `dist-release/`, `src-tauri/target/`, or keys.
+6. **Publish:**
+   ```bash
+   VERSION=$(node -p "require('./package.json').version")
+   git tag -a "xbook-v${VERSION}" -m "xbook v${VERSION}"
+   git push -u origin HEAD
+   git push origin "xbook-v${VERSION}"
+   gh release create "xbook-v${VERSION}" \
+     dist-release/xbook.zip \
+     dist-release/xbook.app.tar.gz \
+     dist-release/xbook.app.tar.gz.sig \
+     dist-release/latest.json \
+     --title "xbook v${VERSION}" \
+     --notes "See CHANGELOG.md for ${VERSION}."
+   ```
+7. **Land on `main`:** merge the release branch (or open PR and merge) so `update.json` and version files are on `main` (raw fallback endpoint).
+8. **Verify auto-update endpoints (unauthenticated):**
+   ```bash
+   curl -sL -o /dev/null -w "%{http_code}\n" https://github.com/GINNOV/xbook/releases/latest/download/latest.json   # 200
+   curl -sL -o /dev/null -w "%{http_code}\n" https://raw.githubusercontent.com/GINNOV/xbook/main/update.json           # 200
+   ```
+   Confirm JSON `version` matches the release and `platforms.darwin-aarch64.url` points at this tag’s tarball.
+9. **Report to user:** release URL, version, that existing **0.4.0+** installs will prompt on next launch; remind that code on `main` alone does not update the desktop app until this process runs.
+
+#### Do not
+- Ship without bumping version (updater compares semver).
+- Upload only `xbook.zip` (need `.tar.gz` + `.sig` + `latest.json` for auto-update).
+- Leave `update.json` only on a feature branch (fallback endpoint reads `main`).
+- Change `plugins.updater.pubkey` unless rotating keys on purpose.
+
+#### Helpers
+- `scripts/write-update-manifest.js` — regenerate manifests from an existing signed build only.
+- `npm run package:desktop` — full signed package pipeline.
 
 ### Building and Signing Releases (CI/CD)
 When deploying from CI:
