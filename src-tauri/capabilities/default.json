@@ -14,6 +14,8 @@
     "core:default",
     "updater:allow-check",
     "updater:allow-download-and-install",
-    "window-state:default"
+    "window-state:default",
+    "allow-open-in-browser",
+    "allow-relaunch-app"
   ]
 }

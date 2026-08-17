@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { XLogo, YouTubeLogo } from "./Icons";
 import { useUpdater } from "@/app/hooks/useUpdater";
+import { useTauriExternalLinks } from "@/app/hooks/useTauriExternalLinks";
 
 const navItems = [
   { href: "/", label: "Dashboard", match: (pathname: string) => pathname === "/" },
@@ -47,6 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Initialize auto-updater inside Tauri environment
   useUpdater();
+  useTauriExternalLinks();
 
   useEffect(() => {
     let mounted = true;
