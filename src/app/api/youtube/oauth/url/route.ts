@@ -6,6 +6,7 @@ import {
   generateCodeVerifier,
   generateState,
 } from "@/lib/pkce";
+import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const DEFAULT_SCOPE = ["https://www.googleapis.com/auth/youtube.readonly"];
 
@@ -17,11 +18,11 @@ export async function POST(request: Request) {
     
     // We use settings from the database OR the ones provided in the form body
     const clientId = body.ytClientId || settings.ytClientId || process.env.YT_CLIENT_ID;
-    const redirectUri =
-      body.ytRedirectUri ||
-      settings.ytRedirectUri ||
-      process.env.YT_REDIRECT_URI ||
-      `${origin}/api/oauth/youtube/callback`;
+    const redirectUri = resolveLoopbackRedirectUri(
+      body.ytRedirectUri || settings.ytRedirectUri,
+      process.env.YT_REDIRECT_URI,
+      origin,
+    );
 
     if (!clientId) {
       return NextResponse.json({ ok: false, error: "Missing YouTube client ID." }, { status: 400 });

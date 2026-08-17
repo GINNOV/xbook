@@ -117,6 +117,8 @@ YouTube:
 http://localhost:3000/api/oauth/youtube/callback
 ```
 
+The desktop app must use that URI. A stored loopback URI on another port (for example `:4010`) is rewritten to the live server origin. Google sign-in always opens in the system browser; the Tauri webview cannot complete Google OAuth.
+
 ## Local LLMs
 
 The app uses the OpenAI SDK against an OpenAI-compatible endpoint. Typical defaults (also available as Settings → AI presets):
@@ -204,9 +206,9 @@ This will compile the Next.js production build, copy all backend assets (includi
 ## Versioning and Releases
 
 XBook Console versions are defined in:
-1. `package.json` (`"version": "0.4.1"`)
-2. `src-tauri/tauri.conf.json` (`"version": "0.4.1"`)
-3. `src-tauri/Cargo.toml` (`version = "0.4.1"`)
+1. `package.json` (`"version": "0.4.2"`)
+2. `src-tauri/tauri.conf.json` (`"version": "0.4.2"`)
+3. `src-tauri/Cargo.toml` (`version = "0.4.2"`)
 
 User-facing history lives in [CHANGELOG.md](CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/) style). Update the **Unreleased** section as you land work; fold it into a dated version heading when you cut a release.
 

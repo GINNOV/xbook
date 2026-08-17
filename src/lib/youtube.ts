@@ -34,7 +34,7 @@ async function refreshAccessToken(input: { clientId: string; clientSecret: strin
   return json.access_token;
 }
 
-async function getAuthContext(): Promise<YtAuthContext> {
+export async function getAuthContext(): Promise<YtAuthContext> {
   const env = envSchema.parse({ YT_CLIENT_ID: cleanEnv(process.env.YT_CLIENT_ID), YT_CLIENT_SECRET: cleanEnv(process.env.YT_CLIENT_SECRET) });
   const settings = await getSettings();
   let token = settings.ytAccessToken ?? null;

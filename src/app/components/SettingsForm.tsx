@@ -79,10 +79,11 @@ function SettingsFormBody({
 
   const setup = useMemo(() => {
     const xConnected = Boolean(xDiagnostics.hasAccessToken || form.xAccessToken);
+    const ytConnected = Boolean(form.ytAccessToken);
     const chatModelSet = Boolean(form.llmModel?.trim());
     const embeddingModelSet = Boolean(form.llmEmbeddingModel?.trim());
-    return { xConnected, chatModelSet, embeddingModelSet };
-  }, [xDiagnostics.hasAccessToken, form.xAccessToken, form.llmModel, form.llmEmbeddingModel]);
+    return { xConnected, ytConnected, chatModelSet, embeddingModelSet };
+  }, [xDiagnostics.hasAccessToken, form.xAccessToken, form.ytAccessToken, form.llmModel, form.llmEmbeddingModel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +98,7 @@ function SettingsFormBody({
           Setup status
         </span>
         <StatusChip ok={setup.xConnected} label={setup.xConnected ? "X connected" : "X not connected"} />
+        <StatusChip ok={setup.ytConnected} label={setup.ytConnected ? "YouTube connected" : "YouTube not connected"} />
         <StatusChip
           ok={setup.chatModelSet}
           label={setup.chatModelSet ? "Chat model set" : "Chat model missing"}
@@ -175,7 +177,17 @@ function SettingsFormBody({
             Unsaved changes
           </span>
         ) : null}
-        {message ? <p className="text-sm text-slate-600">{message}</p> : null}
+        {message ? (
+          <p
+            className={
+              /connected/i.test(message)
+                ? "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800"
+                : "text-sm text-slate-600"
+            }
+          >
+            {message}
+          </p>
+        ) : null}
       </div>
     </form>
   );

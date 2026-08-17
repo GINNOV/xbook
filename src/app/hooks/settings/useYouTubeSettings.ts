@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useSettingsContext } from "./useSettingsContext";
+import { isTauriApp, openExternalUrl } from "@/app/lib/tauri";
+import { liveYouTubeRedirectUri, waitForYouTubeToken } from "@/app/lib/youtube-oauth-connect";
 
 export function useYouTubeSettings() {
   const { form, setForm, setSaving, setMessage, persistSettings } = useSettingsContext();
@@ -11,6 +13,7 @@ export function useYouTubeSettings() {
   const [runningYtDiagnostics, setRunningYtDiagnostics] = useState(false);
   const [ytDiagnosticResult, setYtDiagnosticResult] = useState<unknown>(null);
   const [generatingYtUrl, setGeneratingYtUrl] = useState(false);
+  const [oauthWaiting, setOauthWaiting] = useState(false);
   const ytJsonInputRef = useRef<HTMLInputElement | null>(null);
 
   const testYt = async () => {
@@ -72,10 +75,45 @@ export function useYouTubeSettings() {
   };
 
   const connectYouTubeOAuth = async () => {
-    const ok = await persistSettings();
-    if (ok) {
-      window.location.href = "/api/oauth/youtube/start";
+    const callbackUri = liveYouTubeRedirectUri();
+    const nextForm =
+      callbackUri && callbackUri !== form.ytRedirectUri
+        ? { ...form, ytRedirectUri: callbackUri }
+        : form;
+    if (nextForm !== form) setForm(nextForm);
+
+    const ok = await persistSettings(nextForm);
+    if (!ok) return;
+
+    const previousExpiresAt = form.ytTokenExpiresAt;
+    setOauthWaiting(true);
+    if (isTauriApp()) {
+      setMessage("Complete YouTube sign-in in your browser. This window updates when it finishes.");
     }
+    await openExternalUrl("/api/oauth/youtube/start");
+    if (!isTauriApp()) {
+      setOauthWaiting(false);
+      return;
+    }
+
+    const connected = await waitForYouTubeToken({ previousExpiresAt });
+    setOauthWaiting(false);
+    if (connected) {
+      const expiry = connected.ytTokenExpiresAt;
+      setForm((prev) => ({
+        ...prev,
+        ytAccessToken: connected.ytAccessToken ?? prev.ytAccessToken,
+        ytRefreshToken: connected.ytRefreshToken ?? prev.ytRefreshToken,
+        ytTokenExpiresAt:
+          expiry instanceof Date ? expiry.toISOString() : expiry ?? prev.ytTokenExpiresAt,
+        ytScope: connected.ytScope ?? prev.ytScope,
+        ytTokenType: connected.ytTokenType ?? prev.ytTokenType,
+        ytRedirectUri: connected.ytRedirectUri ?? prev.ytRedirectUri,
+      }));
+      setMessage("YouTube connected.");
+      return;
+    }
+    setMessage("Still waiting for YouTube sign-in. Finish in the browser, then click Test connection.");
   };
 
   const runYtDiagnostics = async () => {
@@ -160,6 +198,7 @@ export function useYouTubeSettings() {
     runningYtDiagnostics,
     ytDiagnosticResult,
     generatingYtUrl,
+    oauthWaiting,
     ytJsonInputRef,
     testYt,
     clearYouTubeOAuth,
