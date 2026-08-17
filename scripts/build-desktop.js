@@ -6,6 +6,7 @@ const STANDALONE_SKIP_DIRS = new Set([
   "src-tauri",
   "tauri-dist",
   "tests",
+  "promo",
   ".git",
 ]);
 

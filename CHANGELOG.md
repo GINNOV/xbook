@@ -7,6 +7,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-17
+
+### Fixed
+
+- Desktop production build no longer type-checks the Remotion trailer package (which has its own dependencies).
+
+### Changed
+
+- X and YouTube library page titles use the source logos instead of text-only headings.
+- Library tables no longer show a category column (category remains in filters and the inspector).
+- Library tables can be sorted by summary, author/channel, folder, posted date, and import date.
+
 ## [0.4.0] - 2026-08-07
 
 ### Added
@@ -90,6 +102,7 @@ Initial product foundation (pre-0.2 packaging polish).
 
 | Version | Git tag       |
 | ------- | ------------- |
+| 0.4.1   | `xbook-v0.4.1` |
 | 0.4.0   | `xbook-v0.4.0` |
 | 0.3.0   | `xbook-v0.3.0` |
 | 0.2.0   | `xbook-v0.2.0` |
