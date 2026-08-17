@@ -9,6 +9,7 @@ import {
   updateOperationRun,
   getActiveRun,
 } from "@/lib/processing";
+import { markFoldersFetched } from "@/lib/folders";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -139,6 +140,7 @@ export async function POST(request: Request) {
             status: "completed",
             message: `Folder ${xf.name || xf.id}: ${folderDelta.newItems.length} new, ${folderDelta.membershipIds.length} ids scanned for membership.`,
           });
+          await markFoldersFetched([xf.id]);
         }
 
         if (foldersLinked > 0) {
@@ -314,6 +316,15 @@ export async function POST(request: Request) {
 
     if (source === "x" && created > 0) {
       await incrementUsage(created, "x");
+    }
+
+    const importedFolderIds = new Set(
+      bookmarks
+        .map((bookmark: { folderId?: string | null }) => bookmark.folderId)
+        .filter((id: string | null | undefined): id is string => Boolean(id))
+    );
+    if (importedFolderIds.size > 0) {
+      await markFoldersFetched(importedFolderIds);
     }
 
     if (source === "x") {

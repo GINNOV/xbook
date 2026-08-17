@@ -14,6 +14,7 @@ import {
 } from "@/lib/processing";
 import { MAX_LLM_CONCURRENCY } from "@/lib/llm-limits";
 import { buildEnrichmentRunConfig } from "@/lib/run-config";
+import { markFolderProcessed } from "@/lib/folders";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -352,6 +353,9 @@ export async function POST(request: Request) {
     ? Math.max(0, totalInScope - attemptedIds.size)
     : await prisma.bookmark.count({ where: pendingWhere });
   const wasStopped = signal.aborted;
+  if (folderId && !wasStopped) {
+    await markFolderProcessed(folderId);
+  }
   // Client multi-batch loops must keep going while remaining > 0 and this
   // request did real work. "finished" means do not start another request.
   const noMoreWork =

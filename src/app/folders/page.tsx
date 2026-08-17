@@ -2,6 +2,7 @@ import Link from "next/link";
 import FoldersPanel from "@/app/components/FoldersPanel";
 import YouTubeFoldersPanel from "@/app/components/YouTubeFoldersPanel";
 import { prisma } from "@/lib/db";
+import { toIsoDate } from "@/lib/folders";
 import { fetchYouTubePlaylists } from "@/lib/youtube";
 import { getSettings } from "@/lib/settings";
 
@@ -22,12 +23,20 @@ export default async function FoldersPage({ searchParams }: PageProps) {
     orderBy: { name: "asc" },
   });
   const ytFolders = await prisma.$queryRaw<
-    Array<{ id: string; name: string | null; total: number | string }>
+    Array<{
+      id: string;
+      name: string | null;
+      total: number | string;
+      lastFetchedAt: Date | null;
+      lastProcessedAt: Date | null;
+    }>
   >`
     SELECT
       bf.id AS id,
       bf.name AS name,
-      COALESCE(cnt.total, 0) AS total
+      COALESCE(cnt.total, 0) AS total,
+      bf.lastFetchedAt AS lastFetchedAt,
+      bf.lastProcessedAt AS lastProcessedAt
     FROM BookmarkFolder bf
     LEFT JOIN (
       SELECT
@@ -40,6 +49,15 @@ export default async function FoldersPage({ searchParams }: PageProps) {
     WHERE bf.id LIKE 'yt:pl:%'
     ORDER BY bf.name ASC
   `;
+  const ytActivityById = new Map(
+    ytFolders.map((folder) => [
+      folder.id,
+      {
+        lastFetchedAt: toIsoDate(folder.lastFetchedAt),
+        lastProcessedAt: toIsoDate(folder.lastProcessedAt),
+      },
+    ])
+  );
   let ytLivePlaylists: Awaited<ReturnType<typeof fetchYouTubePlaylists>> | null = null;
   if (tab === "yt") {
     try {
@@ -88,6 +106,8 @@ export default async function FoldersPage({ searchParams }: PageProps) {
                 id: folder.id,
                 name: folder.name,
                 total: folder._count.bookmarks,
+                lastFetchedAt: toIsoDate(folder.lastFetchedAt),
+                lastProcessedAt: toIsoDate(folder.lastProcessedAt),
               }))}
               soundOnComplete={settings?.soundOnComplete ?? false}
               soundOnError={settings?.soundOnError ?? false}
@@ -96,15 +116,23 @@ export default async function FoldersPage({ searchParams }: PageProps) {
             <YouTubeFoldersPanel
               folders={
                 ytLivePlaylists
-                  ? ytLivePlaylists.map((playlist) => ({
-                      id: `yt:pl:${playlist.id}`,
-                      name: playlist.title ?? null,
-                      total: playlist.itemCount ?? 0,
-                    }))
+                  ? ytLivePlaylists.map((playlist) => {
+                      const id = `yt:pl:${playlist.id}`;
+                      const activity = ytActivityById.get(id);
+                      return {
+                        id,
+                        name: playlist.title ?? null,
+                        total: playlist.itemCount ?? 0,
+                        lastFetchedAt: activity?.lastFetchedAt ?? null,
+                        lastProcessedAt: activity?.lastProcessedAt ?? null,
+                      };
+                    })
                   : ytFolders.map((folder) => ({
                       id: folder.id,
                       name: folder.name,
                       total: Number(folder.total),
+                      lastFetchedAt: toIsoDate(folder.lastFetchedAt),
+                      lastProcessedAt: toIsoDate(folder.lastProcessedAt),
                     }))
               }
               soundOnComplete={settings?.soundOnComplete ?? false}
