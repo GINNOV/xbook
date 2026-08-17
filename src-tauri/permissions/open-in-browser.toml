@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-open-in-browser"
+description = "Open a URL in the default system browser."
+commands.allow = ["open_in_browser"]
+
+[[permission]]
+identifier = "allow-relaunch-app"
+description = "Relaunch the application after an update."
+commands.allow = ["relaunch_app"]

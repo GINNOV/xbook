@@ -7,17 +7,40 @@ use tauri::Manager;
 
 struct ServerProcess(Arc<Mutex<Option<Child>>>);
 
-#[tauri::command]
-fn open_in_browser(url: String) {
+fn open_url_in_system_browser(url: &str) {
   println!("Opening URL in system browser: {}", url);
   #[cfg(target_os = "macos")]
-  let _ = Command::new("open").arg(&url).spawn();
+  let _ = Command::new("open").arg(url).spawn();
 
   #[cfg(target_os = "windows")]
-  let _ = Command::new("cmd").args(&["/C", "start", &url]).spawn();
+  let _ = Command::new("cmd").args(&["/C", "start", url]).spawn();
 
   #[cfg(target_os = "linux")]
-  let _ = Command::new("xdg-open").arg(&url).spawn();
+  let _ = Command::new("xdg-open").arg(url).spawn();
+}
+
+fn is_local_app_url(url: &tauri::Url) -> bool {
+  matches!(url.host_str(), Some("localhost") | Some("127.0.0.1"))
+}
+
+fn external_nav_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+  tauri::plugin::Builder::new("external-nav")
+    .on_navigation(|_webview, url| {
+      if is_local_app_url(url) {
+        return true;
+      }
+      if url.scheme() == "http" || url.scheme() == "https" {
+        open_url_in_system_browser(url.as_str());
+        return false;
+      }
+      true
+    })
+    .build()
+}
+
+#[tauri::command]
+fn open_in_browser(url: String) {
+  open_url_in_system_browser(&url);
 }
 
 #[tauri::command]
@@ -34,6 +57,7 @@ pub fn run() {
     .manage(server_process)
     .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(tauri_plugin_window_state::Builder::new().build())
+    .plugin(external_nav_plugin())
     .invoke_handler(tauri::generate_handler![open_in_browser, relaunch_app])
     .setup(|app| {
       if cfg!(debug_assertions) {
