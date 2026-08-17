@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSettings, updateSettings } from "@/lib/settings";
+import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
@@ -12,7 +13,8 @@ export async function GET(request: Request) {
   const error = url.searchParams.get("error");
 
   if (error) {
-    const redirect = new URL("/settings", origin);
+    const redirect = new URL("/oauth/done", origin);
+    redirect.searchParams.set("provider", "youtube");
     redirect.searchParams.set("error", error);
     return NextResponse.redirect(redirect);
   }
@@ -29,10 +31,11 @@ export async function GET(request: Request) {
   const settings = await getSettings();
   const clientId = settings.ytClientId ?? process.env.YT_CLIENT_ID;
   const clientSecret = settings.ytClientSecret ?? process.env.YT_CLIENT_SECRET;
-  const redirectUri =
-    settings.ytRedirectUri ??
-    process.env.YT_REDIRECT_URI ??
-    `${origin}/api/oauth/youtube/callback`;
+  const redirectUri = resolveLoopbackRedirectUri(
+    settings.ytRedirectUri,
+    process.env.YT_REDIRECT_URI,
+    origin,
+  );
 
   if (!clientId || !clientSecret) {
     await prisma.oAuthSession.delete({ where: { state } });
@@ -88,7 +91,7 @@ export async function GET(request: Request) {
 
   await prisma.oAuthSession.delete({ where: { state } });
 
-  const redirect = new URL("/settings", origin);
-  redirect.searchParams.set("oauth", "youtube_success");
+  const redirect = new URL("/oauth/done", origin);
+  redirect.searchParams.set("provider", "youtube");
   return NextResponse.redirect(redirect);
 }

@@ -29,7 +29,12 @@ export default function DocsConnectionsPage() {
             <h2 className="font-bold text-lg text-primary">YouTube integration</h2>
             <p className="text-sm text-on-surface-variant leading-6">
               Use <strong>Browse Google OAuth JSON</strong> to load a Google Cloud OAuth client file, confirm
-              client ID/secret and redirect URI, then <strong>Save &amp; Connect YouTube</strong>.
+              client ID/secret and redirect URI, then <strong>Save &amp; Connect YouTube</strong>. The desktop app
+              opens Google sign-in in your system browser (embedded sign-in is blocked). Register{" "}
+              <code className="rounded bg-surface-container-low px-1.5 py-0.5 text-xs">
+                http://localhost:3000/api/oauth/youtube/callback
+              </code>{" "}
+              as the authorized redirect URI.
             </p>
           </div>
         </div>

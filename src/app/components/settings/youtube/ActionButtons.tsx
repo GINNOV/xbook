@@ -49,6 +49,9 @@ export function ActionButtons({
         {generatingYtUrl ? "Generating…" : copied ? "Copied link" : "Copy OAuth URL"}
       </button>
       {ytTest && <p className="text-sm text-slate-600">{ytTest}</p>}
+      <p className="w-full text-xs text-slate-500">
+        In the desktop app, Google sign-in opens in your system browser. Stay in XBook after you approve access.
+      </p>
     </div>
   );
 }

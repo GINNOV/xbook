@@ -117,6 +117,8 @@ YouTube:
 http://localhost:3000/api/oauth/youtube/callback
 ```
 
+The desktop app must use that URI. A stored loopback URI on another port (for example `:4010`) is rewritten to the live server origin. Google sign-in always opens in the system browser; the Tauri webview cannot complete Google OAuth.
+
 ## Local LLMs
 
 The app uses the OpenAI SDK against an OpenAI-compatible endpoint. Typical defaults (also available as Settings → AI presets):

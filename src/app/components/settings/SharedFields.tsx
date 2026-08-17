@@ -9,7 +9,14 @@ type SettingsSectionProps = {
   description: string;
   children: React.ReactNode;
   icon?: React.ReactNode;
+  badge?: React.ReactNode;
   defaultOpen?: boolean;
+};
+
+type ConnectionBannerProps = {
+  state: "connected" | "waiting" | "disconnected";
+  title: string;
+  detail?: string;
 };
 
 export const secondaryButtonClass =
@@ -18,11 +25,63 @@ export const secondaryButtonClass =
 export const primaryButtonClass =
   "rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-60";
 
+export function ConnectionBanner({ state, title, detail }: ConnectionBannerProps) {
+  const palette =
+    state === "connected"
+      ? "border-emerald-500 bg-emerald-50 text-emerald-950"
+      : state === "waiting"
+        ? "border-amber-400 bg-amber-50 text-amber-950"
+        : "border-slate-200 bg-slate-50 text-slate-800";
+  const mark =
+    state === "connected"
+      ? "bg-emerald-600 text-white"
+      : state === "waiting"
+        ? "bg-amber-500 text-white"
+        : "bg-slate-400 text-white";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`flex items-start gap-4 rounded-xl border-2 px-4 py-4 shadow-sm ${palette}`}
+    >
+      <span className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold ${mark}`}>
+        {state === "connected" ? "✓" : state === "waiting" ? "…" : "!"}
+      </span>
+      <div className="min-w-0">
+        <p className="text-lg font-bold leading-tight">{title}</p>
+        {detail ? <p className="mt-1 text-sm leading-6 opacity-90">{detail}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+export function ConnectionBadge({
+  state,
+  label,
+}: {
+  state: "connected" | "waiting" | "disconnected";
+  label: string;
+}) {
+  const palette =
+    state === "connected"
+      ? "bg-emerald-600 text-white"
+      : state === "waiting"
+        ? "bg-amber-500 text-white"
+        : "bg-slate-200 text-slate-700";
+  return (
+    <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${palette}`}>
+      {label}
+    </span>
+  );
+}
+
 export function SettingsSection({
   title,
   description,
   children,
   icon,
+  badge,
   defaultOpen = false,
 }: SettingsSectionProps) {
   return (
@@ -38,6 +97,8 @@ export function SettingsSection({
             <span className="block text-xs text-slate-500">{description}</span>
           </span>
         </span>
+        <span className="flex shrink-0 items-center gap-3">
+        {badge ? <span className="shrink-0">{badge}</span> : null}
         <span
           aria-hidden="true"
           className="shrink-0 text-slate-500 transition-transform duration-200 group-open/settings:rotate-180"
@@ -56,6 +117,7 @@ export function SettingsSection({
               strokeLinejoin="round"
             />
           </svg>
+        </span>
         </span>
       </summary>
       <div className="mt-5">{children}</div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/settings";
+import { getAuthContext } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export async function GET() {
     scope: settings.ytScope ?? null,
   };
 
-  if (!accessToken) {
+  if (!accessToken && !refreshToken) {
     return NextResponse.json({
       ok: false,
       summary,
@@ -36,11 +37,12 @@ export async function GET() {
   }
 
   try {
+    const auth = await getAuthContext();
     // Try to fetch channel info as a probe
     const res = await fetch(
       "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
         cache: "no-store",
       }
     );

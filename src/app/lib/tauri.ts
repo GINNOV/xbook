@@ -4,6 +4,10 @@ export function isTauriRuntime(win: { __TAURI_INTERNALS__?: unknown } | undefine
   return Boolean(win && win.__TAURI_INTERNALS__);
 }
 
+export function isTauriApp(): boolean {
+  return typeof window !== "undefined" && isTauriRuntime(window as TauriWindow);
+}
+
 export function resolveExternalUrl(url: string): string {
   return url.startsWith("/") ? `http://localhost:3000${url}` : url;
 }
