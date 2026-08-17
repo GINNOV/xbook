@@ -73,7 +73,7 @@ export default function DocsPage() {
           </p>
           <p>
             <a
-              href="https://github.com/GINNOV/xbook/blob/main/CHANGELOG.md"
+              href="https://github.com/GINNOV/xbook/blame/main/CHANGELOG.md"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-semibold text-primary hover:underline"

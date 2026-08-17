@@ -15,7 +15,8 @@ const path = require("path");
 const REPO = "https://github.com/GINNOV/xbook";
 
 function changelogUrl(version) {
-  return `${REPO}/blob/xbook-v${version}/CHANGELOG.md`;
+  // GitHub's /blob/<tag>/CHANGELOG.md 404s from release pages; /blame renders the file.
+  return `${REPO}/blame/xbook-v${version}/CHANGELOG.md`;
 }
 
 function extractSection(markdown, version) {

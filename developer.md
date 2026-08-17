@@ -278,7 +278,7 @@ Do **not** only rebuild locally and stop. A release means: version bump → sign
      --title "xbook v${VERSION}" \
      --notes-file dist-release/RELEASE_NOTES.md
    ```
-   Release notes are a short headline list plus a **markdown link** to the tagged [CHANGELOG.md](https://github.com/GINNOV/xbook/blob/main/CHANGELOG.md). Do not use a bare “See CHANGELOG.md” sentence. If `RELEASE_NOTES.md` is missing, generate it with `node scripts/changelog-notes.js > dist-release/RELEASE_NOTES.md`.
+   Release notes are a short headline list plus a **markdown link** to the tagged changelog (`/blame/xbook-vX.Y.Z/CHANGELOG.md` — GitHub’s `/blob/` view 404s for this file). Do not use a bare “See CHANGELOG.md” sentence. If `RELEASE_NOTES.md` is missing, generate it with `node scripts/changelog-notes.js > dist-release/RELEASE_NOTES.md`.
 7. **Land on `main`:** merge the release branch (or open PR and merge) so `update.json` and version files are on `main` (raw fallback endpoint).
 8. **Verify auto-update endpoints (unauthenticated):**
    ```bash

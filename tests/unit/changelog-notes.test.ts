@@ -31,7 +31,7 @@ const sample = `# Changelog
 describe("changelog-notes", () => {
   it("points at the tagged CHANGELOG, not a bare filename", () => {
     expect(changelogUrl("0.4.2")).toBe(
-      "https://github.com/GINNOV/xbook/blob/xbook-v0.4.2/CHANGELOG.md",
+      "https://github.com/GINNOV/xbook/blame/xbook-v0.4.2/CHANGELOG.md",
     );
   });
 

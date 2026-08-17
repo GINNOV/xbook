@@ -7,6 +7,10 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- GitHub release-note changelog link uses a `/blame/` URL because `/blob/…/CHANGELOG.md` 404s from the release page.
+
 ## [0.4.3] - 2026-08-17
 
 ### Added
