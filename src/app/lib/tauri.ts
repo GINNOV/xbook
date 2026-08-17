@@ -1,5 +1,9 @@
+export function isTauriApp(): boolean {
+  return typeof window !== "undefined" && Boolean((window as any).__TAURI_INTERNALS__);
+}
+
 export async function openExternalUrl(url: string) {
-  if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
+  if (isTauriApp()) {
     try {
       // Dynamically import to avoid errors during server-side rendering or on web
       const { invoke } = await import("@tauri-apps/api/core");

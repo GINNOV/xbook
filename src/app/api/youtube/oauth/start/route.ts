@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
+import { getSettings, updateSettings } from "@/lib/settings";
 import {
   generateCodeChallenge,
   generateCodeVerifier,
   generateState,
 } from "@/lib/pkce";
+import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const DEFAULT_SCOPE = ["https://www.googleapis.com/auth/youtube.readonly"];
 
@@ -13,10 +14,14 @@ export async function GET(request: Request) {
   const settings = await getSettings();
   const origin = new URL(request.url).origin;
   const clientId = settings.ytClientId ?? process.env.YT_CLIENT_ID;
-  const redirectUri =
-    settings.ytRedirectUri ??
-    process.env.YT_REDIRECT_URI ??
-    `${origin}/api/oauth/youtube/callback`;
+  const redirectUri = resolveLoopbackRedirectUri(
+    settings.ytRedirectUri,
+    process.env.YT_REDIRECT_URI,
+    origin,
+  );
+  if (redirectUri !== settings.ytRedirectUri) {
+    await updateSettings({ ytRedirectUri: redirectUri });
+  }
 
   if (!clientId) {
     const url = new URL("/settings", origin);

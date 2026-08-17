@@ -2,21 +2,30 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useYouTubeSettings } from "@/app/hooks/settings/useYouTubeSettings";
 import { useSettingsContext } from "@/app/hooks/settings/useSettingsContext";
+import { isTauriApp, openExternalUrl } from "@/app/lib/tauri";
 
 vi.mock("@/app/hooks/settings/useSettingsContext");
+vi.mock("@/app/lib/tauri", () => ({
+  isTauriApp: vi.fn(() => false),
+  openExternalUrl: vi.fn(),
+}));
 
 describe("useYouTubeSettings", () => {
   const mockSetMessage = vi.fn();
   const mockSetForm = vi.fn();
   const mockSetSaving = vi.fn();
+  const mockPersistSettings = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPersistSettings.mockResolvedValue(true);
+    vi.mocked(isTauriApp).mockReturnValue(false);
     vi.mocked(useSettingsContext).mockReturnValue({
-      form: { ytClientId: "yt-123" },
+      form: { ytClientId: "yt-123", ytRedirectUri: "http://localhost:4010/api/oauth/youtube/callback" },
       setMessage: mockSetMessage,
       setForm: mockSetForm,
       setSaving: mockSetSaving,
+      persistSettings: mockPersistSettings,
     } as any);
     global.fetch = vi.fn();
   });
@@ -68,5 +77,16 @@ describe("useYouTubeSettings", () => {
 
     expect(fetch).toHaveBeenCalledWith("/api/settings", expect.anything());
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining("cleared"));
+  });
+
+  it("opens YouTube OAuth in the system browser instead of the webview", async () => {
+    const { result } = renderHook(() => useYouTubeSettings());
+
+    await act(async () => {
+      await result.current.connectYouTubeOAuth();
+    });
+
+    expect(mockPersistSettings).toHaveBeenCalled();
+    expect(openExternalUrl).toHaveBeenCalledWith("/api/oauth/youtube/start");
   });
 });

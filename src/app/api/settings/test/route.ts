@@ -3,6 +3,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getSettings } from "@/lib/settings";
 import { X_OAUTH_REQUIRED_MESSAGE, formatXApiError } from "@/lib/x";
+import { getAuthContext } from "@/lib/youtube";
 
 const schema = z.object({
   type: z.enum(["x", "yt", "llm"]),
@@ -77,10 +78,12 @@ export async function POST(request: Request) {
     }
 
     if (data.type === "yt") {
-      const token = data.ytAccessToken || settings.ytAccessToken;
-      if (!token) {
+      let token: string;
+      try {
+        token = (await getAuthContext()).accessToken;
+      } catch (authError) {
         return NextResponse.json(
-          { ok: false, error: "Missing YouTube access token." },
+          { ok: false, error: authError instanceof Error ? authError.message : "Missing YouTube access token." },
           { status: 400 }
         );
       }
