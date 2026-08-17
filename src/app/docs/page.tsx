@@ -71,6 +71,16 @@ export default function DocsPage() {
             videos&quot; from YouTube into one place. It uses an <strong>AI Brain (LLM)</strong> to read them,
             summarize them, and categorize them.
           </p>
+          <p>
+            <a
+              href="https://github.com/GINNOV/xbook/blob/main/CHANGELOG.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-primary hover:underline"
+            >
+              Changelog
+            </a>
+          </p>
         </section>
 
         {/* Scenarios — full content stays on root */}

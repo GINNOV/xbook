@@ -21,7 +21,7 @@
 When the user says **cut a desktop release**, **ship desktop**, **release the app**, **publish desktop update**, or equivalent:
 
 1. Follow the full checklist in [developer.md → Cutting a desktop release (agent checklist)](developer.md#cutting-a-desktop-release-agent-checklist).
-2. That means: semver bump (three version files + CHANGELOG), load signing key from 1Password (`op://GI Business/XBook Console Tauri Update Keys/Private key`) or `~/.tauri/xbook.key`, `npm run package:desktop`, commit `update.json` + version bumps, tag `xbook-vX.Y.Z`, `gh release create` with all `dist-release/*` assets, merge to **main**, verify public `latest.json` / `update.json` return 200.
+2. That means: semver bump (three version files + CHANGELOG), load signing key from 1Password (`op://GI Business/XBook Console Tauri Update Keys/Private key`) or `~/.tauri/xbook.key`, `npm run package:desktop`, commit `update.json` + version bumps, tag `xbook-vX.Y.Z`, `gh release create` with all `dist-release/*` assets and `--notes-file dist-release/RELEASE_NOTES.md` (short headlines + changelog link, not a bare filename), merge to **main**, verify public `latest.json` / `update.json` return 200.
 3. Do **not** treat “push to main” or a local Next build as a desktop release. Installed apps only update from a **new signed GitHub release** with a higher version.
 
 Details (auto-updater endpoints, key rotation, platform notes): [developer.md](developer.md#versioning-and-releases).

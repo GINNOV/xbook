@@ -2,6 +2,7 @@
 
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
 import { formatFolderActivity } from "@/app/lib/formatters";
+import { XLogo } from "./Icons";
 
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
 
@@ -14,7 +15,13 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
     <section className="flex flex-col gap-4 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-sm">
       {msg?.text && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-2xl font-semibold">Bookmark folders</h2><p className="text-xs text-slate-500">Counts show locally imported folder items.</p></div>
+        <div>
+          <h2 className="flex items-center gap-2 text-2xl font-semibold">
+            <XLogo className="h-5 w-5" />
+            Folders
+          </h2>
+          <p className="text-xs text-slate-500">Counts show locally imported folder items.</p>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all"}</button>
           <button onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>

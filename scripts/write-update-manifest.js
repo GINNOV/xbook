@@ -46,23 +46,18 @@ const arch = process.arch === "arm64" ? "aarch64" : "x86_64";
 const platformKey = `darwin-${arch}`;
 const url = `${baseUrl}/${tarName}`;
 
-const notesFromChangelog = (() => {
+const { releaseNotes, loadChangelog } = require("./changelog-notes");
+const changelogNotes = (() => {
   try {
-    const cl = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
-    const m = cl.match(new RegExp(`## \\[${version.replace(/\./g, "\\.")}\\][\\s\\S]*?(?=\\n## \\[|$)`));
-    if (!m) return `XBook Console ${version}`;
-    const bullets = m[0]
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l.startsWith("- "))
-      .slice(0, 12)
-      .join("\n");
-    const notes = bullets || `XBook Console ${version}`;
-    return notes.length > 1500 ? `${notes.slice(0, 1490)}\n…` : notes;
+    return releaseNotes({ version, changelogMarkdown: loadChangelog(root) });
   } catch {
-    return `XBook Console ${version}`;
+    return {
+      notes: `XBook Console ${version}`,
+      updaterNotes: `XBook Console ${version}`,
+    };
   }
 })();
+const notesFromChangelog = changelogNotes.updaterNotes;
 
 const manifest = {
   version,
@@ -84,13 +79,20 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const latestPath = path.join(outDir, "latest.json");
 const updatePath = path.join(root, "update.json");
+const releaseNotesPath = path.join(outDir, "RELEASE_NOTES.md");
 
 const json = JSON.stringify(manifest, null, 2) + "\n";
 fs.writeFileSync(latestPath, json);
 fs.writeFileSync(updatePath, json);
+if (changelogNotes.notes) {
+  fs.writeFileSync(releaseNotesPath, `${changelogNotes.notes}\n`);
+}
 
 console.log(`Wrote ${latestPath}`);
 console.log(`Wrote ${updatePath}`);
+if (changelogNotes.notes) {
+  console.log(`Wrote ${releaseNotesPath}`);
+}
 console.log(`Platform: ${platformKey}`);
 console.log(`URL: ${url}`);
 console.log(`Version: ${version}`);
