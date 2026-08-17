@@ -10,12 +10,11 @@ export function XLogo({ className = "h-3 w-3" }: { className?: string }) {
 
 export function YouTubeLogo({ className = "h-3 w-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 28 20" aria-hidden="true" className={className}>
+    <svg viewBox="0 0 28 20" aria-hidden="true" className={className} fill="currentColor">
       <path
-        d="M27.417 3.132a3.52 3.52 0 0 0-2.477-2.49C22.753 0 14 0 14 0S5.247 0 3.06.642A3.52 3.52 0 0 0 .583 3.132C0 5.33 0 10 0 10s0 4.67.583 6.868a3.52 3.52 0 0 0 2.477 2.49C5.247 20 14 20 14 20s8.753 0 10.94-.642a3.52 3.52 0 0 0 2.477-2.49C28 14.67 28 10 28 10s0-4.67-.583-6.868Z"
-        fill="currentColor"
+        fillRule="evenodd"
+        d="M27.417 3.132a3.52 3.52 0 0 0-2.477-2.49C22.753 0 14 0 14 0S5.247 0 3.06.642A3.52 3.52 0 0 0 .583 3.132C0 5.33 0 10 0 10s0 4.67.583 6.868a3.52 3.52 0 0 0 2.477 2.49C5.247 20 14 20 14 20s8.753 0 10.94-.642a3.52 3.52 0 0 0 2.477-2.49C28 14.67 28 10 28 10s0-4.67-.583-6.868ZM11.2 14.286V5.714L18.486 10 11.2 14.286Z"
       />
-      <path d="m11.2 14.286 7.286-4.286L11.2 5.714v8.572Z" fill="white" />
     </svg>
   );
 }

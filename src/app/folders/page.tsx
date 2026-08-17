@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FoldersPanel from "@/app/components/FoldersPanel";
 import YouTubeFoldersPanel from "@/app/components/YouTubeFoldersPanel";
+import { XLogo, YouTubeLogo } from "@/app/components/Icons";
 import { prisma } from "@/lib/db";
 import { toIsoDate } from "@/lib/folders";
 import { fetchYouTubePlaylists } from "@/lib/youtube";
@@ -83,19 +84,25 @@ export default async function FoldersPage({ searchParams }: PageProps) {
         <nav className="inline-flex w-fit rounded-lg bg-surface-container-high p-1">
           <Link
             href="/folders?tab=x"
-            className={`rounded-md px-5 py-2 text-sm font-semibold ${
+            aria-label="X folders"
+            title="X folders"
+            className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold ${
               tab === "x" ? "bg-surface-container-lowest text-on-surface" : "text-on-surface-variant"
             }`}
           >
-            X folders
+            <XLogo className="h-3.5 w-3.5" />
+            Folders
           </Link>
           <Link
             href="/folders?tab=yt"
-            className={`rounded-md px-5 py-2 text-sm font-semibold ${
+            aria-label="YouTube playlists"
+            title="YouTube playlists"
+            className={`flex items-center gap-2 rounded-md px-5 py-2 text-sm font-semibold ${
               tab === "yt" ? "bg-surface-container-lowest text-on-surface" : "text-on-surface-variant"
             }`}
           >
-            YouTube playlists
+            <YouTubeLogo className="h-3.5 w-5" />
+            Playlists
           </Link>
         </nav>
 

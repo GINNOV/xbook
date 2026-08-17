@@ -1,11 +1,11 @@
 {
-  "version": "0.4.2",
-  "notes": "- Desktop links (tweets, videos, docs) open in the system browser instead of trapping navigation inside the webview.\n- YouTube Google sign-in always opens in the system browser. A stored loopback redirect on a dead port (for example `:4010`) is rewritten to the live server origin.\n- YouTube Settings shows a connected / waiting / not-connected banner and waits for the browser OAuth callback without a reload.",
-  "pub_date": "2026-08-17T14:59:10.433Z",
+  "version": "0.4.3",
+  "notes": "- Docs “What is XB👀k Console” section links to the GitHub changelog.\n- Desktop GitHub release notes summarize the main bullets and link the tagged changelog instead of only naming the file.\n- Folder and processing source labels use X and YouTube logos (YouTube mark is a single solid icon).\n\nhttps://github.com/GINNOV/xbook/blob/xbook-v0.4.3/CHANGELOG.md",
+  "pub_date": "2026-08-17T15:27:26.286Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQmdPUWdqWGdmN2lEeENMRDRreGc3Vk1NWnpTYm1JbDFaTmp6VlhSQTJ2aE10Zi80MjRDYS9RdUJod05QK044dUtPUExWSnNSbEtJdGUzZTBET2JoUVBmamFLbnVId1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2OTc4NzM3CWZpbGU6eGJvb2suYXBwLnRhci5negpPSm9CZmVVQWFMZDh4MUZxd1JPbk8zUytSSFY5VTNia3kvTFhGZ2Fqekt3TFpQQ01NVGhKYVpFUFNnek9UdGpFZy9kR0czck4xb3g1UnM5WHozTS9BZz09Cg==",
-      "url": "https://github.com/GINNOV/xbook/releases/download/xbook-v0.4.2/xbook.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQmdPUWdqWGdmN29rVHpPUTZCUUxWdCtQdmk5OGNyU2xWenNxUnRRcjRadm1oM2dGbnlmeTdaaFBmMGl5Vm9YQ29GaEJoMks2T3M0THMvd05EdUpzQVV0Vy9xQjdNTWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2OTgwNDMzCWZpbGU6eGJvb2suYXBwLnRhci5negpXbmtTQWJIbkNTT3FadmErck9Tc0lTenlDNHpoK041Tk1EYmJmYkxZSnpyRExaRzhPcTc3amdjd1loRzQ2MGVFWUFHUjRaSDFLQkUyVDhMZkxGdHRCdz09Cg==",
+      "url": "https://github.com/GINNOV/xbook/releases/download/xbook-v0.4.3/xbook.app.tar.gz"
     }
   }
 }

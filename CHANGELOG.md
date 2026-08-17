@@ -7,6 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-08-17
+
+### Added
+
+- Docs “What is XB👀k Console” section links to the GitHub changelog.
+
+### Changed
+
+- Desktop GitHub release notes summarize the main bullets and link the tagged changelog instead of only naming the file.
+- Folder and processing source labels use X and YouTube logos (YouTube mark is a single solid icon).
+
 ## [0.4.2] - 2026-08-17
 
 ### Fixed
@@ -113,6 +124,7 @@ Initial product foundation (pre-0.2 packaging polish).
 
 | Version | Git tag       |
 | ------- | ------------- |
+| 0.4.3   | `xbook-v0.4.3` |
 | 0.4.2   | `xbook-v0.4.2` |
 | 0.4.1   | `xbook-v0.4.1` |
 | 0.4.0   | `xbook-v0.4.0` |
@@ -122,5 +134,5 @@ Initial product foundation (pre-0.2 packaging polish).
 ## How to update this file
 
 1. Under **[Unreleased]**, add entries as you merge work (`Added` / `Changed` / `Fixed` / `Removed` / `Security`).
-2. When cutting a release, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, bump versions in `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`, and open a fresh empty `[Unreleased]` section at the top.
+2. When cutting a release, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, bump versions in `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`, and open a fresh empty `[Unreleased]` section at the top. GitHub release notes should summarize the main bullets and **link** this file at the release tag (`node scripts/changelog-notes.js`).
 3. Prefer short, user-facing bullets over internal commit lists.

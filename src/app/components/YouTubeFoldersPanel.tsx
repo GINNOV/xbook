@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
 import { formatFolderActivity } from "@/app/lib/formatters";
+import { YouTubeLogo } from "./Icons";
 
 type Folder = {
   id: string;
@@ -114,7 +115,10 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
         </div>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold">YouTube playlists</h2>
+        <h2 className="flex items-center gap-2 text-2xl font-semibold">
+          <YouTubeLogo className="h-5 w-7" />
+          Playlists
+        </h2>
         <button
           type="button"
           onClick={syncPlaylists}

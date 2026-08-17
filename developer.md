@@ -206,9 +206,9 @@ This will compile the Next.js production build, copy all backend assets (includi
 ## Versioning and Releases
 
 XBook Console versions are defined in:
-1. `package.json` (`"version": "0.4.2"`)
-2. `src-tauri/tauri.conf.json` (`"version": "0.4.2"`)
-3. `src-tauri/Cargo.toml` (`version = "0.4.2"`)
+1. `package.json` (`"version": "0.4.3"`)
+2. `src-tauri/tauri.conf.json` (`"version": "0.4.3"`)
+3. `src-tauri/Cargo.toml` (`version = "0.4.3"`)
 
 User-facing history lives in [CHANGELOG.md](CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/) style). Update the **Unreleased** section as you land work; fold it into a dated version heading when you cut a release.
 
@@ -261,7 +261,7 @@ Do **not** only rebuild locally and stop. A release means: version bump → sign
    npm run package:desktop
    # or: bash scripts/package-desktop-release.sh
    ```
-   Expect under `dist-release/` (gitignored): `xbook.zip`, `xbook.app.tar.gz`, `xbook.app.tar.gz.sig`, `latest.json`.  
+   Expect under `dist-release/` (gitignored): `xbook.zip`, `xbook.app.tar.gz`, `xbook.app.tar.gz.sig`, `latest.json`, `RELEASE_NOTES.md`.  
    Also writes repo-root **`update.json`** (commit this).
 5. **Commit** on the release branch: version bumps, CHANGELOG, `update.json`, any packaging script fixes. Do not commit `dist-release/`, `src-tauri/target/`, or keys.
 6. **Publish:**
@@ -276,8 +276,9 @@ Do **not** only rebuild locally and stop. A release means: version bump → sign
      dist-release/xbook.app.tar.gz.sig \
      dist-release/latest.json \
      --title "xbook v${VERSION}" \
-     --notes "See CHANGELOG.md for ${VERSION}."
+     --notes-file dist-release/RELEASE_NOTES.md
    ```
+   Release notes are a short headline list plus a **markdown link** to the tagged [CHANGELOG.md](https://github.com/GINNOV/xbook/blob/main/CHANGELOG.md). Do not use a bare “See CHANGELOG.md” sentence. If `RELEASE_NOTES.md` is missing, generate it with `node scripts/changelog-notes.js > dist-release/RELEASE_NOTES.md`.
 7. **Land on `main`:** merge the release branch (or open PR and merge) so `update.json` and version files are on `main` (raw fallback endpoint).
 8. **Verify auto-update endpoints (unauthenticated):**
    ```bash
@@ -295,6 +296,7 @@ Do **not** only rebuild locally and stop. A release means: version bump → sign
 
 #### Helpers
 - `scripts/write-update-manifest.js` — regenerate manifests from an existing signed build only.
+- `scripts/changelog-notes.js` — short GitHub / updater notes from CHANGELOG plus a changelog URL.
 - `npm run package:desktop` — full signed package pipeline.
 
 ### Building and Signing Releases (CI/CD)

@@ -74,6 +74,9 @@ cp "$SIG" "$OUT/"
 # Writes dist-release/latest.json and repo-root update.json
 node "$ROOT/scripts/write-update-manifest.js"
 
+# Brief GitHub notes (headlines + changelog URL) — never a bare "See CHANGELOG.md"
+node "$ROOT/scripts/changelog-notes.js" "$VERSION" > "$OUT/RELEASE_NOTES.md"
+
 echo ""
 echo "==> Release assets ready in dist-release/"
 ls -lh "$OUT"
@@ -83,5 +86,5 @@ echo "  1. Commit version bump + update.json on the release branch"
 echo "  2. gh release create xbook-v${VERSION} \\"
 echo "       dist-release/xbook.zip dist-release/xbook.app.tar.gz \\"
 echo "       dist-release/xbook.app.tar.gz.sig dist-release/latest.json \\"
-echo "       --title \"xbook v${VERSION}\" --notes-from-tag"
+echo "       --title \"xbook v${VERSION}\" --notes-file dist-release/RELEASE_NOTES.md"
 echo "  3. Merge to main so raw update.json endpoint stays in sync"

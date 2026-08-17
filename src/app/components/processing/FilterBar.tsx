@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { getFilterUrl } from "@/app/lib/processing-utils";
+import { XLogo, YouTubeLogo } from "../Icons";
 
 type Props = {
   status: string; source: string; errorsOnly: boolean;
@@ -24,8 +25,22 @@ export function FilterBar({ status, source, errorsOnly, currentParams }: Props) 
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-2 text-xs font-semibold uppercase text-on-surface-variant">Source:</span>
         <Link href={getFilterUrl(currentParams, { source: null })} className={sBtn(!source)}>Both</Link>
-        <Link href={getFilterUrl(currentParams, { source: "x" })} className={sBtn(source === "x")}>X</Link>
-        <Link href={getFilterUrl(currentParams, { source: "yt" })} className={sBtn(source === "yt")}>YouTube</Link>
+        <Link
+          href={getFilterUrl(currentParams, { source: "x" })}
+          className={`${sBtn(source === "x")} inline-flex items-center justify-center`}
+          aria-label="X"
+          title="X"
+        >
+          <XLogo className="h-3 w-3" />
+        </Link>
+        <Link
+          href={getFilterUrl(currentParams, { source: "yt" })}
+          className={`${sBtn(source === "yt")} inline-flex items-center justify-center`}
+          aria-label="YouTube"
+          title="YouTube"
+        >
+          <YouTubeLogo className="h-3 w-4" />
+        </Link>
       </div>
     </section>
   );
