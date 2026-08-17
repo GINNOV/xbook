@@ -2,6 +2,20 @@ export const formatDate = (v: any) => v ? new Date(v).toLocaleString() : "Not fi
 export const formatDateShort = (v: any) => v ? new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : "-";
 export const formatTime = (v: any) => v ? new Date(v).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : "-";
 
+/** Compact folder activity timestamp, or "Never" when missing. */
+export function formatFolderActivity(v?: Date | string | null) {
+  if (!v) return "Never";
+  const date = new Date(v);
+  if (Number.isNaN(date.getTime())) return "Never";
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Human label for OperationRun.source (x / yt / system / other). */
 export function formatRunSource(source?: string | null): string {
   if (source === "x") return "X";

@@ -8,6 +8,7 @@ import {
   updateOperationRun,
   getActiveRun,
 } from "@/lib/processing";
+import { markFoldersFetched } from "@/lib/folders";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -159,6 +160,8 @@ export async function POST(request: Request) {
     if (created > 0) {
       await incrementUsage(created, "x");
     }
+
+    await markFoldersFetched([folderId]);
 
     await updateOperationRun(operation.id, {
       status: "completed",

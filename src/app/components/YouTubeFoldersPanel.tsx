@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
+import { formatFolderActivity } from "@/app/lib/formatters";
 
 type Folder = {
   id: string;
   name?: string | null;
   total?: number;
+  lastFetchedAt?: string | null;
+  lastProcessedAt?: string | null;
 };
 
 type Props = {
@@ -122,12 +125,14 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
         </button>
       </div>
       {folders.length ? (
-        <div className="overflow-hidden rounded-lg border border-black/10">
+        <div className="overflow-x-auto rounded-lg border border-black/10">
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant">
               <tr>
                 <th className="px-4 py-2">Playlist Name</th>
                 <th className="px-4 py-2">Videos</th>
+                <th className="px-4 py-2">Fetched</th>
+                <th className="px-4 py-2">Processed</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -139,6 +144,12 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
                   </td>
                   <td className="px-4 py-3 text-slate-500">
                     {folder.total ?? 0}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                    {formatFolderActivity(folder.lastFetchedAt)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                    {formatFolderActivity(folder.lastProcessedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
+import { formatFolderActivity } from "@/app/lib/formatters";
 
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
 
@@ -20,14 +21,16 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
         </div>
       </div>
       {folders.length ? (
-        <div className="overflow-hidden rounded-lg border border-black/10">
+        <div className="overflow-x-auto rounded-lg border border-black/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Imported</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
+            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Imported</th><th className="px-4 py-2">Fetched</th><th className="px-4 py-2">Processed</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-black/5 bg-white">
               {folders.map(f => (
                 <tr key={f.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 font-semibold">{f.name ?? "Untitled folder"}</td>
                   <td className="px-4 py-3 text-slate-500">{f.total ?? 0}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastFetchedAt)}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastProcessedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>

@@ -8,6 +8,8 @@ export interface Folder {
   id: string;
   name: string | null;
   total?: number;
+  lastFetchedAt?: string | null;
+  lastProcessedAt?: string | null;
 }
 
 async function readJson(res: Response): Promise<any> {
