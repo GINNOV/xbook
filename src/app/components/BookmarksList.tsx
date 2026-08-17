@@ -1,15 +1,63 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useBookmarksList, Bookmark } from "../hooks/useBookmarksList";
-import { BookmarkRow } from "./BookmarkRow";
+import { BookmarkRow, LIBRARY_ROW_GRID } from "./BookmarkRow";
 import { BookmarkInspector } from "./BookmarkInspector";
 import { EditEnrichmentDialog } from "./EditEnrichmentDialog";
+import {
+  type BookmarkSortKey,
+  type SortDir,
+  defaultDirForSort,
+} from "@/lib/bookmark-sort";
 
 type Props = {
   initial: Bookmark[];
+  sort: BookmarkSortKey;
+  dir: SortDir;
+  source: string;
 };
 
-export default function BookmarksList({ initial }: Props) {
+function SortHeader({
+  column,
+  label,
+  sort,
+  dir,
+}: {
+  column: BookmarkSortKey;
+  label: string;
+  sort: BookmarkSortKey;
+  dir: SortDir;
+}) {
+  const searchParams = useSearchParams();
+  const active = sort === column;
+  const nextDir = active ? (dir === "asc" ? "desc" : "asc") : defaultDirForSort(column);
+  const params = new URLSearchParams(searchParams.toString());
+  params.set("sort", column);
+  params.set("dir", nextDir);
+  params.delete("page");
+  const href = `/bookmarks?${params.toString()}`;
+
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-1 uppercase transition hover:text-on-surface ${
+        active ? "text-on-surface" : ""
+      }`}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
+    >
+      {label}
+      {active ? (
+        <span aria-hidden className="text-[10px] leading-none">
+          {dir === "asc" ? "▲" : "▼"}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+export default function BookmarksList({ initial, sort, dir, source }: Props) {
   const {
     items,
     busyId,
@@ -55,21 +103,22 @@ export default function BookmarksList({ initial }: Props) {
     }
   };
 
+  const isYouTube = source === "yt" || items[0]?.source === "yt";
+
   return (
     <div className="flex flex-col gap-4">
       {message ? <p className="text-sm text-on-surface-variant">{message}</p> : null}
       <section className={`grid gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_380px]" : "grid-cols-1"}`}>
         <div className="overflow-x-auto rounded-lg bg-surface-container-lowest border border-outline-variant/30">
-          <div className="min-w-[1200px]">
-            <div className="grid min-w-[1200px] grid-cols-[44px_150px_minmax(220px,1fr)_150px_150px_100px_90px_90px_140px] bg-surface-container px-4 py-2 text-xs font-semibold uppercase text-on-surface-variant">
+          <div className="min-w-[1050px]">
+            <div className={`grid min-w-[1050px] ${LIBRARY_ROW_GRID} bg-surface-container px-4 py-2 text-xs font-semibold uppercase text-on-surface-variant`}>
               <span></span>
-              <span>Category</span>
-              <span>{items[0]?.source === "yt" ? "Video / digest" : "Summary"}</span>
-              <span>{items[0]?.source === "yt" ? "Channel" : "Author"}</span>
-              <span>Folder</span>
+              <SortHeader column="summary" label={isYouTube ? "Video / digest" : "Summary"} sort={sort} dir={dir} />
+              <SortHeader column="author" label={isYouTube ? "Channel" : "Author"} sort={sort} dir={dir} />
+              <SortHeader column="folder" label="Folder" sort={sort} dir={dir} />
               <span>Status</span>
-              <span>Posted</span>
-              <span>Import</span>
+              <SortHeader column="posted" label="Posted" sort={sort} dir={dir} />
+              <SortHeader column="import" label="Import" sort={sort} dir={dir} />
               <span className="text-right">Actions</span>
             </div>
             <div className="divide-y divide-[color-mix(in_srgb,var(--outline-variant)_25%,transparent)]">

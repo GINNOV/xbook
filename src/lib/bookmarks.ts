@@ -1,5 +1,10 @@
 import { prisma } from "./db";
 import { generateEmbedding } from "./llm";
+import {
+  parseBookmarkSort,
+  prismaBookmarkOrderBy,
+  sortBookmarkItems,
+} from "./bookmark-sort";
 
 export type BookmarkItem = {
   id: string; source: string; tweetUrl: string; text: string | null; folderName: string | null; summary: string | null;
@@ -117,20 +122,29 @@ const mapB = (b: any) => ({
 });
 
 export async function getBookmarks(p: any) {
-  if (p.semantic && p.query) return performSemanticSearch(p.query, p.page, p.pageSize);
+  const { sort, dir } = parseBookmarkSort(p.sort, p.dir);
+  if (p.semantic && p.query) return performSemanticSearch(p.query, p.page, p.pageSize, sort, dir);
   const where = buildWhereClause(p);
   const total = await prisma.bookmark.count({ where });
   const raw = await prisma.bookmark.findMany({
     where, include: { folder: true, processingEvents: { where: { status: "failed" }, orderBy: { createdAt: "desc" }, take: 1, select: { message: true } } },
-    orderBy: [{ category: "asc" }, { importedAt: "desc" }], skip: (p.page - 1) * p.pageSize, take: p.pageSize,
+    orderBy: prismaBookmarkOrderBy(sort, dir), skip: (p.page - 1) * p.pageSize, take: p.pageSize,
   });
   return { bookmarks: raw.map(mapB), total };
 }
 
-async function performSemanticSearch(query: string, page: number, pageSize: number) {
+async function performSemanticSearch(
+  query: string,
+  page: number,
+  pageSize: number,
+  sort: ReturnType<typeof parseBookmarkSort>["sort"],
+  dir: ReturnType<typeof parseBookmarkSort>["dir"],
+) {
   const all = await searchBookmarksSemantically(query);
+  const mapped = all.map(mapB);
+  const sorted = sortBookmarkItems(mapped, sort, dir);
   const skip = (page - 1) * pageSize;
-  return { bookmarks: all.slice(skip, skip + pageSize).map(mapB), total: all.length };
+  return { bookmarks: sorted.slice(skip, skip + pageSize), total: sorted.length };
 }
 
 export type FilterCategory = { name: string; count: number };

@@ -3,6 +3,7 @@ import BookmarksList from "@/app/components/BookmarksList";
 import { FilterControls } from "@/app/components/bookmarks/FilterControls";
 import { PaginationControls } from "@/app/components/bookmarks/PaginationControls";
 import { getBookmarksPageData, buildPageHref } from "@/app/lib/bookmarks-fetcher";
+import { XLogo, YouTubeLogo } from "@/app/components/Icons";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 100;
@@ -19,8 +20,16 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
       <div className="mx-auto flex max-w-[1500px] flex-col gap-8">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-headline text-5xl font-semibold tracking-tight">
-              {d.src === "yt" ? "YouTube Library" : d.src === "x" ? "X Library" : "Library"}
+            <h1
+              className="flex items-center gap-3 font-headline text-5xl font-semibold tracking-tight"
+              aria-label={d.src === "yt" ? "YouTube Library" : d.src === "x" ? "X Library" : "Library"}
+            >
+              {d.src === "yt" ? (
+                <YouTubeLogo className="h-9 w-12 shrink-0" />
+              ) : d.src === "x" ? (
+                <XLogo className="h-8 w-8 shrink-0" />
+              ) : null}
+              Library
             </h1>
             <p className="mt-2 text-sm text-on-surface-variant">
               Browse and search your knowledge base
@@ -48,8 +57,10 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
           video={d.vid}
           semantic={d.sem}
           folderId={d.fid}
+          sort={d.sort}
+          dir={d.dir}
         />
-        <BookmarksList initial={d.data.bookmarks} />
+        <BookmarksList initial={d.data.bookmarks} sort={d.sort} dir={d.dir} source={d.src} />
         <PaginationControls from={from} to={to} total={d.data.total} currentPage={d.currentPage} totalPages={d.totalPages} pageHref={href} />
       </div>
     </main>
