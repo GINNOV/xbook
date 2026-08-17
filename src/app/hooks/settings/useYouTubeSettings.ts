@@ -99,11 +99,13 @@ export function useYouTubeSettings() {
     const connected = await waitForYouTubeToken({ previousExpiresAt });
     setOauthWaiting(false);
     if (connected) {
+      const expiry = connected.ytTokenExpiresAt;
       setForm((prev) => ({
         ...prev,
         ytAccessToken: connected.ytAccessToken ?? prev.ytAccessToken,
         ytRefreshToken: connected.ytRefreshToken ?? prev.ytRefreshToken,
-        ytTokenExpiresAt: connected.ytTokenExpiresAt ?? prev.ytTokenExpiresAt,
+        ytTokenExpiresAt:
+          expiry instanceof Date ? expiry.toISOString() : expiry ?? prev.ytTokenExpiresAt,
         ytScope: connected.ytScope ?? prev.ytScope,
         ytTokenType: connected.ytTokenType ?? prev.ytTokenType,
         ytRedirectUri: connected.ytRedirectUri ?? prev.ytRedirectUri,

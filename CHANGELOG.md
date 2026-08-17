@@ -7,6 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-08-17
+
+### Fixed
+
+- Desktop links (tweets, videos, docs) open in the system browser instead of trapping navigation inside the webview.
+- YouTube Google sign-in always opens in the system browser. A stored loopback redirect on a dead port (for example `:4010`) is rewritten to the live server origin.
+
+### Changed
+
+- YouTube Settings shows a connected / waiting / not-connected banner and waits for the browser OAuth callback without a reload.
+
 ## [0.4.1] - 2026-08-17
 
 ### Fixed
@@ -102,6 +113,7 @@ Initial product foundation (pre-0.2 packaging polish).
 
 | Version | Git tag       |
 | ------- | ------------- |
+| 0.4.2   | `xbook-v0.4.2` |
 | 0.4.1   | `xbook-v0.4.1` |
 | 0.4.0   | `xbook-v0.4.0` |
 | 0.3.0   | `xbook-v0.3.0` |
