@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
+import type { BookmarkSortKey, SortDir } from "@/lib/bookmark-sort";
 
 type SearchMode = "keyword" | "semantic" | "ask";
 
@@ -18,6 +19,8 @@ type Props = {
   video: boolean;
   semantic: boolean;
   folderId: string;
+  sort: BookmarkSortKey;
+  dir: SortDir;
 };
 
 type AskCitation = {
@@ -75,7 +78,7 @@ function FacetPill({
 }
 
 function buildFilterHref(
-  base: { source: string; q: string; status: string; video: boolean; semantic: boolean },
+  base: { source: string; q: string; status: string; video: boolean; semantic: boolean; sort: string; dir: string },
   patch: Record<string, string | null>
 ) {
   const params = new URLSearchParams();
@@ -84,6 +87,8 @@ function buildFilterHref(
   if (base.status) params.set("status", base.status);
   if (base.video) params.set("video", "true");
   if (base.semantic) params.set("semantic", "true");
+  if (base.sort) params.set("sort", base.sort);
+  if (base.dir) params.set("dir", base.dir);
 
   for (const [key, value] of Object.entries(patch)) {
     if (value === null || value === "") params.delete(key);
@@ -105,6 +110,8 @@ export function FilterControls({
   video,
   semantic,
   folderId,
+  sort,
+  dir,
 }: Props) {
   const router = useRouter();
   const [mode, setMode] = useState<SearchMode>(semantic ? "semantic" : "keyword");
@@ -115,11 +122,18 @@ export function FilterControls({
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [askCitations, setAskCitations] = useState<AskCitation[]>([]);
 
-  const clearHref = source ? `/bookmarks?source=${encodeURIComponent(source)}` : "/bookmarks";
+  const clearHref = (() => {
+    const params = new URLSearchParams();
+    if (source) params.set("source", source);
+    if (sort) params.set("sort", sort);
+    if (dir) params.set("dir", dir);
+    const qs = params.toString();
+    return qs ? `/bookmarks?${qs}` : "/bookmarks";
+  })();
   const hasFilter = q || category || folderId || status || video || semantic;
   const base = useMemo(
-    () => ({ source, q, status, video, semantic: mode === "semantic" }),
-    [source, q, status, video, mode]
+    () => ({ source, q, status, video, semantic: mode === "semantic", sort, dir }),
+    [source, q, status, video, mode, sort, dir]
   );
 
   const sel =
@@ -191,6 +205,8 @@ export function FilterControls({
       <form method="GET" action="/bookmarks" onSubmit={onSubmit} className="space-y-3">
         {source ? <input type="hidden" name="source" value={source} /> : null}
         {mode === "semantic" ? <input type="hidden" name="semantic" value="true" /> : null}
+        {sort ? <input type="hidden" name="sort" value={sort} /> : null}
+        {dir ? <input type="hidden" name="dir" value={dir} /> : null}
 
         {/* Search row: box + mode switch */}
         <div className="flex flex-wrap items-stretch gap-2">
