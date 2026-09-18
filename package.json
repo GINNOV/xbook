@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "build:desktop": "node scripts/build-desktop.js",
+    "test:desktop": "node --test tests/desktop/*.test.cjs",
+    "smoke:desktop": "node scripts/smoke-desktop.js",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

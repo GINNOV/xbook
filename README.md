@@ -30,7 +30,7 @@ Depending on your comfort level, you can run and interact with XBook Console in 
 
 ### 1. The Default Experience (Native Desktop App)
 Designed for everyday usage without touching a terminal.
-* **Single-Click Execution:** Download the latest build from the [GitHub Releases](https://github.com/GINNOV/xbook/releases) page and launch the native desktop application (`xbook.app`).
+* **Single-Click Execution:** Download the latest macOS build from the [GitHub Releases](https://github.com/GINNOV/xbook/releases) page and launch `xbook.app`. Windows x64 test installers are available as artifacts in [Windows desktop workflow runs](https://github.com/GINNOV/xbook/actions/workflows/desktop-windows.yml). See [desktop build instructions](developer.md#desktop-application-tauri) for requirements and signing limitations.
 * **Self-Configuring Backend:** The app automatically launches its own local SQLite database, sets up folders, runs schema migrations, and orchestrates backend processes in the background.
 * **Default Browser Integration:** Dynamic OAuth authentication for X and Google launches securely in your default web browser (leveraging your active sessions) and feeds credentials back to the local database automatically.
 * **Secure Auto-Updates:** The app cryptographically verifies and installs verified releases behind the scenes.

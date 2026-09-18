@@ -1,11 +1,14 @@
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
 // Database and configuration directory (stored outside the app bundle in a known location)
 const home = os.homedir();
-const appDir = path.join(home, ".xbook");
+const appDir = process.env.XBOOK_DATA_DIR || (process.platform === "win32"
+  ? path.join(process.env.LOCALAPPDATA || path.join(home, "AppData", "Local"), "xbook")
+  : path.join(home, ".xbook"));
+process.env.HOSTNAME = "127.0.0.1";
 
 // Ensure the directory exists
 if (!fs.existsSync(appDir)) {
@@ -47,41 +50,34 @@ process.stderr.write = (chunk, encoding, callback) => {
 };
 
 const dbPath = path.join(appDir, "dev.db");
-process.env.DATABASE_URL = `file:${dbPath}`;
+process.env.DATABASE_URL = `file:${dbPath.split(path.sep).join("/")}`;
 console.log(`[xbook-server] Using database at: ${dbPath}`);
 
 // Run Prisma migrations dynamically
 try {
+  // Prisma's schema engine requires an existing SQLite file on a fresh install.
+  fs.closeSync(fs.openSync(dbPath, "a", 0o600));
   const prismaCliPath = path.join(__dirname, "node_modules", "prisma", "build", "index.js");
   const schemaPath = path.join(__dirname, "prisma", "schema.prisma");
   const prismaConfigPath = path.join(__dirname, "prisma.runtime.config.mjs");
 
   console.log("[xbook-server] Checking database migrations...");
   if (fs.existsSync(prismaCliPath) && fs.existsSync(schemaPath)) {
-    fs.writeFileSync(
-      prismaConfigPath,
-      [
-        'import { defineConfig } from "prisma/config";',
-        "export default defineConfig({",
-        '  schema: "prisma/schema.prisma",',
-        '  migrations: { path: "prisma/migrations" },',
-        '  datasource: { url: process.env.DATABASE_URL },',
-        "});",
-        "",
-      ].join("\n")
-    );
-    
     // Redirect migration process output directly to log file
     const logFd = fs.openSync(logFile, "a");
-    execSync(`"${process.execPath}" "${prismaCliPath}" migrate deploy --config="${prismaConfigPath}"`, {
-      stdio: [0, logFd, logFd],
-      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
-      cwd: __dirname,
-    });
-    fs.closeSync(logFd);
+    try {
+      execFileSync(process.execPath, [prismaCliPath, "migrate", "deploy", "--config", prismaConfigPath], {
+        stdio: ["ignore", logFd, logFd],
+        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+        cwd: appDir,
+        windowsHide: true,
+      });
+    } finally {
+      fs.closeSync(logFd);
+    }
     console.log("[xbook-server] Database migrations successfully applied.");
   } else {
-    console.warn("[xbook-server] Prisma CLI or schema.prisma not found. Skipping auto-migration.");
+    throw new Error("Packaged Prisma CLI or schema.prisma is missing");
   }
 } catch (err) {
   logInternalError("Database migration failed", err);

@@ -7,8 +7,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Windows x64 NSIS installer builds on pull requests and main, with downloadable CI artifacts and packaged-server smoke checks.
+
 ### Fixed
 
+- Desktop packaging bundles the build machine's Node runtime, excludes local credentials and databases, and supports Windows runtime paths without writing migration configuration into the installed application.
+- Desktop browser links use the system URL opener, preserving OAuth query parameters on Windows.
 - GitHub release-note changelog link uses a `/blame/` URL because `/blob/…/CHANGELOG.md` 404s from the release page.
 
 ## [0.4.3] - 2026-08-17

@@ -185,21 +185,26 @@ Composition ID: `XBookTrailer`. Optional real screenshots go in `promo/trailer/p
 
 ## Desktop Application (Tauri)
 
-XBook Console can be packaged as a standalone macOS desktop application using Tauri.
+XBook Console can be packaged as a standalone macOS or Windows desktop application using Tauri. Build on the target OS and architecture so the bundled Node executable and native SQLite addon match.
 
 ### Desktop Commands
 
-To build the desktop application:
+Install Node.js 22 LTS, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). Windows needs the Visual Studio C++ build tools and WebView2. Use a clean checkout with no local credentials or database:
 ```bash
-npm run build:desktop
-npx tauri build
+npm ci
+npx tauri build --config src-tauri/tauri.ci.conf.json
+npm run smoke:desktop
 ```
-This will compile the Next.js production build, copy all backend assets (including Prisma migrations and the local Node.js binary), compile the Rust runner, and generate the final packaged `.app` bundle at `src-tauri/target/release/bundle/macos/xbook.app`.
+Tauri runs `build:desktop` automatically. The CI config disables updater signatures for local and PR builds, so no signing secrets are needed. macOS produces `src-tauri/target/release/bundle/macos/xbook.app`; Windows x64 produces `src-tauri/target/release/bundle/nsis/*-setup.exe`. The Windows platform config selects a per-user NSIS install and Tauri's default WebView2 bootstrapper. Build natively on Windows x64; cross-compiling the Rust runner alone does not build compatible Node/SQLite assets.
+
+The **Windows desktop** GitHub Actions workflow runs for PRs, main pushes, and manual dispatch. Download `xbook-windows-x64-<commit>` from the run's artifacts. These are unsigned test installers and may trigger Windows SmartScreen. CI builds the installer, launches the bundled server twice, verifies fresh migrations and database reuse, and checks native SQLite and the Settings page before uploading. CI never publishes a GitHub release or accesses signing keys.
+
+`npm run test:desktop` checks that packaging excludes environment files, SQLite databases and sidecars, logs, and common credential files. The same filter applies to standalone output, public assets, Prisma assets, and copied dependencies. Always build distributable assets in a clean environment: filtering files cannot remove secrets already embedded by a build.
 
 ### Under the Hood
 
 - **Self-contained Server:** On startup, the desktop app spawns a hidden background Node.js server using the bundled node binary and a wrapper script (`start-server.js`).
-- **OS Application Data:** The SQLite database is created and migrated automatically in the user's home directory (e.g. `~/.xbook/dev.db`) to prevent write failures inside the read-only application bundle.
+- **OS Application Data:** Windows stores the database and server log in `%LOCALAPPDATA%\xbook`; macOS keeps `~/.xbook` for compatibility. `XBOOK_DATA_DIR` overrides this directory for isolated smoke checks. Migration config ships in the bundle and uses absolute asset paths; startup writes only to the user directory. Node and the migration subprocess run without console windows on Windows. The server binds to `127.0.0.1:3000`.
 - **Secure Auto-Updater:** The app checks for signed releases automatically on boot. Update payloads are signed and cryptographically verified using the public key configured in `tauri.conf.json`.
 - **Default Browser OAuth:** OAuth logins launch in the default system browser to support existing sessions and prevent Google's embedded webview block, returning credentials back to the local app.
 
@@ -303,6 +308,10 @@ Do **not** only rebuild locally and stop. A release means: version bump → sign
 When deploying from CI:
 1. Store the private key as `TAURI_SIGNING_PRIVATE_KEY` (and optional `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`).
 2. Prefer the official `tauri-apps/tauri-action` GitHub Action to build, sign, and upload macOS artifacts to GitHub Releases, including `latest.json`.
+
+Windows release preparation is separate from the unsigned PR workflow. On Windows x64, run `npx tauri build` without the CI override and supply the existing updater signing key through environment variables. This produces an NSIS installer and its `.sig`. Authenticode signing is separate from updater signatures and is not configured here. Do not publish unsigned PR artifacts as signed updates.
+
+The current `package:desktop` and `release:manifest` helpers still package macOS only. Before publishing a future Windows update, combine the signed Windows installer entry under `platforms.windows-x86_64` with the same-version macOS entries in both `latest.json` and `update.json`, and upload the exact installer named in its URL. Do not overwrite a combined manifest with the macOS-only helper. No Windows release or updater manifest is published by the PR workflow.
 
 ## Troubleshooting
 
