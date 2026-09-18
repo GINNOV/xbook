@@ -1,12 +1,15 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { copyRecursiveSync } = require("./desktop-files");
 
 const STANDALONE_SKIP_DIRS = new Set([
   "src-tauri",
   "tauri-dist",
   "tests",
   "promo",
+  "dist-release",
+  ".github",
   ".git",
 ]);
 
@@ -14,33 +17,6 @@ const STANDALONE_SKIP_FILES = new Set([
   "dev.db",
   "tsconfig.tsbuildinfo",
 ]);
-
-function shouldSkipStandaloneEntry(name) {
-  return STANDALONE_SKIP_DIRS.has(name) || STANDALONE_SKIP_FILES.has(name);
-}
-
-function copyRecursiveSync(src, dest, { filter } = {}) {
-  const exists = fs.existsSync(src);
-  const stats = exists && fs.statSync(src);
-  const isDirectory = exists && stats.isDirectory();
-  if (isDirectory) {
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    fs.readdirSync(src).forEach((childItemName) => {
-      if (filter && !filter(childItemName)) {
-        return;
-      }
-      copyRecursiveSync(
-        path.join(src, childItemName),
-        path.join(dest, childItemName),
-        { filter }
-      );
-    });
-  } else {
-    fs.copyFileSync(src, dest);
-  }
-}
 
 console.log("1. Running production next build...");
 execSync("npm run build", { stdio: "inherit" });
@@ -50,14 +26,6 @@ const tauriDistDir = path.join(__dirname, "..", "tauri-dist");
 const tauriResourcesDir = path.join(__dirname, "..", "src-tauri", "resources");
 const tauriServerDir = path.join(tauriResourcesDir, "server");
 const tauriBinDir = path.join(tauriResourcesDir, "bin");
-
-function copyPackageToServer(packageName) {
-  const packageSrc = path.join(__dirname, "..", "node_modules", packageName);
-  const packageDest = path.join(tauriServerDir, "node_modules", packageName);
-  if (fs.existsSync(packageSrc)) {
-    copyRecursiveSync(packageSrc, packageDest);
-  }
-}
 
 // Clean existing resources folder
 if (fs.existsSync(tauriResourcesDir)) {
@@ -77,7 +45,7 @@ fs.writeFileSync(
 
 console.log("2. Copying standalone files to Tauri resources...");
 copyRecursiveSync(standaloneDir, tauriServerDir, {
-  filter: (name) => !shouldSkipStandaloneEntry(name),
+  filter: (name) => !STANDALONE_SKIP_DIRS.has(name) && !STANDALONE_SKIP_FILES.has(name),
 });
 
 console.log("3. Copying public assets to Tauri resources...");
@@ -151,13 +119,18 @@ const startServerDest = path.join(tauriServerDir, "start-server.js");
 if (fs.existsSync(startServerSrc)) {
   fs.copyFileSync(startServerSrc, startServerDest);
 }
+fs.copyFileSync(
+  path.join(__dirname, "prisma.runtime.config.mjs"),
+  path.join(tauriServerDir, "prisma.runtime.config.mjs")
+);
 
 console.log("8. Copying node binary to Tauri resources...");
-const systemNode = "/Users/megov/.local/bin/node";
-const destNode = path.join(tauriBinDir, "node");
+// Bundle the same runtime that built the native SQLite addon. Build on the target OS/architecture.
+const systemNode = process.execPath;
+const destNode = path.join(tauriBinDir, process.platform === "win32" ? "node.exe" : "node");
 if (fs.existsSync(systemNode)) {
   fs.copyFileSync(systemNode, destNode);
-  fs.chmodSync(destNode, 0o755); // make executable
+  if (process.platform !== "win32") fs.chmodSync(destNode, 0o755);
   console.log(`Copied node binary from ${systemNode} to ${destNode}`);
 } else {
   console.error(`ERROR: Node binary not found at ${systemNode}`);

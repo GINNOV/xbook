@@ -8,15 +8,13 @@ use tauri::Manager;
 struct ServerProcess(Arc<Mutex<Option<Child>>>);
 
 fn open_url_in_system_browser(url: &str) {
-  println!("Opening URL in system browser: {}", url);
-  #[cfg(target_os = "macos")]
-  let _ = Command::new("open").arg(url).spawn();
-
-  #[cfg(target_os = "windows")]
-  let _ = Command::new("cmd").args(&["/C", "start", url]).spawn();
-
-  #[cfg(target_os = "linux")]
-  let _ = Command::new("xdg-open").arg(url).spawn();
+  if let Ok(parsed) = tauri::Url::parse(url) {
+    if matches!(parsed.scheme(), "http" | "https") {
+      if let Err(error) = tauri_plugin_opener::open_url(url, None::<&str>) {
+        eprintln!("Failed to open browser: {}", error);
+      }
+    }
+  }
 }
 
 fn is_local_app_url(url: &tauri::Url) -> bool {
@@ -69,16 +67,22 @@ pub fn run() {
       } else {
         // Production mode: spawn local Next.js node server
         let resource_dir = app.path().resource_dir().expect("failed to get resource dir");
-        let node_path = resource_dir.join("resources").join("bin").join("node");
+        let node_name = if cfg!(target_os = "windows") { "node.exe" } else { "node" };
+        let node_path = resource_dir.join("resources").join("bin").join(node_name);
         let server_path = resource_dir.join("resources").join("server").join("start-server.js");
 
         println!("Spawning background desktop server using node: {:?} with script: {:?}", node_path, server_path);
 
-        let child = Command::new(node_path)
-          .arg(server_path)
+        let mut command = Command::new(node_path);
+        command.arg(server_path)
           .env("PORT", "3000")
-          .env("NODE_ENV", "production")
-          .spawn()
+          .env("NODE_ENV", "production");
+        #[cfg(target_os = "windows")]
+        {
+          use std::os::windows::process::CommandExt;
+          command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        let child = command.spawn()
           .expect("failed to start background server");
 
         let state = app.state::<ServerProcess>();
