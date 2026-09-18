@@ -45,6 +45,7 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 
 ## Testing Guidelines
 - Unit tests use Vitest in `tests/unit/`; run `npm test`. Database export regression tests use real temporary SQLite databases: `npm test -- tests/unit/db-export.test.ts`.
+- Backup download naming coverage: `npm test -- tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
 
 ## Commit & Pull Request Guidelines
 - Commit messages in history are short, imperative sentences (e.g., "added hash system"). Follow that pattern unless you introduce a formal convention.

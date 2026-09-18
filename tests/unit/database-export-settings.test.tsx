@@ -12,10 +12,12 @@ it("downloads without credentials unless the user explicitly opts in", () => {
   const checkbox = screen.getByRole("checkbox", { name: "Include API keys and account tokens in download" });
   const link = screen.getByRole("link", { name: "Download active database (.db)" });
   expect(checkbox).not.toBeChecked();
-  expect(link).toHaveAttribute("href", "/api/settings/database/backup?includeSecrets=false");
+  const downloadUrl = () => new URL(link.getAttribute("href") ?? "", "http://localhost");
+  expect(downloadUrl().pathname).toBe("/api/settings/database/backup");
+  expect(downloadUrl().searchParams.get("includeSecrets")).toBe("false");
   fireEvent.click(checkbox);
-  expect(link).toHaveAttribute("href", "/api/settings/database/backup?includeSecrets=true");
+  expect(downloadUrl().searchParams.get("includeSecrets")).toBe("true");
   expect(screen.getByText(/Anyone with this file can use your connected accounts/)).toBeVisible();
   fireEvent.click(checkbox);
-  expect(link).toHaveAttribute("href", "/api/settings/database/backup?includeSecrets=false");
+  expect(downloadUrl().searchParams.get("includeSecrets")).toBe("false");
 });

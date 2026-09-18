@@ -10,6 +10,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Database downloads exclude API keys and account tokens by default, with an explicit option to include credentials.
+- Active database downloads honor the custom backup name, sanitize unsafe characters, and add a single `.db` extension.
 - GitHub release-note changelog link uses a `/blame/` URL because `/blob/…/CHANGELOG.md` 404s from the release page.
 
 ## [0.4.3] - 2026-08-17
