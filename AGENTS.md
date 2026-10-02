@@ -16,6 +16,12 @@
 - `npm run worktree:setup` / `bash scripts/setup-worktree.sh`: Bootstrap a git worktree (env copy, npm ci, Prisma). Prefer isolated worktrees for multi-step agent work; see `developer.md`.
 - `npm run package:desktop`: Signed macOS desktop package + updater manifests (see below).
 
+## Git Worktree Location Rule
+- All worktrees for XBook must be located inside `/Volumes/AIWork/code/worktrees/Xbook/<worktree-name>`.
+- Do not create worktrees in `/Volumes/AIWork/code/` or alongside the repository checkout.
+- Example: `git worktree add -b <branch> /Volumes/AIWork/code/worktrees/Xbook/<branch> main`.
+
+
 ## Desktop releases (agent trigger)
 
 When the user says **cut a desktop release**, **ship desktop**, **release the app**, **publish desktop update**, or equivalent:
