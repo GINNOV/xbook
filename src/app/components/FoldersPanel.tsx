@@ -4,45 +4,50 @@ import Link from "next/link";
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
 import { formatFolderActivity } from "@/app/lib/formatters";
 import { XLogo } from "./Icons";
+import OperationStatus from "./OperationStatus";
+import { folderLibraryHref } from "../lib/folder-links";
 
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
 
 export default function FoldersPanel({ folders, soundOnComplete, soundOnError }: Props) {
-  const { msg, loading, syncFolders, importFolder, importAllFolders, processFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
+  const { operation, msg, loading, syncFolders, importFolder, importAllFolders, processFolder, indexFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
+  const busy = loading.syncing || loading.all || !!loading.importing || !!loading.processing || !!loading.indexing || operation.active || operation.submitting;
   const btn = "rounded-full border border-black/10 px-4 py-2 text-sm font-semibold transition disabled:opacity-60";
   const rowBtn = (l: string, c: string) => `rounded-full px-3 py-1 text-xs font-bold uppercase transition hover:text-white disabled:opacity-60 ${c}`;
 
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-sm">
-      {msg?.text && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
+      <OperationStatus operation={operation} />
+      {msg?.text && (!operation.run || operation.connectionError) && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-2xl font-semibold">
             <XLogo className="h-5 w-5" />
             Folders
           </h2>
-          <p className="text-xs text-slate-500">Counts show locally imported folder items.</p>
+          <p className="text-xs text-slate-500">Local counts open imported bookmarks. Import fetches source items; Summarize creates digests; Index builds search vectors.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button title="Import bookmarks for every folder. This does not summarize or index." onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all"}</button>
-          <button title="Update folder names only. This does not import, summarize, or index." onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync names"}</button>
+          <button title="Import source bookmarks for all folders; existing summaries are preserved." onClick={importAllFolders} disabled={busy} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
+          <button title="Refresh source folder names." onClick={syncFolders} disabled={busy} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
         </div>
       </div>
       {folders.length ? (
         <div className="overflow-x-auto rounded-lg border border-black/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Imported</th><th className="px-4 py-2">Fetched</th><th className="px-4 py-2">Processed</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
+            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Local bookmarks</th><th className="px-4 py-2">Fetched</th><th className="px-4 py-2">Summarized</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-black/5 bg-white">
               {folders.map(f => (
                 <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-semibold"><Link className="hover:text-primary" href={`/bookmarks?source=x&folderId=${encodeURIComponent(f.id)}`}>{f.name ?? "Untitled folder"}</Link></td>
-                  <td className="px-4 py-3 text-slate-500"><Link className="hover:text-primary" href={`/bookmarks?source=x&folderId=${encodeURIComponent(f.id)}`}>{f.total ?? 0} items</Link></td>
+                  <td className="px-4 py-3 font-semibold"><Link className="text-primary hover:underline" href={folderLibraryHref("x", f.id)}>{f.name ?? "Untitled folder"}</Link></td>
+                  <td className="px-4 py-3 text-slate-500"><Link aria-label={`Open ${f.total ?? 0} local bookmarks in ${f.name ?? "Untitled folder"}`} className="text-primary hover:underline" href={folderLibraryHref("x", f.id)}>{f.total ?? 0}</Link></td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastFetchedAt)}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastProcessedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button title="Import this folder's bookmarks. Existing summaries are kept." onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
-                      <button title="Summarize and index items already imported in this folder." onClick={() => processFolder(f.id)} disabled={loading.all || loading.processing === f.id || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
+                      <button onClick={() => importFolder(f.id)} disabled={busy} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
+                      <button title="Summarize locally imported bookmarks." onClick={() => processFolder(f.id)} disabled={busy || !f.total} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
+                      <button title="Rebuild missing or incompatible search vectors for this folder." onClick={() => void indexFolder(f.id)} disabled={busy || !f.total} className={rowBtn("Index", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.indexing === f.id ? "Indexing…" : "Index"}</button>
                     </div>
                   </td>
                 </tr>

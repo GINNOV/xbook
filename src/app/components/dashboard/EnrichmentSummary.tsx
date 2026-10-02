@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import OperationStatus from "../OperationStatus";
 import { useActions } from "../../hooks/useActions";
 
 type Props = {
   source: "x" | "yt";
+  total?: number;
   sum: number;
   pend: number;
   failed: number;
   skipped: number;
   indexed?: number;
   unindexed?: number;
+  missing?: number;
+  stale?: number;
   soundOnComplete?: boolean;
   soundOnError?: boolean;
 };
@@ -22,16 +26,19 @@ function fmt(n: number) {
 
 export function EnrichmentSummary({
   source,
+  total,
   sum,
   pend,
   failed,
   skipped,
   indexed = 0,
   unindexed = 0,
+  missing = 0,
+  stale = 0,
   soundOnComplete = false,
   soundOnError = false,
 }: Props) {
-  const { loading, message, runSyncEmbeddings } = useActions(
+  const { loading, message, operation, runSyncEmbeddings } = useActions(
     source,
     50,
     soundOnComplete,
@@ -40,11 +47,11 @@ export function EnrichmentSummary({
   const syncing = loading.embeddings;
 
   const [progress, setProgress] = useState({ indexed, unindexed });
-  const liveIndexed = syncing ? progress.indexed : indexed;
-  const liveUnindexed = syncing ? progress.unindexed : unindexed;
+  const liveIndexed = indexed;
+  const liveUnindexed = unindexed;
 
-  const libraryTotal = Math.max(0, sum + pend);
-  const coverage = libraryTotal > 0 ? Math.min(100, (liveIndexed / libraryTotal) * 100) : 0;
+  const indexable = total ?? sum + pend;
+  const coverage = indexable > 0 ? Math.min(100, (liveIndexed / indexable) * 100) : 0;
   const needsIndex = liveUnindexed > 0;
   const sourceLabel = source === "yt" ? "YouTube" : "X";
 
@@ -52,8 +59,9 @@ export function EnrichmentSummary({
     setProgress({ indexed, unindexed });
     void runSyncEmbeddings({
       source,
+      rebuild: true,
       onProgress: ({ done, remaining }) => {
-        setProgress({ indexed: indexed + done, unindexed: remaining });
+        setProgress({ indexed: done, unindexed: remaining });
       },
     });
   };
@@ -65,7 +73,9 @@ export function EnrichmentSummary({
         Counts for this tab ({sourceLabel}) only. The percentage divides vectors by every saved item, including pending enrichment.{" "}
         <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=pending`}>{fmt(pend)} pending</Link>
         {" · "}
-        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=unindexed`}>{fmt(liveUnindexed)} missing vectors</Link>
+        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=unindexed`}>{fmt(liveUnindexed)} summarized items need indexing</Link>
+        {" · "}{fmt(missing)} have no vector{" · "}
+        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=stale`}>{fmt(stale)} stale or incompatible</Link>
         {" · "}
         <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=failed`}>{fmt(failed)} failed</Link>
       </p>
@@ -76,7 +86,7 @@ export function EnrichmentSummary({
             Index health
           </p>
           <p className="text-xs font-medium text-on-surface-variant">
-            {libraryTotal > 0 ? `${Math.round(coverage)}% of saved items have vectors` : "No content yet"}
+            {indexable > 0 ? `${Math.round(coverage)}% (${fmt(liveIndexed)}/${fmt(indexable)}) of saved items have usable vectors` : "No content yet"}
           </p>
         </div>
 
@@ -96,7 +106,7 @@ export function EnrichmentSummary({
           <span className={needsIndex ? "text-amber-900" : undefined}>
             <span className="font-semibold tabular-nums">{fmt(liveUnindexed)}</span>{" "}
             <span className={needsIndex ? "text-amber-800" : "text-on-surface-variant"}>
-              missing
+              needs indexing
             </span>
           </span>
         </div>
@@ -106,13 +116,13 @@ export function EnrichmentSummary({
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3">
           <p className="text-sm font-semibold text-amber-950">
             {syncing
-              ? `Indexing… ${fmt(liveUnindexed)} remaining`
-              : `${fmt(liveUnindexed)} item${liveUnindexed === 1 ? "" : "s"} not searchable`}
+              ? `Indexing… ${fmt(progress.indexed)} generated this run · ${fmt(progress.unindexed)} remaining`
+              : `${fmt(liveUnindexed)} summarized item${liveUnindexed === 1 ? "" : "s"} need indexing`}
           </p>
           <p className="mt-1 text-xs text-amber-900/80 leading-snug">
             {syncing
-              ? "Progress matches this tab’s missing queue (summarized items without embeddings)."
-              : "Summarized items without embeddings — semantic search will skip them until indexed."}
+              ? "Progress covers summarized items with missing, stale, legacy, or incompatible vectors."
+              : "Rebuild missing, stale, or incompatible vectors for the configured embedding model. Keyword search remains available. Bookmarks and folders are preserved."}
           </p>
           <button
             type="button"
@@ -120,11 +130,13 @@ export function EnrichmentSummary({
             disabled={syncing || liveUnindexed === 0}
             className="mt-3 rounded-lg bg-amber-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-900 disabled:opacity-60"
           >
-            {syncing ? "Syncing embeddings…" : "Sync embeddings"}
+            {syncing ? "Syncing embeddings…" : "Rebuild index"}
           </button>
           {message && <p className="mt-2 text-xs text-amber-900/90">{message}</p>}
         </div>
       )}
+
+      {operation.run?.type === "embedding_sync" && <OperationStatus operation={operation} />}
 
       <div className="mt-5 border-t border-outline-variant/30 pt-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant/70">
@@ -136,24 +148,24 @@ export function EnrichmentSummary({
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-xs text-on-surface-variant">Summarized</dt>
-            <dd className="font-semibold tabular-nums">{fmt(sum)}</dd>
+            <dd className="font-semibold tabular-nums"><Link href={`/bookmarks?source=${source}&status=summarized`}>{fmt(sum)}</Link></dd>
           </div>
           <div>
             <dt className="text-xs text-on-surface-variant">Pending</dt>
             <dd className={`font-semibold tabular-nums ${pend > 0 ? "text-secondary" : ""}`}>
-              {fmt(pend)}
+              <Link href={`/bookmarks?source=${source}&status=pending`}>{fmt(pend)}</Link>
             </dd>
           </div>
           <div title="Bookmarks with a current enrichmentError from the last failed attempt">
             <dt className="text-xs text-on-surface-variant">Failed</dt>
             <dd className={`font-semibold tabular-nums ${failed > 0 ? "text-error" : ""}`}>
-              {fmt(failed)}
+              <Link href={`/bookmarks?source=${source}&status=failed`}>{fmt(failed)}</Link>
             </dd>
           </div>
           <div title="Still pending after 3+ failures — normal Enrich skips these until reprocess">
             <dt className="text-xs text-on-surface-variant">Blocked</dt>
             <dd className={`font-semibold tabular-nums ${skipped > 0 ? "text-amber-800" : ""}`}>
-              {fmt(skipped)}
+              <Link href={`/bookmarks?source=${source}&status=blocked`}>{fmt(skipped)}</Link>
             </dd>
           </div>
         </dl>

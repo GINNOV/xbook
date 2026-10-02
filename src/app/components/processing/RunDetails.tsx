@@ -1,9 +1,19 @@
 "use client";
 
+import { resolveRunStatus } from "@/lib/run-outcome";
+
 import { useState } from "react";
 import Link from "next/link";
 import { XLogo, YouTubeLogo, CloseIcon, SearchIcon } from "../Icons";
 import StopRunButton from "../StopRunButton";
+import { useOperationObserver } from "../../hooks/useOperationObserver";
+import OperationStatus from "../OperationStatus";
+import { operationCheckpoint, operationRunSchema } from "../../lib/operation-observer";
+
+function RunRecovery({ runId }: { runId: string }) {
+  const operation = useOperationObserver({ initialRunId: runId });
+  return <OperationStatus operation={operation} />;
+}
 import { ProcessingEvents } from "./ProcessingEvents";
 import { statusClass } from "@/app/lib/formatters";
 import { getFilterUrl } from "@/app/lib/processing-utils";
@@ -18,6 +28,17 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
   const [search, setSearch] = useState("");
   if (!selectedRun) return <p className="text-sm text-on-surface-variant">Select a run to inspect events.</p>;
 
+  const snapshot = operationRunSchema.safeParse(selectedRun);
+  const importing = snapshot.success ? operationCheckpoint(snapshot.data)?.import : null;
+  const metrics = importing ? [
+    { label: "New entries", value: importing.imported }, { label: "Refreshed entries", value: importing.refreshed },
+    { label: "Skipped", value: importing.skipped }, { label: "Unavailable", value: importing.unavailable },
+    { label: "Pages fetched", value: importing.pagesFetched }, { label: "Folders finished", value: importing.foldersCompleted },
+    { label: "Folders failed", value: importing.foldersFailed }, { label: "Summarized", value: importing.enriched }, { label: "Indexed", value: importing.indexed },
+  ] : [
+    { label: "Processed", value: selectedRun.processed }, { label: "Updated", value: selectedRun.updated },
+    { label: "Failed", value: selectedRun.failed }, { label: "Skipped", value: selectedRun.skipped },
+  ];
   const configLine = formatRunConfig(
     resolveRunConfig({
       configJson: selectedRun.configJson,
@@ -37,8 +58,8 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
             </span>
             <h2 className="font-headline text-3xl font-semibold tracking-tight capitalize">{selectedRun.type.replaceAll("_", " ")}</h2>
             <div className="ml-2 flex items-center gap-3">
-              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${statusClass(selectedRun.status)} bg-opacity-10 border border-current`}>
-                {selectedRun.status}
+              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${statusClass(resolveRunStatus(selectedRun))} bg-opacity-10 border border-current`}>
+                {resolveRunStatus(selectedRun)}
               </span>
               {configLine ? (
                 <span
@@ -65,7 +86,7 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
             />
           </div>
           <div className="flex items-center gap-3">
-            {(selectedRun.status === "running" || selectedRun.status === "queued") && <StopRunButton runId={selectedRun.id} />}
+            {!selectedRun.jobJson && (selectedRun.status === "running" || selectedRun.status === "queued") && <StopRunButton runId={selectedRun.id} />}
             <Link 
               href={getFilterUrl(currentParams, { runId: null })} 
               className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high hover:bg-surface-container-highest transition-colors shadow-sm"
@@ -77,16 +98,13 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
         </div>
       </header>
 
+      {selectedRun.jobJson && <RunRecovery key={selectedRun.id} runId={selectedRun.id} />}
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          ["Processed", selectedRun.processed], 
-          ["Updated", selectedRun.updated], 
-          ["Failed", selectedRun.failed, "text-error"], 
-          ["Skipped", selectedRun.skipped]
-        ].map(([l, v, c]) => (
-          <div key={l as string} className="flex flex-col gap-1 rounded-xl bg-surface-container-lowest p-5 border border-outline-variant/20 shadow-sm transition hover:border-outline-variant/40">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{l}</dt>
-            <dd className={`text-2xl font-semibold tabular-nums ${c ?? ""}`}>{v}</dd>
+        {metrics.map(({ label, value }) => (
+          <div key={label} className="flex flex-col gap-1 rounded-xl bg-surface-container-lowest p-5 border border-outline-variant/20 shadow-sm">
+            <dt className="text-xs font-semibold text-on-surface-variant">{label}</dt>
+            <dd className={`text-2xl font-semibold tabular-nums ${label.includes("failed") || label === "Failed" ? "text-error" : ""}`}>{value}</dd>
           </div>
         ))}
       </div>

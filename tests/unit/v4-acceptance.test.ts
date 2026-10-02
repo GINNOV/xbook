@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { getBookmarks } from "@/lib/bookmarks";
 import { getBookmarksPageData } from "@/app/lib/bookmarks-fetcher";
@@ -27,7 +28,16 @@ vi.mock("@/lib/db", async () => {
   connection.close();
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: path }) }) };
 });
-vi.mock("@/lib/llm", () => ({ generateEmbedding: vi.fn() }));
+vi.mock("@/lib/llm", () => {
+  const generateEmbedding = vi.fn();
+  return ({
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+ generateEmbedding });
+});
 
 const vector = (values: number[]) => Buffer.from(new Float32Array(values).buffer);
 const request = (body: unknown) => new Request("http://localhost/api/agent", {
@@ -39,7 +49,7 @@ async function seed() {
     { id: "relevant", source: "x", tweetUrl: "https://x.com/i/status/a", summary: "Zebra", category: "Testing", embedding: vector([1, 0]), importedAt: new Date("2020-01-01") },
     { id: "newest", source: "x", tweetUrl: "https://x.com/i/status/b", summary: "Apple", category: "Testing", embedding: vector([0.5, 0.8660254]), importedAt: new Date("2026-01-01") },
     { id: "wrong-source", source: "yt", tweetUrl: "https://youtube.com/watch?v=c", summary: "Yankee", embedding: vector([1, 0]), importedAt: new Date("2026-09-01") },
-  ] });
+  ].map(indexedFixture) });
 }
 
 beforeEach(async () => {

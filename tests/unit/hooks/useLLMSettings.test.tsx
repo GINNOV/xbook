@@ -13,6 +13,8 @@ describe("useLLMSettings", () => {
     vi.clearAllMocks();
     vi.mocked(useSettingsContext).mockReturnValue({
       form: { llmModel: "gpt-4o" },
+      connectionTests: {},
+      testConnection: vi.fn(),
       setMessage: mockSetMessage,
       setForm: mockSetForm,
       defaultPrompt: "Be helpful",
@@ -20,20 +22,11 @@ describe("useLLMSettings", () => {
     global.fetch = vi.fn();
   });
 
-  it("should test LLM connection", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ ok: true, message: "Response ok" }),
-    } as any);
-
+  it("delegates chat and embedding tests independently to the displayed draft context", async () => {
     const { result } = renderHook(() => useLLMSettings());
-
-    await act(async () => {
-      await result.current.testLlm();
-    });
-
-    expect(fetch).toHaveBeenCalledWith("/api/settings/test", expect.anything());
-    expect(result.current.llmTest).toBe("Response ok");
+    await act(async () => { await result.current.testLlm(); await result.current.testEmbedding(); });
+    expect(useSettingsContext().testConnection).toHaveBeenNthCalledWith(1, "llm");
+    expect(useSettingsContext().testConnection).toHaveBeenNthCalledWith(2, "embedding");
   });
 
   it("should clear processing history", async () => {
@@ -88,7 +81,7 @@ describe("useLLMSettings", () => {
 
     const updater = mockSetForm.mock.calls[0][0];
     const newState = updater({ other: "data" });
-    expect(newState.llmBaseUrl).toBe("http://192.168.0.69:8000/v1");
+    expect(newState.llmBaseUrl).toBe("https://api.example.com/v1");
     expect(newState.llmApiKey).toBe("EMPTY");
     expect(newState.llmModel).toBe("gemma-4-26b");
     expect(newState.llmConcurrency).toBe(32);

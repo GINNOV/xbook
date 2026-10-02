@@ -2,7 +2,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { prisma } from "@/lib/db";
-import { POST } from "@/app/api/bookmarks/embeddings/sync/route";
+import { POST as submit_POST } from "@/app/api/bookmarks/embeddings/sync/route";
 import { generateEmbedding } from "@/lib/llm";
 const fixture = vi.hoisted(() => ({ directory: "" }));
 vi.mock("@/lib/db", async () => {
@@ -22,7 +22,21 @@ vi.mock("@/lib/db", async () => {
   db.close();
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: databasePath }) }) };
 });
-vi.mock("@/lib/llm", () => ({ generateEmbedding: vi.fn() }));
+vi.mock("@/lib/llm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/llm")>();
+  const generateEmbedding = vi.fn();
+  return ({
+    ...actual,
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => {
+      const settings = await prisma.settings.findUnique({ where: { id: "default" } });
+      return { model: settings?.llmEmbeddingModel ?? "fixture-model", endpoint: settings?.llmEmbeddingBaseUrl ?? "http://localhost:1234/v1", dimensions: 2 };
+    },
+ generateEmbedding });
+});
 const request = () => new Request("http://localhost/api/bookmarks/embeddings/sync?source=x");
 beforeEach(async () => {
   vi.mocked(generateEmbedding).mockReset().mockResolvedValue([0.1, 0.2]);
@@ -33,7 +47,7 @@ beforeEach(async () => {
 afterAll(async () => { await prisma.$disconnect(); rmSync(fixture.directory, { recursive: true, force: true }); });
 describe("durable embedding sync outcomes", () => {
   it("fails the run and response when every embedding attempt fails", async () => {
-    vi.mocked(generateEmbedding).mockRejectedValue(new Error("Provider timed out"));
+    vi.mocked(generateEmbedding).mockRejectedValue(new Error("Provider failed"));
     const response = await POST(request()); const body = await response.json();
     expect(response.status).toBe(502);
     expect(body).toMatchObject({ ok: false, updated: 0, failed: 2, remaining: 2, skipped: 0, source: "x", error: "All 2 embedding attempts failed." });
@@ -56,19 +70,19 @@ describe("durable embedding sync outcomes", () => {
     expect(generateEmbedding).toHaveBeenCalledTimes(1);
     expect(await prisma.operationRun.findUnique({ where: { id: body.runId } })).toMatchObject({ status: "failed", processed: 1 });
   });
-  it("keeps partial success completed after a generic failure", async () => {
-    vi.mocked(generateEmbedding).mockRejectedValueOnce(new Error("Provider timed out"));
+  it("records partial success after a generic failure", async () => {
+    vi.mocked(generateEmbedding).mockRejectedValueOnce(new Error("Provider failed"));
     const response = await POST(request()); const body = await response.json();
     expect(response.status).toBe(200); expect(body).toMatchObject({ ok: true, updated: 1, failed: 1, remaining: 1 });
-    expect(await prisma.operationRun.findUnique({ where: { id: body.runId } })).toMatchObject({ status: "completed", processed: 2 });
+    expect(await prisma.operationRun.findUnique({ where: { id: body.runId } })).toMatchObject({ status: "partial", processed: 2 });
   });
-  it("keeps partial success completed when a later configuration error stops the batch", async () => {
+  it("pauses partial success when a later configuration error leaves work", async () => {
     await prisma.bookmark.create({ data: { id: "b3", tweetUrl: "https://x.com/b3", summary: "Third" } });
     vi.mocked(generateEmbedding).mockResolvedValueOnce([0.1, 0.2]).mockRejectedValueOnce(new Error("Missing embedding model"));
     const response = await POST(request()); const body = await response.json();
     expect(response.status).toBe(200); expect(body).toMatchObject({ ok: true, updated: 1, failed: 1, remaining: 2, error: "Missing embedding model" });
     expect(generateEmbedding).toHaveBeenCalledTimes(2);
-    expect(await prisma.operationRun.findUnique({ where: { id: body.runId } })).toMatchObject({ status: "completed", processed: 2 });
+    expect(await prisma.operationRun.findUnique({ where: { id: body.runId } })).toMatchObject({ status: "paused", processed: 2 });
   });
   it("completes successful batches with actual vectors and terminal checkpoints", async () => {
     const response = await POST(request()); const body = await response.json();
@@ -96,7 +110,7 @@ describe("embedding request resumption", () => {
   it("gives recovery guidance for a legacy active run with malformed config", async () => {
     await prisma.operationRun.create({ data: { id: "legacy", type: "embedding_sync", source: "x", configJson: "malformed" } });
     const response = await POST(request());
-    expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ runId: "legacy", error: expect.stringContaining("Stop") });
+    expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ runId: "legacy", error: expect.stringContaining("stop") });
     expect(generateEmbedding).not.toHaveBeenCalled();
     const resumed = await POST(new Request("http://localhost/api/bookmarks/embeddings/sync?runId=legacy"));
     expect(resumed.status).toBe(409);
@@ -108,25 +122,35 @@ describe("embedding request resumption", () => {
     expect(await resumed.json()).toMatchObject({ runId: first.runId, updated: 2, failed: 0 });
     expect(generateEmbedding).not.toHaveBeenCalled(); expect(await prisma.operationRun.count()).toBe(1);
   });
-  it("returns busy with the durable runId for a duplicate active request", async () => {
+  it("returns accepted with the durable runId for a duplicate active request", async () => {
     let entered: (() => void) | undefined; const started = new Promise<void>((resolve) => { entered = resolve; });
     let release: (() => void) | undefined; const blocked = new Promise<void>((resolve) => { release = resolve; });
     vi.mocked(generateEmbedding).mockImplementation(async () => { entered?.(); await blocked; return [1, 0]; });
     const first = POST(request()); await started;
     const active = await prisma.operationRun.findFirstOrThrow();
     const second = await POST(request());
-    expect(second.status).toBe(409); expect(await second.json()).toMatchObject({ busy: true, runId: active.id });
+    expect(second.status).toBe(202); expect(await second.json()).toMatchObject({ status: "running", runId: active.id });
     expect(await prisma.operationRun.count()).toBe(1);
     release?.(); expect((await first).status).toBe(200);
   });
-  it("rejects a model settings change during provider work without publishing its vector", async () => {
+  it("uses the frozen model when settings change during provider work", async () => {
     vi.mocked(generateEmbedding).mockImplementation(async () => {
       await prisma.settings.update({ where: { id: "default" }, data: { llmEmbeddingModel: "changed-model" } });
       return [1, 0];
     });
     const response = await POST(request()); const body = await response.json();
-    expect(response.status).toBe(502); expect(body.error).toContain("Embedding configuration changed");
-    expect(body.updated).toBe(0); expect(await prisma.bookmark.count({ where: { embedding: null } })).toBe(2);
+    expect(response.status).toBe(200); expect(body.updated).toBe(2);
+    expect(await prisma.bookmark.count({ where: { embeddingModel: "fixture-model" } })).toBe(2);
     await prisma.settings.update({ where: { id: "default" }, data: { llmEmbeddingModel: null } });
   });
 });
+
+import { processOperationQueue } from "@/lib/operation-worker";
+async function POST(request: Request) {
+  const response = await submit_POST(request);
+  if (response.status !== 202) return response;
+  const body = await response.json();
+  await processOperationQueue();
+  const url = new URL(request.url); url.searchParams.set("runId", body.runId);
+  return submit_POST(new Request(url, { method: "POST" }));
+}

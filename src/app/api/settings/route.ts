@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSettings, updateSettings } from "@/lib/settings";
 import { MAX_LLM_CONCURRENCY } from "@/lib/llm-limits";
+import { prisma } from "@/lib/db";
+import { modelEndpointSchema } from "@/lib/connection-diagnostics";
 
 const schema = z.object({
   xBearerToken: z.string().optional().nullable(),
@@ -12,7 +14,7 @@ const schema = z.object({
   xRedirectUri: z.string().optional().nullable(),
   xAccessToken: z.string().optional().nullable(),
   xRefreshToken: z.string().optional().nullable(),
-  xTokenExpiresAt: z.string().optional().nullable(),
+  xTokenExpiresAt: z.iso.datetime().optional().nullable(),
   xScope: z.string().optional().nullable(),
   xTokenType: z.string().optional().nullable(),
   ytClientId: z.string().optional().nullable(),
@@ -20,14 +22,14 @@ const schema = z.object({
   ytRedirectUri: z.string().optional().nullable(),
   ytAccessToken: z.string().optional().nullable(),
   ytRefreshToken: z.string().optional().nullable(),
-  ytTokenExpiresAt: z.string().optional().nullable(),
+  ytTokenExpiresAt: z.iso.datetime().optional().nullable(),
   ytScope: z.string().optional().nullable(),
   ytTokenType: z.string().optional().nullable(),
-  llmBaseUrl: z.string().optional().nullable(),
+  llmBaseUrl: z.union([modelEndpointSchema, z.literal("")]).optional().nullable(),
   llmApiKey: z.string().optional().nullable(),
   llmModel: z.string().optional().nullable(),
   llmEmbeddingModel: z.string().optional().nullable(),
-  llmEmbeddingBaseUrl: z.string().optional().nullable(),
+  llmEmbeddingBaseUrl: z.union([modelEndpointSchema, z.literal("")]).optional().nullable(),
   llmSystemPrompt: z.string().optional().nullable(),
   llmPrompt: z.string().optional().nullable(),
   llmConcurrency: z.coerce.number().int().min(1).max(MAX_LLM_CONCURRENCY).optional(),
@@ -54,7 +56,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  const body: unknown = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     const error = parsed.error.issues[0]?.message || "Validation failed";
@@ -65,23 +67,28 @@ export async function POST(request: Request) {
     );
   }
 
+  const { xTokenExpiresAt, ytTokenExpiresAt, ...values } = parsed.data;
   const payload = {
-    ...parsed.data,
-    xTokenExpiresAt: parsed.data.xTokenExpiresAt
-      ? new Date(parsed.data.xTokenExpiresAt)
-      : null,
-    ytTokenExpiresAt: parsed.data.ytTokenExpiresAt
-      ? new Date(parsed.data.ytTokenExpiresAt)
-      : null,
+    ...values,
+    ...(xTokenExpiresAt !== undefined ? { xTokenExpiresAt: xTokenExpiresAt ? new Date(xTokenExpiresAt) : null } : {}),
+    ...(ytTokenExpiresAt !== undefined ? { ytTokenExpiresAt: ytTokenExpiresAt ? new Date(ytTokenExpiresAt) : null } : {}),
   };
 
   try {
-    const updated = await updateSettings(payload);
+    const disconnected = (key: "xAccessToken" | "xRefreshToken" | "ytAccessToken" | "ytRefreshToken") => parsed.data[key] !== undefined && !parsed.data[key]?.trim();
+    const prefixes = [
+      ...(disconnected("xAccessToken") || disconnected("xRefreshToken") ? ["x:"] : []),
+      ...(disconnected("ytAccessToken") || disconnected("ytRefreshToken") ? ["yt:"] : []),
+    ];
+    const updated = prefixes.length ? await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`UPDATE "Settings" SET "id" = "id" WHERE 0`;
+      await tx.oAuthSession.deleteMany({ where: { OR: prefixes.map((prefix) => ({ state: { startsWith: prefix } })) } });
+      return updateSettings(payload, tx);
+    }) : await updateSettings(payload);
     return NextResponse.json({ ok: true, settings: updated });
-  } catch (error) {
-    console.error("Failed to update settings:", error);
+  } catch {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Unknown error" },
+      { ok: false, error: "Settings could not be saved. Retry after checking database availability." },
       { status: 500 }
     );
   }

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchBookmarks, fetchXUsage } from "@/lib/x";
-import { getSettings, updateSettings } from "@/lib/settings";
+import { getSettings } from "@/lib/settings";
+import { saveRefreshedTokens } from "@/lib/oauth-tokens";
+
+vi.mock("@/lib/oauth-tokens", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/oauth-tokens")>(),
+  saveRefreshedTokens: vi.fn(async (_provider, tokens) => tokens.access_token),
+}));
 
 vi.mock("@/lib/settings", () => ({
   getSettings: vi.fn(),
@@ -106,14 +112,9 @@ describe("x lib", () => {
       xUserId: "user-123",
     } as any);
 
-    // Mock token refresh call
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        access_token: "new-token",
-        expires_in: 3600,
-      }),
-    } as any);
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({
+      access_token: "new-token", expires_in: 3600, token_type: "Bearer",
+    }));
 
     // Mock subsequent bookmarks call
     vi.mocked(fetch).mockResolvedValueOnce({
@@ -125,10 +126,8 @@ describe("x lib", () => {
 
     await fetchBookmarks();
 
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        xAccessToken: "new-token",
-      })
-    );
+    expect(saveRefreshedTokens).toHaveBeenCalledWith("x",
+      expect.objectContaining({ access_token: "new-token" }),
+      expect.objectContaining({ xAccessToken: "expired-token" }), undefined);
   });
 });

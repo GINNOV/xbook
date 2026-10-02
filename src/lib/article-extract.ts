@@ -1,137 +1,51 @@
-const MAX_BYTES = 200_000;
-const MAX_REDIRECTS = 3;
-const TIMEOUT_MS = 8_000;
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
+import { fetchPublicWeb, publicWebUrl, type WebTransport } from "./public-web";
+import { captureTranscriptJson, type TranscriptCapture } from "./youtubeTranscript";
 
-function isPublicHttp(url: URL) {
-  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return false;
-  if (host === "0.0.0.0" || host === "::" || host === "::1") return false;
-  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4) {
-    const [a, b] = ipv4.slice(1).map(Number);
-    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) {
-      return false;
-    }
-  }
-  if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) return false;
-  return true;
-}
-
-export function isExternalContentUrl(url: string) {
+export function isExternalContentUrl(value: string) {
   try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.toLowerCase();
-    if (host.endsWith("x.com") || host.endsWith("twitter.com") || host.endsWith("t.co")) return false;
-    return isPublicHttp(parsed);
-  } catch {
-    return false;
-  }
+    const url = publicWebUrl(value);
+    return !/(^|\.)(x\.com|twitter\.com|t\.co)$/.test(url.hostname);
+  } catch { return false; }
 }
-
-export type ArticleCapture = {
-  method: "article";
-  status: "complete" | "partial" | "missing";
-  text?: string;
-  reason?: string;
-  capturedAt: string;
-};
-
-function htmlToText(html: string) {
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Keep the start and the end so a fact near the tail is not dropped. */
-export function boundSourceText(text: string, budget = 8_000) {
+/** Compatibility preview only. Source processing uses all retained sections. */
+export function boundSourceText(text: string, budget = 8000) {
   if (text.length <= budget) return { text, status: "complete" as const };
-  const marker = "\n\n[middle omitted; beginning and end retained]\n\n";
+  const marker = "\n[middle omitted in preview]\n";
   const half = Math.max(1, Math.floor((budget - marker.length) / 2));
-  return {
-    text: `${text.slice(0, half)}${marker}${text.slice(-half)}`,
-    status: "partial" as const,
-  };
+  return { text: text.slice(0, half) + marker + text.slice(-half), status: "partial" as const };
 }
-
-export async function fetchArticleCapture(url: string, fetchImpl: typeof fetch = fetch): Promise<ArticleCapture> {
-  const capturedAt = new Date().toISOString();
-  let current: URL;
+export function extractArticle(html: string, url: string) {
+  // JSDOM executes no scripts and loads no external resources by default.
+  const dom = new JSDOM(html, { url });
   try {
-    current = new URL(url);
-  } catch {
-    return { method: "article", status: "missing", reason: "Invalid URL.", capturedAt };
-  }
-  if (!isPublicHttp(current)) {
-    return { method: "article", status: "missing", reason: "Only public http(s) destinations are fetched.", capturedAt };
-  }
-
-  for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-      const response = await fetchImpl(current, {
-        signal: controller.signal,
-        redirect: "manual",
-        headers: { "User-Agent": "XBook/1.0" },
-      });
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
-        if (!location) return { method: "article", status: "missing", reason: "Redirect had no destination.", capturedAt };
-        const next = new URL(location, current);
-        if (!isPublicHttp(next)) {
-          return { method: "article", status: "missing", reason: "Redirect left the public web.", capturedAt };
-        }
-        current = next;
-        continue;
-      }
-      if (!response.ok) {
-        return { method: "article", status: "missing", reason: `Page returned HTTP ${response.status}.`, capturedAt };
-      }
-      const reader = response.body?.getReader();
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      if (reader) {
-        while (size < MAX_BYTES) {
-          const step = await reader.read();
-          if (step.done) break;
-          size += step.value.byteLength;
-          chunks.push(step.value);
-        }
-        await reader.cancel().catch(() => undefined);
-      } else {
-        const buffered = new Uint8Array(await response.arrayBuffer());
-        chunks.push(buffered.subarray(0, MAX_BYTES));
-        size = buffered.byteLength;
-      }
-      const html = new TextDecoder().decode(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).subarray(0, MAX_BYTES));
-      const text = htmlToText(html);
-      if (!text) return { method: "article", status: "missing", reason: "Page had no readable text.", capturedAt };
-      const bounded = boundSourceText(text);
-      return { method: "article", status: bounded.status, text: bounded.text, capturedAt };
-    } catch (error) {
-      const reason = error instanceof Error && error.name === "AbortError" ? "Page timed out." : "Page could not be fetched.";
-      return { method: "article", status: "missing", reason, capturedAt };
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-  return { method: "article", status: "missing", reason: "Too many redirects.", capturedAt };
+    const document = dom.window.document;
+    const language = document.documentElement.lang || null;
+    const article = new Readability(document, { charThreshold: 80, maxElemsToParse: 50_000 }).parse();
+    const text = article?.textContent?.replace(/\s+/g, " ").trim();
+    if (!text || text.length < 80) throw new Error("No readable article body was found. The page may require login or JavaScript.");
+    return { text, language };
+  } finally { dom.window.close(); }
 }
-
-export async function buildExternalSourceText(urls?: string[]) {
-  if (!urls?.length) return undefined;
-  const captures = [];
-  for (const url of urls.filter(isExternalContentUrl).slice(0, 2)) {
-    const capture = await fetchArticleCapture(url);
-    if (capture.text) captures.push(capture);
+export type ArticleCapture = { method: "article"; url: string; language: string | null; capture: TranscriptCapture; status: TranscriptCapture["status"]; text?: string; reason: string | null; capturedAt: string };
+export async function fetchArticleCapture(value: string, options: { signal?: AbortSignal; transport?: WebTransport } = {}): Promise<ArticleCapture> {
+  try {
+    const response = await fetchPublicWeb(value, options);
+    const contentType = response.headers.contentType?.split(";")[0].trim().toLowerCase();
+    if (contentType && !["text/html", "application/xhtml+xml", "text/plain"].includes(contentType)) throw new Error("This source is not a supported text or HTML article.");
+    const extracted = contentType === "text/plain" ? { text: response.text.trim(), language: null } : extractArticle(response.text, response.url);
+    const capture = captureTranscriptJson({ events: [{ segs: [{ utf8: extracted.text }] }] });
+    return { method: "article", url: response.url, language: extracted.language, capture, status: capture.status, text: capture.sections.map((section) => section.text).join("\n"), reason: capture.reason, capturedAt: capture.capturedAt };
+  } catch (error) {
+    if (options.signal?.aborted) throw options.signal.reason;
+    const capture: TranscriptCapture = { status: "missing", reason: error instanceof Error ? error.message : "Article capture failed.", capturedAt: new Date().toISOString(), sections: [], totalCharacters: 0, storedCharacters: 0 };
+    return { method: "article", url: value, language: null, capture, status: capture.status, reason: capture.reason, capturedAt: capture.capturedAt };
   }
-  if (!captures.length) return undefined;
-  return {
-    text: captures.map((capture) => capture.text).join("\n---\n"),
-    captures,
-  };
+}
+export async function buildExternalSourceText(urls?: string[], signal?: AbortSignal) {
+  const captures: ArticleCapture[] = [];
+  for (const url of (urls ?? []).filter(isExternalContentUrl).slice(0, 2)) captures.push(await fetchArticleCapture(url, { signal }));
+  const text = captures.map((entry) => entry.text).filter(Boolean).join("\n---\n");
+  return captures.length ? { text: text || undefined, captures } : undefined;
 }

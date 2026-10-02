@@ -25,7 +25,7 @@ vi.mock("@/lib/db", () => ({
         llmApiKey: "test-key",
         llmModel: "test-model",
         llmSystemPrompt: "test-system",
-        llmContextWindow: 1000,
+        llmContextWindow: 4096,
         llmResponseLimit: 100,
         llmMaxTokens: 100,
         logLlmPayloads: true,
@@ -40,7 +40,7 @@ vi.mock("@/lib/settings", () => ({
     llmApiKey: "test-key",
     llmModel: "test-model",
     llmSystemPrompt: "test-system",
-    llmContextWindow: 1000,
+    llmContextWindow: 4096,
     llmResponseLimit: 100,
     llmMaxTokens: 100,
     logLlmPayloads: true,
@@ -71,6 +71,7 @@ vi.mock("openai", () => {
 describe("LLM Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSettings).mockResolvedValue(defaultSettings);
   });
 
   const defaultSettings = {
@@ -79,7 +80,7 @@ describe("LLM Service", () => {
     llmApiKey: "test-key",
     llmModel: "test-model",
     llmSystemPrompt: null,
-    llmContextWindow: 1000,
+    llmContextWindow: 4096,
     llmResponseLimit: 100,
     llmMaxTokens: 100,
     logLlmPayloads: true,
@@ -87,8 +88,7 @@ describe("LLM Service", () => {
 
   it("should add no-think instruction when LLM thinking is disabled", async () => {
     vi.mocked(getSettings)
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: false })
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: false });
+      .mockResolvedValue({ ...defaultSettings, llmThinkingEnabled: false });
     const mockOpenAI = new OpenAI() as MockOpenAI;
     mockOpenAI.chat.completions.create.mockResolvedValue({
       choices: [{ message: { content: '{ "summary": "test", "category": "Tech", "tags": ["a"] }' } }],
@@ -113,8 +113,7 @@ describe("LLM Service", () => {
 
   it("should omit no-think instruction when LLM thinking is enabled", async () => {
     vi.mocked(getSettings)
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: true })
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: true });
+      .mockResolvedValue({ ...defaultSettings, llmThinkingEnabled: true });
     const mockOpenAI = new OpenAI() as MockOpenAI;
     mockOpenAI.chat.completions.create.mockResolvedValue({
       choices: [{ message: { content: '{ "summary": "test", "category": "Tech", "tags": ["a"] }' } }],
@@ -159,7 +158,7 @@ describe("LLM Service", () => {
       usage: { total_tokens: 10 },
     });
 
-    const promise = expect(summarizeBookmark({ text: "test tweet" })).rejects.toThrow(/No starting '{' found/);
+    const promise = expect(summarizeBookmark({ text: "test tweet" })).rejects.toThrow(/Failed to parse LLM response/);
     await vi.runAllTimersAsync();
     await promise;
     vi.useRealTimers();
@@ -177,6 +176,20 @@ describe("LLM Service", () => {
     await vi.runAllTimersAsync();
     await promise;
     vi.useRealTimers();
+  });
+
+  it("does not retry authentication failures inside enrichment", async () => {
+    const create = OpenAI.prototype.chat.completions.create;
+    vi.mocked(create).mockRejectedValueOnce(new Error("401 Unauthorized"));
+    await expect(summarizeBookmark({ text: "Fixture" })).rejects.toThrow("HTTP 401");
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call a provider after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(summarizeBookmark({ text: "Fixture", signal: controller.signal })).rejects.toThrow();
+    expect(OpenAI.prototype.chat.completions.create).not.toHaveBeenCalled();
   });
 
   it("should retry and succeed if the first attempt returns an empty response", async () => {
@@ -201,7 +214,7 @@ describe("LLM Service", () => {
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(2);
     expect(mockOpenAI.chat.completions.create).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        max_tokens: 16000
+        max_tokens: 100
       }),
       expect.anything()
     );
@@ -231,7 +244,7 @@ describe("LLM Service", () => {
     expect(mockOpenAI.chat.completions.create).toHaveBeenLastCalledWith(
       expect.objectContaining({
         temperature: 0.1,
-        max_tokens: 16000
+        max_tokens: 100
       }),
       expect.anything()
     );

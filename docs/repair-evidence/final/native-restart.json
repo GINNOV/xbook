@@ -1,0 +1,18 @@
+{
+  "identity": {
+    "app": "0.4.3",
+    "desktop": "0.4.3",
+    "match": true,
+    "runtime": "node v24.21.0",
+    "database": "sqlite",
+    "backend": {
+      "pid": 45075,
+      "port": "3116",
+      "commit": "a3d6d4488852fd5a480e7934ec767ebe2509d458",
+      "startedAt": "2026-10-02T17:17:13.799Z",
+      "owner": "45070-1790961433767234000"
+    }
+  },
+  "newOwnedBackend": true,
+  "humanAndGeneratedSummariesPreserved": true
+}

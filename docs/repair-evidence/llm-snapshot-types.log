@@ -1,0 +1,1 @@
+src/lib/operation-api.ts(71,74): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Pick<{ model: string; endpoint: string; dimensions: number; }, "model" | "endpoint"> | undefined'.

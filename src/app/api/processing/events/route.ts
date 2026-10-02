@@ -1,48 +1,34 @@
-import { processingEvents } from "@/lib/signals";
-
+import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
+const serialize = (value: unknown) => JSON.stringify(value, (key, item) => key === "jobJson" ? undefined : item);
 
-export async function GET() {
+/** Database snapshots make reconnects and workers in other processes observable. */
+export async function GET(request: Request) {
   const encoder = new TextEncoder();
-  let cleanup: (() => void) | undefined;
-
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let closed = false;
+  let reading = false;
+  let previous = "";
   const stream = new ReadableStream({
     start(controller) {
-      const onRunCreated = (run: unknown) => {
-        try { controller.enqueue(encoder.encode(`event: run_created\ndata: ${JSON.stringify(run)}\n\n`)); } catch { /* ignore */ }
-      };
-      const onRunUpdated = (run: unknown) => {
-        try { controller.enqueue(encoder.encode(`event: run_updated\ndata: ${JSON.stringify(run)}\n\n`)); } catch { /* ignore */ }
-      };
-      const onEventLogged = (event: unknown) => {
-        try { controller.enqueue(encoder.encode(`event: event_logged\ndata: ${JSON.stringify(event)}\n\n`)); } catch { /* ignore */ }
-      };
-
-      processingEvents.on("run_created", onRunCreated);
-      processingEvents.on("run_updated", onRunUpdated);
-      processingEvents.on("event_logged", onEventLogged);
-
-      const interval = setInterval(() => {
-        try { controller.enqueue(encoder.encode(": heartbeat\n\n")); } catch { /* ignore */ }
-      }, 30000);
-
-      cleanup = () => {
-        clearInterval(interval);
-        processingEvents.off("run_created", onRunCreated);
-        processingEvents.off("run_updated", onRunUpdated);
-        processingEvents.off("event_logged", onEventLogged);
-      };
+      async function snapshot() {
+        if (closed || reading) return;
+        reading = true;
+        try {
+          const runs = await prisma.operationRun.findMany({ orderBy: { startedAt: "desc" }, take: 50, include: { _count: { select: { events: true, llmRequests: true } } } });
+          const serialized = serialize(runs);
+          if (serialized !== previous) {
+            previous = serialized;
+            for (const run of runs) controller.enqueue(encoder.encode(`event: run_updated\ndata: ${serialize(run)}\n\n`));
+          } else controller.enqueue(encoder.encode(": heartbeat\n\n"));
+        } catch { /* The next snapshot reconciles after maintenance or reconnect. */ }
+        finally { reading = false; }
+      }
+      void snapshot();
+      timer = setInterval(() => { void snapshot(); }, 1000);
+      request.signal.addEventListener("abort", () => { closed = true; if (timer) clearInterval(timer); try { controller.close(); } catch { /* Already disconnected. */ } }, { once: true });
     },
-    cancel() {
-      if (cleanup) cleanup();
-    },
+    cancel() { closed = true; if (timer) clearInterval(timer); },
   });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    },
-  });
+  return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
 }

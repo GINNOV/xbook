@@ -131,7 +131,7 @@ The app uses the OpenAI SDK against an OpenAI-compatible endpoint. Typical defau
 - LM Studio: `http://localhost:1234/v1` (concurrency 1)
 - Ollama: `http://localhost:11434/v1` (concurrency 1)
 - vLLM (localhost): `http://localhost:8000/v1` (concurrency 4; embeddings often on Ollama)
-- REMOTE (high-concurrency LAN/remote vLLM example): `http://192.168.0.69:8000/v1`, model `gemma-4-26b`, concurrency up to **32**
+- REMOTE (high-concurrency LAN/remote vLLM example): `https://api.example.com/v1`, model `gemma-4-26b`, concurrency up to **32**
 
 Max parallel enrichment is `MAX_LLM_CONCURRENCY` (32) in `src/lib/llm-limits.ts`.
 
@@ -140,8 +140,8 @@ The configured model must be available at the selected endpoint before enrichmen
 ## App Flow
 
 1. Configure X, YouTube, and LLM settings in `/settings`.
-2. Use the Dashboard to sync X or YouTube items.
-3. Enrich pending items from the Dashboard, Library, or Folders workflows.
+2. Use source-scoped Dashboard Import or Process inbox. Process inbox submits one durable import → enrich → index run.
+3. Folder actions separate name discovery, import, summarize, and index. Local counts link to actual folderId/source scopes.
 4. Review runs and failures in `/processing`.
 5. Search, filter, edit, reprocess, and mark items read in `/bookmarks`.
 
@@ -155,9 +155,23 @@ Important Prisma models:
 - `BookmarkFolder`: X folders and YouTube playlists.
 - `Settings`: local credentials, API limits, model config, and UI preferences.
 - `UsageMonth`: monthly import usage by source.
-- `OperationRun`: sync and enrichment run summaries.
+- `OperationRun`: authoritative cumulative status, frozen settings, durable checkpoints, leases, cancellation, and recovery for import, enrichment, and embedding runs.
 - `ProcessingEvent`: per-run and per-bookmark processing events.
-- `LlmRequestLog`: prompt, response, usage, timing, and error records.
+- `LlmRequestLog`: prompt/response previews, parsed output, usage, timing, and errors. Full prompt/response fields depend on payload logging.
+
+## Operation and search contracts
+
+POST import/enrichment/embedding operations once with an `Idempotency-Key`. Read `/api/processing/runs/<runId>` for authoritative cumulative progress. POST `{ "action": "stop" }` or `{ "action": "resume" }` to that run URL. Navigation does not cancel server work. Partial and paused runs retain their checkpoints. Operation snapshots omit API keys; current private credentials are resolved when work executes.
+
+`POST /api/import?source=x&pipeline=true` runs the whole inbox pipeline. Folder imports use `/api/folders/import?source=x&folderId=<id>` or `all=true`. New local entries consume source monthly caps; refreshing existing entries does not. YouTube playlist entries keep stable IDs and can represent the same video in multiple playlists.
+
+Library and Agent reads use `bookmarkQuerySchema`: substring text by default, `textMode=word` for whole tokens, and `textMode=phrase` for adjacent ordered tokens within one field. Source/category/folder/status/video filters apply before semantic ranking. Semantic results cap at 50; unusable embedding identities are excluded. Unavailable embeddings retain scoped keyword results and expose recovery feedback.
+
+Settings chat and embedding tests use explicit displayed draft fields. Submitted empty values do not silently use saved values; an empty embedding endpoint uses the displayed chat endpoint. Results are separate and invalidated by changed drafts. Numbers must be finite bounded integers before saving or creating operations. Target language affects Translate; enrichment summaries default to English unless a custom prompt overrides that instruction.
+
+Local, LAN, and remote model endpoints receive source text, prompts, Ask context, digest text, or search queries as appropriate. Payload logging off still retains prompt/response previews. Safe database downloads omit stored credentials by default, while full local backups preserve credentials and logs. Restore validates integrity/schema, blocks conflicting operations, preserves a recovery snapshot, and rolls back after replacement failure.
+
+`GET /api/version` returns app/desktop versions and backend PID, port, build commit, and start time. Inspect this identity when comparing a development checkout with an installed desktop backend; a build or merge does not update an installed app.
 
 ## Commands
 

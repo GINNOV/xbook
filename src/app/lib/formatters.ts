@@ -1,3 +1,7 @@
+import { operationCheckpoint, operationMessage, operationRunSchema } from "./operation-observer";
+import { resolveRunStatus } from "@/lib/run-outcome";
+export { resolveRunStatus } from "@/lib/run-outcome";
+
 export const formatDate = (v: any) => v ? new Date(v).toLocaleString() : "Not finished";
 export const formatDateShort = (v: any) => v ? new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : "-";
 export const formatTime = (v: any) => v ? new Date(v).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : "-";
@@ -32,6 +36,9 @@ const RUN_TYPE_LABELS: Record<string, string> = {
   folder_enrichment: "Folder enrichment",
   single_reprocess: "Single reprocess",
   embedding_sync: "Embedding sync",
+  import_pipeline: "Import, summarize and index",
+  x_folder_import: "X folder import",
+  youtube_playlist_import: "YouTube playlist import",
   x_sync: "X sync",
   youtube_sync: "YouTube sync",
 };
@@ -68,6 +75,7 @@ export type RunOutcomeInput = {
   failed?: number | null;
   skipped?: number | null;
   notes?: string | null;
+  jobJson?: string | null;
 };
 
 /**
@@ -75,21 +83,15 @@ export type RunOutcomeInput = {
  * Prefers counts over generic notes; falls back to notes / "No details".
  */
 export function formatRunOutcome(run: RunOutcomeInput): string {
+  const snapshot = operationRunSchema.safeParse(run);
+  if (snapshot.success && operationCheckpoint(snapshot.data)?.kind === "import") return operationMessage(snapshot.data);
   const total = Number(run.total ?? 0) || 0;
   const processed = Number(run.processed ?? 0) || 0;
   const updated = Number(run.updated ?? 0) || 0;
   const failed = Number(run.failed ?? 0) || 0;
   const skipped = Number(run.skipped ?? 0) || 0;
-  const status = (run.status ?? "").toLowerCase();
-  const inFlight = status === "running" || status === "queued";
-  if (!inFlight && updated === 0 && failed > 0 && !/paused|more remaining/i.test(run.notes ?? "")) {
-    const skippedText = skipped > 0 ? ` · ${skipped} skipped` : "";
-    return `Failed · ${failed} failed${skippedText}`;
-  }
-  if (!inFlight && /paused|more remaining/i.test(run.notes ?? "")) {
-    const detail = [updated > 0 ? `${updated} updated` : "", failed > 0 ? `${failed} failed` : ""].filter(Boolean).join(" · ");
-    return detail ? `Paused · ${detail}` : "Paused · work remaining";
-  }
+  const status = resolveRunStatus(run).toLowerCase();
+  const inFlight = status === "running" || status === "queued" || status === "paused";
 
   const segments: string[] = [];
 

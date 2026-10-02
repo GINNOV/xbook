@@ -43,13 +43,13 @@ const tabs = [
     detail: (
       <>
         <p className="text-sm text-on-surface-variant leading-6">
-          Section title in the form: <strong>LLM configuration</strong>. Pick a preset (LM Studio, Ollama, REMOTE,
+          Section title in the form: <strong>AI / LLM</strong>. Pick a preset (LM Studio, Ollama, REMOTE,
           vLLM localhost), set base URL, API key, chat model, embedding model / base URL, concurrency, context
           window, response limit, and target language for translations.
         </p>
         <ul className="list-disc list-inside text-sm text-on-surface-variant leading-6 space-y-1.5">
           <li>
-            <strong>Test LLM connection</strong> — use after save; do not Process inbox until this succeeds.
+            <strong>Test chat with displayed values</strong> and <strong>Test embeddings with displayed values</strong> — separate small tests of the unsaved draft. A working chat test does not verify embeddings. Save the draft before starting operations.
           </li>
           <li>
             <strong>Fetch models</strong> — pull model IDs from the server when available.
@@ -79,15 +79,13 @@ const tabs = [
         <p className="text-sm font-bold text-on-surface">Usage limits</p>
         <ul className="list-disc list-inside text-sm text-on-surface-variant leading-6 space-y-1.5">
           <li>
-            <strong>X monthly cap</strong> — max bookmarks fetched from X per month (counter shown as used this
-            month).
+            <strong>X monthly cap</strong> — maximum new local entries imported from X per month. Refreshing an existing entry does not use this cap.
           </li>
           <li>
-            <strong>YouTube monthly cap</strong> — max video entries per month; sync stops at the quota.
+            <strong>YouTube monthly cap</strong> — maximum new local playlist entries imported per month. Google API request quota is separate. Paused imports retain their checkpoint.
           </li>
           <li>
-            <strong>Enrichment batch size</strong> — items per LLM batch (default 50). Larger is faster, more
-            timeout-prone.
+            <strong>Enrichment batch size</strong> — items selected for one operation batch. Each bookmark has its own model request. Response tokens and parallel requests are separate settings.
           </li>
         </ul>
         <p className="text-sm font-bold text-on-surface mt-3">Maintenance actions</p>
@@ -131,14 +129,14 @@ const tabs = [
         </p>
         <ul className="list-disc list-inside text-sm text-on-surface-variant leading-6 space-y-1.5">
           <li>
-            <strong>Download active database (.db)</strong> — export a copy to your machine.
+            <strong>Download active database (.db)</strong> — download a consistent SQLite snapshot. Stored credentials are omitted by default; select the credential option only when you intend to include them.
           </li>
           <li>
-            <strong>Save to server</strong> — create a named backup stored with the app (optional custom name).
+            <strong>Save to server</strong> — create a full local backup stored with the app. It includes credentials and technical logs. An existing custom name is rejected instead of overwritten.
           </li>
           <li>
             <strong>Restore from file</strong> — upload a previous <code className="rounded bg-white px-1 py-0.5 text-xs">.db</code>{" "}
-            (confirm before overwrite).
+            (confirm before replacement). Restore checks integrity and schema, blocks conflicting work, keeps a recovery snapshot, and rolls back if replacement fails.
           </li>
           <li>
             <strong>Server backups list</strong> — restore or delete saved backups.
@@ -201,13 +199,11 @@ export default function DocsSettingsPage() {
               Use the <strong>tabs</strong> (Connections, AI, Limits, Data, Agents) to focus one area at a time.
             </li>
             <li>
-              <strong>Setup status</strong> chips at the top show whether X is connected, a chat model is set, and an
-              embedding model is set—quick health for “why isn’t enrich working?”
+              <strong>Setup status</strong> chips distinguish configured, tested, disconnected, expired, and unavailable connections. A saved token or model name does not establish connectivity. Changing a tested draft invalidates that result.
             </li>
             <li>
               Change fields, then click <strong>Save settings</strong>. An <strong>Unsaved changes</strong> badge
-              appears while the form is dirty. Some actions (OAuth connect, test connection, backup) run their own
-              requests; still save form fields after editing them.
+              appears while the form is dirty. Tabs preserve edits and test results. Server refreshes preserve a dirty draft. Leaving Settings offers a discard choice. A failed save retains edits and shows an error; a successful save shows Settings saved.
             </li>
             <li>
               Env vars (e.g. <code className="rounded bg-surface-container-low px-1 py-0.5 text-xs">OPENAI_*</code>,{" "}
@@ -256,7 +252,7 @@ export default function DocsSettingsPage() {
               <strong>Connections</strong> — OAuth for X and/or YouTube, Test connection.
             </li>
             <li>
-              <strong>AI</strong> — preset + model + embedding model, Save, Test LLM connection.
+              <strong>AI</strong> — choose endpoints and models, test chat and embeddings separately, then Save settings.
             </li>
             <li>
               <strong>Limits</strong> — set caps and batch size if you care about API spend.

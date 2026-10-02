@@ -1,15 +1,15 @@
-type Props = { status: string; edited: boolean; error?: string | null; sim?: number; };
-
-export function StatusColumn({ status, edited, error, sim }: Props) {
-  const c = status === "Pending" ? "font-semibold text-secondary" : "font-semibold text-primary";
-  return (
-    <span className={c}>
-      {edited ? "Edited" : status === "Pending" && error ? <span className="text-error" title={error}>Failed</span> : status}
-      {sim !== undefined && (
-        <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-          {Math.round(sim * 100)}%
-        </span>
-      )}
-    </span>
-  );
+import { readCapturedSource } from "@/lib/capture-contract";
+type Props = { captureJson?: string | null; availability?: string | null; status: string; edited: boolean; read?: boolean; error?: string | null; failures?: number; sim?: number };
+export function StatusColumn({ status, edited, read, error, failures = 0, sim, captureJson, availability }: Props) {
+  const capture = status === "Summarized" ? readCapturedSource(captureJson) : null;
+  return <span className="flex flex-col gap-0.5 text-xs">
+    <span className={status === "Pending" ? "font-semibold text-secondary" : "font-semibold text-primary"}>{status}</span>
+    {error && <span className="font-semibold text-error" title={error}>{failures >= 3 ? "Blocked" : "Failed"}</span>}
+    {capture?.method === "description" && <span>Description only</span>}
+    {capture?.capture.status === "partial" && <span>Partial source</span>}
+    {availability && availability !== "available" && <span>Unavailable video</span>}
+    {edited && <span className="text-on-surface-variant">Edited</span>}
+    <span className="text-on-surface-variant">{read ? "Read" : "Unread"}</span>
+    {sim !== undefined && <span className="font-semibold text-primary">{Math.round(sim * 100)}% match</span>}
+  </span>;
 }

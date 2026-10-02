@@ -1,15 +1,16 @@
 "use client";
 
+import { z } from "zod";
 import { useState, useEffect, useRef } from "react";
 import { useSettingsContext } from "./useSettingsContext";
+import { connectionFingerprint } from "../../lib/settings-draft";
 
 export function useLLMSettings() {
-  const { form, setForm, setMessage, defaultPrompt } = useSettingsContext();
+  const { form, setForm, setMessage, defaultPrompt, connectionTests, testConnection } = useSettingsContext();
   
   const [llmTest, setLlmTest] = useState<string | null>(null);
-  const [testingLlm, setTestingLlm] = useState(false);
-  const [testingEmbedding, setTestingEmbedding] = useState(false);
-  const [embeddingTest, setEmbeddingTest] = useState<string | null>(null);
+  const chat = connectionTests.llm?.fingerprint === connectionFingerprint("llm", form) ? connectionTests.llm : undefined;
+  const embedding = connectionTests.embedding?.fingerprint === connectionFingerprint("embedding", form) ? connectionTests.embedding : undefined;
   const [clearingLogs, setClearingLogs] = useState(false);
   const [modelHistory, setModelHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -21,8 +22,8 @@ export function useLLMSettings() {
     const raw = localStorage.getItem("xbook:llm-model-history");
     if (raw) {
       try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setModelHistory(parsed);
+        const parsed = z.array(z.string()).safeParse(JSON.parse(raw));
+        if (parsed.success) setModelHistory(parsed.data);
       } catch (e) {
         console.error("Failed to parse model history", e);
       }
@@ -39,49 +40,8 @@ export function useLLMSettings() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const testLlm = async () => {
-    setTestingLlm(true);
-    setLlmTest(null);
-    try {
-      const res = await fetch("/api/settings/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "llm", ...form }),
-      });
-      const json = await res.json();
-      const errorMessage =
-        typeof json.error === "string"
-          ? json.error
-          : json.error
-            ? JSON.stringify(json.error)
-            : null;
-      if (!res.ok) throw new Error(errorMessage ?? "LLM test failed");
-      setLlmTest(json.message ?? "LLM connection ok.");
-    } catch (error) {
-      setLlmTest(error instanceof Error ? error.message : "LLM test failed");
-    } finally {
-      setTestingLlm(false);
-    }
-  };
-
-  const testEmbedding = async () => {
-    setTestingEmbedding(true);
-    setEmbeddingTest(null);
-    try {
-      const res = await fetch("/api/settings/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "embedding", ...form }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Embedding test failed");
-      setEmbeddingTest(json.message ?? "Embedding connection ok.");
-    } catch (error) {
-      setEmbeddingTest(error instanceof Error ? error.message : "Embedding test failed");
-    } finally {
-      setTestingEmbedding(false);
-    }
-  };
+  const testLlm = () => testConnection("llm");
+  const testEmbedding = () => testConnection("embedding");
 
   const applyLlmPreset = (preset: "lmstudio" | "vllm" | "ollama" | "remote") => {
     if (preset === "ollama") {
@@ -122,7 +82,7 @@ export function useLLMSettings() {
     // High-concurrency LAN/remote OpenAI-compatible vLLM (edit host/model as needed).
     setForm((prev) => ({
       ...prev,
-      llmBaseUrl: "http://192.168.0.69:8000/v1",
+      llmBaseUrl: "https://api.example.com/v1",
       llmApiKey: "EMPTY",
       llmModel: "gemma-4-26b",
       llmConcurrency: 32,
@@ -172,12 +132,13 @@ export function useLLMSettings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ baseUrl: form.llmBaseUrl, apiKey: form.llmApiKey }),
       });
-      const json = await res.json();
+      const json = z.object({ models: z.array(z.string()).optional(), error: z.string().optional() }).parse(await res.json());
       if (!res.ok) throw new Error(json.error ?? "Failed to fetch models");
-      if (json.models?.length > 0) {
-        setModelHistory((prev) => Array.from(new Set([...json.models, ...prev])).slice(0, 10));
+      const models = json.models ?? [];
+      if (models.length > 0) {
+        setModelHistory((prev) => Array.from(new Set([...models, ...prev])).slice(0, 10));
         setShowHistory(true);
-        setLlmTest(`Found ${json.models.length} models on server.`);
+        setLlmTest(`Found ${models.length} models on server.`);
       }
     } catch (error) {
       setLlmTest(error instanceof Error ? error.message : "Fetch models failed");
@@ -187,8 +148,11 @@ export function useLLMSettings() {
   };
 
   return {
-    llmTest,
-    testingLlm,
+    llmTest: chat?.message ?? null,
+    modelMessage: llmTest,
+    chatTestState: chat?.status,
+    embeddingTestState: embedding?.status,
+    testingLlm: chat?.status === "testing",
     clearingLogs,
     modelHistory,
     showHistory,
@@ -196,8 +160,8 @@ export function useLLMSettings() {
     historyRef,
     testLlm,
     testEmbedding,
-    testingEmbedding,
-    embeddingTest,
+    testingEmbedding: embedding?.status === "testing",
+    embeddingTest: embedding?.message ?? null,
     applyLlmPreset,
     clearProcessingHistory,
     resetPrompt,

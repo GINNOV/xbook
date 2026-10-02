@@ -21,10 +21,10 @@ export default function DocsSetupPage() {
               <div className="space-y-2 flex-1">
                 <p className="font-bold text-base text-primary">1. Install packages &amp; migrate schema</p>
                 <p className="text-sm text-on-surface-variant leading-6">
-                  Install dependencies and apply Prisma migrations for the local SQLite database:
+                  Use Node 24 for the native SQLite adapter. Install dependencies and apply Prisma migrations for an isolated local database:
                 </p>
                 <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100 font-mono">
-                  npm install{"\n"}
+                  npm ci{"\n"}
                   npx prisma migrate dev
                 </pre>
               </div>
@@ -65,7 +65,7 @@ export default function DocsSetupPage() {
               <div className="space-y-2 flex-1">
                 <p className="font-bold text-base text-primary">3. Run, test, and package</p>
                 <p className="text-sm text-on-surface-variant leading-6">
-                  Start the web app, run unit tests, Playwright e2e (app on port 3100), or build the desktop bundle:
+                  Start the web app, run synthetic unit and SQLite tests, or run Chromium workflows. Playwright starts port 3100 with a temporary migrated database and deletes it afterward. Stop an existing server on that port first:
                 </p>
                 <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100 font-mono">
                   npm run dev{"\n"}

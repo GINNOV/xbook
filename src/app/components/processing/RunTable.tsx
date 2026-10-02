@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveRunStatus } from "@/lib/run-outcome";
+
 import { XLogo, YouTubeLogo } from "../Icons";
 import Link from "next/link";
 import { statusClass, formatDate, formatRunOutcome, formatRunTitle } from "@/app/lib/formatters";
@@ -29,7 +31,7 @@ export function RunTable({ runs, selectedId, currentParams }: Props) {
                 {run.source === "yt" ? <YouTubeLogo className="h-2.5 w-3" /> : run.source === "x" ? <XLogo className="h-2.5 w-2.5" /> : <span className="text-[10px] font-bold uppercase">mixed</span>}
               </span>
             </span>
-            <span className={`font-bold uppercase text-[10px] ${statusClass(run.status)}`}>{run.status}</span>
+            <span className={`font-bold uppercase text-[10px] ${statusClass(resolveRunStatus(run))}`}>{resolveRunStatus(run)}</span>
             <span className="text-xs text-on-surface-variant">{formatDate(run.startedAt)}</span>
           </Link>
         ))}

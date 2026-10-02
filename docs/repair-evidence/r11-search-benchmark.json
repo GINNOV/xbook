@@ -1,0 +1,597 @@
+{
+  "date": "2026-10-02T16:38:05.905Z",
+  "node": "v24.21.0",
+  "fixture": "Real migrated SQLite; controlled768-dimensional HTTP embeddings; no live quality acceptance",
+  "fixtureDelayMs": 20,
+  "vectorDimensions": 768,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "sizes": [
+    100,
+    1000,
+    10000
+  ],
+  "queriesPerSize": 11,
+  "fallbackQueriesPerSize": 1,
+  "scopeChecks": [
+    "source",
+    "category",
+    "folder",
+    "unread",
+    "summarized",
+    "video"
+  ],
+  "excludedVectorStates": [
+    "stale",
+    "malformed byte length",
+    "NaN",
+    "wrong model",
+    "legacy"
+  ],
+  "results": [
+    {
+      "size": 100,
+      "query": "distributed clocks",
+      "mode": "semantic",
+      "knownItem": "known-clocks",
+      "top5": [
+        "known-clocks",
+        "known-bayes",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 121.44545800000003,
+      "embeddingGenerationMs": 101.62383399999999,
+      "localRetrievalMs": 19.821624000000043,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "coral reef monitoring",
+      "mode": "semantic",
+      "knownItem": "known-coral",
+      "top5": [
+        "known-coral"
+      ],
+      "recalled": true,
+      "totalMs": 28.111625000000004,
+      "embeddingGenerationMs": 24.46904100000006,
+      "localRetrievalMs": 3.6425839999999425,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "naive bayes tutorial",
+      "mode": "semantic",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 26.948082999999997,
+      "embeddingGenerationMs": 23.740625000000023,
+      "localRetrievalMs": 3.207457999999974,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "winter cooking",
+      "mode": "semantic",
+      "knownItem": "known-cooking",
+      "top5": [
+        "known-cooking"
+      ],
+      "recalled": true,
+      "totalMs": 24.35908299999994,
+      "embeddingGenerationMs": 23.138166999999953,
+      "localRetrievalMs": 1.2209159999999883,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "human corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "known-bayes",
+        "known-clocks",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 24.461041999999907,
+      "embeddingGenerationMs": 22.65079199999991,
+      "localRetrievalMs": 1.8102499999999964,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "rareterm retrieval",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm",
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 24.54316700000004,
+      "embeddingGenerationMs": 22.286000000000058,
+      "localRetrievalMs": 2.2571669999999813,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "entire library corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "filler-00078",
+        "filler-00079",
+        "filler-00080",
+        "filler-00081"
+      ],
+      "recalled": true,
+      "totalMs": 36.21295800000007,
+      "embeddingGenerationMs": 23.15466600000002,
+      "localRetrievalMs": 13.058292000000051,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "rareterm",
+      "mode": "keyword:word",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 5.145249999999919,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 5.145249999999919,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "NAÏVE BAYES",
+      "mode": "keyword:phrase",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes"
+      ],
+      "recalled": true,
+      "totalMs": 0.9920829999999796,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 0.9920829999999796,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "A/B test alpha",
+      "mode": "keyword:phrase",
+      "knownItem": "known-phrase",
+      "top5": [
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 1.6737920000000486,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 1.6737920000000486,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "C++",
+      "mode": "keyword:substring",
+      "knownItem": "known-symbol",
+      "top5": [
+        "known-symbol"
+      ],
+      "recalled": true,
+      "totalMs": 5.2521670000000995,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 5.2521670000000995,
+      "fallback": null
+    },
+    {
+      "size": 100,
+      "query": "rareterm",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 24.861332999999945,
+      "embeddingGenerationMs": 23.842958000000067,
+      "localRetrievalMs": 1.0183749999998781,
+      "fallback": "embedding_unavailable"
+    },
+    {
+      "size": 1000,
+      "query": "distributed clocks",
+      "mode": "semantic",
+      "knownItem": "known-clocks",
+      "top5": [
+        "known-clocks",
+        "known-bayes",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 26.25691699999993,
+      "embeddingGenerationMs": 23.39387499999998,
+      "localRetrievalMs": 2.8630419999999503,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "coral reef monitoring",
+      "mode": "semantic",
+      "knownItem": "known-coral",
+      "top5": [
+        "known-coral"
+      ],
+      "recalled": true,
+      "totalMs": 24.566874999999982,
+      "embeddingGenerationMs": 23.45737500000007,
+      "localRetrievalMs": 1.1094999999999118,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "naive bayes tutorial",
+      "mode": "semantic",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 23.51595800000007,
+      "embeddingGenerationMs": 21.865208000000052,
+      "localRetrievalMs": 1.6507500000000164,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "winter cooking",
+      "mode": "semantic",
+      "knownItem": "known-cooking",
+      "top5": [
+        "known-cooking"
+      ],
+      "recalled": true,
+      "totalMs": 24.008332999999993,
+      "embeddingGenerationMs": 22.987874999999917,
+      "localRetrievalMs": 1.020458000000076,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "human corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "known-bayes",
+        "known-clocks",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 24.70445800000016,
+      "embeddingGenerationMs": 22.773249999999962,
+      "localRetrievalMs": 1.931208000000197,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "rareterm retrieval",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm",
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 25.337291999999934,
+      "embeddingGenerationMs": 22.949957999999924,
+      "localRetrievalMs": 2.38733400000001,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "entire library corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "filler-00078",
+        "filler-00079",
+        "filler-00080",
+        "filler-00081"
+      ],
+      "recalled": true,
+      "totalMs": 99.82312500000012,
+      "embeddingGenerationMs": 23.04774999999995,
+      "localRetrievalMs": 76.77537500000017,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "rareterm",
+      "mode": "keyword:word",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 1.2159580000000005,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 1.2159580000000005,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "NAÏVE BAYES",
+      "mode": "keyword:phrase",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes"
+      ],
+      "recalled": true,
+      "totalMs": 2.2103749999998854,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 2.2103749999998854,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "A/B test alpha",
+      "mode": "keyword:phrase",
+      "knownItem": "known-phrase",
+      "top5": [
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 0.5334169999998721,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 0.5334169999998721,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "C++",
+      "mode": "keyword:substring",
+      "knownItem": "known-symbol",
+      "top5": [
+        "known-symbol"
+      ],
+      "recalled": true,
+      "totalMs": 1.1704999999999472,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 1.1704999999999472,
+      "fallback": null
+    },
+    {
+      "size": 1000,
+      "query": "rareterm",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 25.196416999999883,
+      "embeddingGenerationMs": 24.333667000000105,
+      "localRetrievalMs": 0.8627499999997781,
+      "fallback": "embedding_unavailable"
+    },
+    {
+      "size": 10000,
+      "query": "distributed clocks",
+      "mode": "semantic",
+      "knownItem": "known-clocks",
+      "top5": [
+        "known-clocks",
+        "known-bayes",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 38.03479100000004,
+      "embeddingGenerationMs": 23.295875000000024,
+      "localRetrievalMs": 14.738916000000017,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "coral reef monitoring",
+      "mode": "semantic",
+      "knownItem": "known-coral",
+      "top5": [
+        "known-coral"
+      ],
+      "recalled": true,
+      "totalMs": 36.01229199999989,
+      "embeddingGenerationMs": 22.847416000000067,
+      "localRetrievalMs": 13.164875999999822,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "naive bayes tutorial",
+      "mode": "semantic",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 39.325000000000045,
+      "embeddingGenerationMs": 22.928499999999985,
+      "localRetrievalMs": 16.39650000000006,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "winter cooking",
+      "mode": "semantic",
+      "knownItem": "known-cooking",
+      "top5": [
+        "known-cooking"
+      ],
+      "recalled": true,
+      "totalMs": 39.6657909999999,
+      "embeddingGenerationMs": 22.346832999999833,
+      "localRetrievalMs": 17.318958000000066,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "human corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "known-bayes",
+        "known-clocks",
+        "known-phrase",
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 40.7417089999999,
+      "embeddingGenerationMs": 23.308750000000146,
+      "localRetrievalMs": 17.432958999999755,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "rareterm retrieval",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm",
+        "known-bayes",
+        "known-clocks",
+        "known-corrected",
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 41.8643340000001,
+      "embeddingGenerationMs": 23.208374999999933,
+      "localRetrievalMs": 18.655959000000166,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "entire library corrected result",
+      "mode": "semantic",
+      "knownItem": "known-corrected",
+      "top5": [
+        "known-corrected",
+        "filler-00078",
+        "filler-00079",
+        "filler-00080",
+        "filler-00081"
+      ],
+      "recalled": true,
+      "totalMs": 559.0312500000002,
+      "embeddingGenerationMs": 23.155499999999847,
+      "localRetrievalMs": 535.8757500000004,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "rareterm",
+      "mode": "keyword:word",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 12.052000000000135,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 12.052000000000135,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "NAÏVE BAYES",
+      "mode": "keyword:phrase",
+      "knownItem": "known-bayes",
+      "top5": [
+        "known-bayes"
+      ],
+      "recalled": true,
+      "totalMs": 25.995584000000235,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 25.995584000000235,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "A/B test alpha",
+      "mode": "keyword:phrase",
+      "knownItem": "known-phrase",
+      "top5": [
+        "known-phrase"
+      ],
+      "recalled": true,
+      "totalMs": 12.787874999999985,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 12.787874999999985,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "C++",
+      "mode": "keyword:substring",
+      "knownItem": "known-symbol",
+      "top5": [
+        "known-symbol"
+      ],
+      "recalled": true,
+      "totalMs": 26.18724999999995,
+      "embeddingGenerationMs": 0,
+      "localRetrievalMs": 26.18724999999995,
+      "fallback": null
+    },
+    {
+      "size": 10000,
+      "query": "rareterm",
+      "mode": "semantic",
+      "knownItem": "known-rareterm",
+      "top5": [
+        "known-rareterm"
+      ],
+      "recalled": true,
+      "totalMs": 36.29141699999991,
+      "embeddingGenerationMs": 22.55533299999979,
+      "localRetrievalMs": 13.736084000000119,
+      "fallback": "embedding_unavailable"
+    }
+  ]
+}

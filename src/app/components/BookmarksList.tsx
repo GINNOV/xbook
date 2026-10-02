@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
+import { BookmarkActionFeedback } from "./BookmarkActionFeedback";
+import OperationStatus from "./OperationStatus";
 import { useSearchParams } from "next/navigation";
 import { useBookmarksList, Bookmark } from "../hooks/useBookmarksList";
 import { BookmarkRow, LIBRARY_ROW_GRID } from "./BookmarkRow";
@@ -60,8 +63,11 @@ function SortHeader({
 export default function BookmarksList({ initial, sort, dir, source }: Props) {
   const {
     items,
-    busyId,
-    message,
+    operation,
+    processingIds,
+    feedbacks,
+    readingIds,
+    savingIds,
     editing,
     setEditing,
     selectedId,
@@ -76,6 +82,14 @@ export default function BookmarksList({ initial, sort, dir, source }: Props) {
     saveEdit,
     selected,
   } = useBookmarksList(initial);
+
+  const editOpener = useRef<HTMLElement | null>(null);
+  const editBookmark = (bookmark: Bookmark) => { editOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; openEdit(bookmark); };
+  const closeReader = () => {
+    const id = selectedId;
+    setSelectedId(null);
+    document.querySelectorAll<HTMLElement>("[data-bookmark-reader]").forEach(element => { if (element.dataset.bookmarkReader === id) element.focus(); });
+  };
 
   const getYouTubeTitle = (bookmark: Bookmark) => {
     if (bookmark.source !== "yt") return null;
@@ -107,9 +121,9 @@ export default function BookmarksList({ initial, sort, dir, source }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      {message ? <p className="text-sm text-on-surface-variant">{message}</p> : null}
+      <BookmarkActionFeedback feedback={feedbacks.filter(feedback => feedback.action !== "edit" && feedback.id !== selectedId)} />
       <section className={`grid gap-4 ${selected ? "xl:grid-cols-[minmax(0,1fr)_380px]" : "grid-cols-1"}`}>
-        <div className="overflow-x-auto rounded-lg bg-surface-container-lowest border border-outline-variant/30">
+        <div className="min-w-0 overflow-x-auto rounded-lg bg-surface-container-lowest border border-outline-variant/30">
           <div className="min-w-[1050px]">
             <div className={`grid min-w-[1050px] ${LIBRARY_ROW_GRID} bg-surface-container px-4 py-2 text-xs font-semibold uppercase text-on-surface-variant`}>
               <span></span>
@@ -129,8 +143,8 @@ export default function BookmarksList({ initial, sort, dir, source }: Props) {
                   isSelected={selectedId === bookmark.id}
                   onSelect={setSelectedId}
                   onToggleRead={toggleRead}
-                  onEdit={openEdit}
-                  isBusy={busyId === bookmark.id}
+                  onEdit={editBookmark}
+                  isBusy={readingIds.includes(bookmark.id)}
                   getYouTubeTitle={getYouTubeTitle}
                   getYouTubeFolder={getYouTubeFolder}
                 />
@@ -149,22 +163,30 @@ export default function BookmarksList({ initial, sort, dir, source }: Props) {
             selected={selected}
             translatedText={translatedText}
             isTranslating={isTranslating}
-            busyId={busyId}
+            busyId={selected && processingIds.includes(selected.id) ? selected.id : null}
+            feedback={feedbacks.filter(feedback => feedback.id === selected.id && feedback.action !== "edit")}
             onTranslate={translate}
             onReprocess={reprocess}
-            onEdit={openEdit}
-            onClose={() => setSelectedId(null)}
+            onEdit={editBookmark}
+            onClose={closeReader}
+            suspended={Boolean(editing)}
+            reading={readingIds.includes(selected.id)}
+            onToggleRead={toggleRead}
             getYouTubeTitle={getYouTubeTitle}
           />
         )}
       </section>
+
+      <OperationStatus operation={operation} />
 
       <EditEnrichmentDialog
         editing={editing}
         onClose={closeEdit}
         onSave={saveEdit}
         setEditing={setEditing}
-        isBusy={busyId === editing?.id}
+        isBusy={Boolean(editing && savingIds.includes(editing.id))}
+        error={feedbacks.find(feedback => feedback.id === editing?.id && feedback.action === "edit" && feedback.error)?.text}
+        restoreFocus={() => editOpener.current?.focus()}
       />
     </div>
   );

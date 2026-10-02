@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { SettingsProvider, useSettingsContext } from "../hooks/settings/useSettingsContext";
 import { XSettings } from "./settings/XSettings";
 import { YouTubeSettings } from "./settings/YouTubeSettings";
@@ -10,7 +10,7 @@ import { UsageSettings } from "./settings/UsageSettings";
 import { AgentApiSettings } from "./settings/AgentApiSettings";
 import { DatabaseSettings } from "./settings/DatabaseSettings";
 import { primaryButtonClass } from "./settings/SharedFields";
-import { Settings } from "./settings/types";
+import type { Settings } from "./settings/types";
 
 type Props = {
   initial: Settings;
@@ -28,6 +28,8 @@ type Props = {
     apiBase: string;
   };
 };
+
+import { connectionState, type ConnectionType } from "../lib/settings-draft";
 
 type TabId = "connections" | "ai" | "limits" | "data" | "agents";
 
@@ -74,16 +76,23 @@ function SettingsFormBody({
   agentApiTokenConfigured,
   xDiagnostics,
 }: Props) {
-  const { form, saving, message, persistSettings, setMessage, isDirty } = useSettingsContext();
+  const { form, saving, message, persistSettings, setMessage, isDirty, connectionTests, validationError, messageError } = useSettingsContext();
   const [activeTab, setActiveTab] = useState<TabId>("connections");
 
-  const setup = useMemo(() => {
-    const xConnected = Boolean(xDiagnostics.hasAccessToken || form.xAccessToken);
-    const ytConnected = Boolean(form.ytAccessToken);
-    const chatModelSet = Boolean(form.llmModel?.trim());
-    const embeddingModelSet = Boolean(form.llmEmbeddingModel?.trim());
-    return { xConnected, ytConnected, chatModelSet, embeddingModelSet };
-  }, [xDiagnostics.hasAccessToken, form.xAccessToken, form.ytAccessToken, form.llmModel, form.llmEmbeddingModel]);
+  useEffect(() => {
+    const readTab = () => {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      if (TABS.some((candidate) => candidate.id === tab)) setActiveTab(tab as TabId);
+    };
+    readTab(); window.addEventListener("popstate", readTab);
+    return () => window.removeEventListener("popstate", readTab);
+  }, []);
+  const changeTab = (tab: TabId) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href); url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", url);
+  };
+  const states: { type: ConnectionType; label: string }[] = [{ type: "x", label: "X" }, { type: "yt", label: "YouTube" }, { type: "llm", label: "Chat" }, { type: "embedding", label: "Embeddings" }];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,21 +101,15 @@ function SettingsFormBody({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Setup status
         </span>
-        <StatusChip ok={setup.xConnected} label={setup.xConnected ? "X connected" : "X not connected"} />
-        <StatusChip ok={setup.ytConnected} label={setup.ytConnected ? "YouTube connected" : "YouTube not connected"} />
-        <StatusChip
-          ok={setup.chatModelSet}
-          label={setup.chatModelSet ? "Chat model configured" : "Chat model missing"}
-        />
-        <StatusChip
-          ok={setup.embeddingModelSet}
-          label={setup.embeddingModelSet ? "Embeddings configured, not tested" : "Embedding model missing"}
-        />
+        {states.map(({ type, label }) => {
+          const state = connectionState(type, form, connectionTests[type]);
+          return <StatusChip key={type} ok={state === "tested"} label={`${label}: ${state === "configured" ? "configured, not tested" : state}`} />;
+        })}
       </div>
 
       <div
@@ -123,7 +126,8 @@ function SettingsFormBody({
               role="tab"
               aria-selected={selected}
               id={`settings-tab-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
+              aria-controls="settings-panel"
+              onClick={() => changeTab(tab.id)}
               className={`rounded-md px-3 py-2 text-left transition ${
                 selected
                   ? "bg-emerald-700 text-white shadow-sm"
@@ -140,6 +144,7 @@ function SettingsFormBody({
       </div>
 
       <div
+        id="settings-panel"
         role="tabpanel"
         aria-labelledby={`settings-tab-${activeTab}`}
         className="flex flex-col gap-6"
@@ -177,8 +182,9 @@ function SettingsFormBody({
             Unsaved changes
           </span>
         ) : null}
+        {validationError && <p role="alert" className="text-sm text-error">{validationError}</p>}
         {message ? (
-          <p
+          <p role={messageError ? "alert" : "status"} aria-live="polite"
             className={
               /connected/i.test(message)
                 ? "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800"

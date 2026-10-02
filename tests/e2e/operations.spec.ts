@@ -109,37 +109,6 @@ test.describe("Operations & Logs", () => {
     expect(count).toBe(0);
   });
 
-  test("Multi-batch enrichment reuses one run ID", async ({ page }) => {
-    const requests: URL[] = [];
-    const testRunId = "consolidated-run-id";
-
-    await page.route("**/api/enrich?**", async (route) => {
-      requests.push(new URL(route.request().url()));
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          runId: testRunId,
-          processed: 1,
-          updated: 1,
-          remaining: requests.length === 1 ? 1 : 0,
-          errors: [],
-        }),
-      });
-    });
-
-    await page.goto("/");
-    await page.getByRole("button", { name: "Advanced actions" }).click();
-    await page.getByRole("button", { name: /Enrich all X/ }).click();
-    await expect(page.getByText("Processing finished.")).toBeVisible();
-
-    expect(requests).toHaveLength(2);
-    expect(requests[0].searchParams.get("runId")).toBeNull();
-    expect(requests[1].searchParams.get("runId")).toBe(testRunId);
-    expect(requests.every((url) => url.searchParams.get("source") === "x")).toBe(true);
-  });
-
   test("Stopping active runs persists the stopped status", async ({ page }) => {
     await page.goto("/processing");
     await page.getByRole("button", { name: "Stop all operations" }).click();

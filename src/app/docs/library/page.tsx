@@ -15,7 +15,7 @@ const fields: Term[] = [
   {
     name: "Summary",
     meaning:
-      "AI-written digest of the post or video (usually 3–6 sentences). For YouTube, the row title often comes from the video title; the summary is still the enrichment body.",
+      "Saved digest of the post or captured source (usually 3–6 sentences). Its provenance distinguishes generated summaries from human corrections. For YouTube, the row title often comes from the video title; the summary is still the enrichment body.",
     use: "Primary text for scanning the list, keyword search, and semantic search embeddings. Empty summary = still pending enrichment.",
   },
   {
@@ -48,8 +48,8 @@ const fields: Term[] = [
   },
   {
     name: "Posted / Import dates",
-    meaning: "Posted = original create time on the platform. Import = when Xbook stored the item.",
-    use: "Rough recency cues while browsing; not primary filters today.",
+    meaning: "Posted is the original X post or YouTube upload time. Import is when Xbook stored the local entry. Playlist-added time is distinct; an unknown upload time remains unknown.",
+    use: "Sort by Posted or Import in the table. Unknown authors and dates remain unknown rather than using the importing account or playlist time.",
   },
   {
     name: "Read state",
@@ -59,27 +59,27 @@ const fields: Term[] = [
   {
     name: "Embedding",
     meaning:
-      "Vector representation of the enriched text used for semantic search. Built after a non-empty summary exists.",
-    use: "Required for Semantic Search. Missing embeddings show up on the Dashboard as unindexed; run embedding sync or Process inbox.",
+      "Search vector for the saved digest, with model, endpoint, dimensions, content hash, and build time. Unknown legacy or incompatible vectors are excluded from retrieval.",
+    use: "Run Index or embedding sync after changing digest text or embedding model/endpoint. Stale vectors need rebuilding. Coverage counts only usable vectors across all items in the selected source.",
   },
 ];
 
 const filters: Term[] = [
   {
     name: "Text search",
-    meaning: "Substring match across text, summary, category, author, and tags.",
-    use: "Default mode next to the search box. Quick find by phrase, handle, or tag.",
+    meaning: "Default substring matching across saved text, summary, category, author, and tags. Exact words match whole tokens; exact phrases match adjacent tokens in order within one field. Matching ignores case and separates punctuation.",
+    use: "Choose Substring, Exact words, or Exact phrase. Exact words for nomic does not match economic. Multiple exact words may occur in different fields.",
   },
   {
     name: "Semantic search",
     meaning: "Embedding similarity—matches by idea, not exact wording. Switch on the search row.",
-    use: "Pick Semantic in the mode control beside the box, then search. Needs embeddings (Settings → AI).",
+    use: "Structured source, category, status, video, and folder filters apply before ranking. Semantic retrieval returns at most 50 compatible vectors. If embeddings are unavailable, scoped keyword results remain with an actionable Settings banner and keyword sorting.",
   },
   {
     name: "Ask AI",
     meaning:
-      "Chat-style find: retrieve relevant bookmarks by meaning, then your configured LLM answers in plain language with citations.",
-    use: "Pick Ask AI, type a question (e.g. “what did I save about local LLMs?”), press Ask. Scoped to the current X or YouTube library.",
+      "Retrieve saved evidence using semantic and keyword matches, then ask your configured chat model for an answer with grounded citations. Missing evidence produces an insufficient-evidence response.",
+    use: "Pick Ask AI, type a question (e.g. “what did I save about local LLMs?”), press Ask. Scoped to the current X or YouTube source. Ask does not apply the other list filters.",
   },
   {
     name: "Category / status / videos / folder",
@@ -102,12 +102,12 @@ const statuses: { label: string; definition: string }[] = [
   {
     label: "Failed",
     definition:
-      "Shown in the Status column when the item is still pending and enrichmentError (or a recent failed processing event) is set. Filter by Pending to surface them, then reprocess or fix the LLM connection.",
+      "An unresolved enrichment failure. The Failed filter and Processing details expose its cause. Repair the provider or source problem before retrying.",
   },
   {
     label: "Edited",
     definition:
-      "You manually changed summary/category/tags. Replaces the normal status label in the column so hand-curated items stand out.",
+      "You manually corrected summary, category, or tags. The edit marker is independent of read and processing state. Replacing a human correction requires an explicit choice.",
   },
 ];
 
@@ -171,11 +171,11 @@ export default function DocsLibraryPage() {
             {[
               {
                 t: "Import",
-                d: "Sync or Process inbox copies items into the local SQLite DB.",
+                d: "Import or Process inbox copies source entries into the local SQLite database.",
               },
               {
                 t: "Enrich",
-                d: "LLM fills summary, category, tags (and may set enrichment errors on failure).",
+                d: "The chat model fills summary, category, and tags from available evidence; missing evidence remains blocked.",
               },
               {
                 t: "Index",
@@ -207,8 +207,7 @@ export default function DocsLibraryPage() {
         <section className="space-y-4">
           <h2 className="text-2xl font-bold text-on-surface">Status meanings</h2>
           <p className="text-sm leading-7 text-on-surface-variant max-w-2xl">
-            Status is defined the same way in the Library filters, Dashboard tiles, and Enrich
-            queue: <em>pending means empty summary</em>. That keeps “work remaining” accurate even
+            Pending and summarized use the same summary predicate in the Library, Dashboard, and enrichment queue. Read state, human edits, failures, blocked evidence, and index state are independent. That keeps “work remaining” accurate even
             when a stub category was written without a real digest.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -259,8 +258,7 @@ export default function DocsLibraryPage() {
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-on-surface">Filters</h2>
             <p className="text-sm leading-7 text-on-surface-variant max-w-2xl">
-              Filters combine with AND. Submit the form (Search) after changing dropdowns; the source
-              toggle updates the URL immediately.
+              Filters combine with AND. Submit the form (Search) after changing dropdowns; the X Library and YouTube Library sidebar links choose the source.
             </p>
           </div>
           <div className="grid gap-4">
@@ -360,6 +358,13 @@ export default function DocsLibraryPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-outline-variant/30 bg-white p-6 space-y-3">
+          <h2 className="text-xl font-bold">Captured source and citations</h2>
+          <p className="text-sm leading-6 text-on-surface-variant">The inspector shows source method, capture date, language, completeness, reason, and retained source sections. X posts and linked articles are captured separately from generated summaries. YouTube transcripts retain timed sections; when only a useful description exists, the digest identifies that limitation. Sparse or unavailable evidence remains blocked.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">A partial capture does not mean the whole article or video was read. Failed refreshes can retain an earlier capture with its original date and a reason. Ask citations include supported excerpts and video timestamps when available. Open the source to assess the surrounding context.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">Unread is a personal flag. Blocked means a pending item exhausted the automatic retry budget. Its cause can be unavailable source evidence or repeated provider failures. Stale index includes outdated, legacy, malformed, or incompatible vectors. Unindexed means vector work remains. Editing a digest invalidates its old search vector without deleting captured source.</p>
+        </section>
+
         {/* Related */}
         <section className="rounded-2xl border border-outline-variant/30 bg-white p-6 shadow-sm space-y-4">
           <h2 className="text-xl font-bold text-on-surface">Related</h2>
@@ -374,7 +379,7 @@ export default function DocsLibraryPage() {
               <Link href="/folders" className="font-semibold text-primary hover:underline">
                 Folders
               </Link>{" "}
-              — sync X folders / YouTube playlists that feed the Library.
+              — import source entries and open exact local folder scopes.
             </li>
             <li>
               <Link href="/processing" className="font-semibold text-primary hover:underline">

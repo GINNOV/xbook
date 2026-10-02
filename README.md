@@ -19,7 +19,7 @@ My need is the same as many others that scan the web for knowledge but want a lo
 
 * **Unified Inbox:** Pulls X posts and YouTube playlists dynamically into a single inbox.
 * **Local AI Enrichment:** Processes bookmarks using local LLMs (via Ollama, LM Studio, etc.) or remote APIs to extract concise summaries, categorize content, and apply relevant tags.
-* **Semantic Vector Search:** Finds exactly what you are looking for based on concepts and ideas, rather than needing exact keyword matches.
+* **Semantic Vector Search:** Ranks compatible vectors within the selected source and filters. Keyword substring, whole-word, and phrase modes remain available when embeddings are unavailable.
 * **Privacy & Local Ownership:** Bookmarks, credentials, and the SQLite database stay on this machine. XBook does not run its own tracking service. If Settings points chat or embeddings at a remote or LAN endpoint, the text sent for enrichment, semantic search, or Ask is transmitted to that endpoint. Downloads omit stored credentials unless you explicitly include them. Local backups and technical logs can still contain secrets.
 
 ---
@@ -40,3 +40,15 @@ Designed for compiling, extending, testing, or building custom configurations.
 * **Next.js & Rust Pipeline:** Access the raw Next.js web application, inspect database Prisma schemas, run the Vitest and Playwright test suites, or compile Tauri desktop packages yourself.
 * **Environment Configuration:** Override configuration settings directly via terminal env variables or development consoles.
 * **Full Developer Setup:** See the [Developer Guide](developer.md) to get started with terminal setup.
+
+## Daily controls
+
+Choose X or YouTube on the Dashboard. **Process inbox** submits one server-owned import, summarize, and index run that continues after navigation. **Processing** shows cumulative results and saved recovery actions. Stop and Resume act on the same run. Monthly caps count new local entries; provider request quota is separate.
+
+**Folders** separates Sync names, Import, Summarize, and Index. Folder names and local counts open that exact library scope. Playlist entry counts differ from unique videos because a video can appear in several playlists. Imports preserve IDs, membership, read dates, and manual summaries.
+
+**Settings** distinguishes configured, tested, expired, disconnected, and unavailable states. Chat and embedding tests use the displayed draft separately. Tabs preserve edits; failed saves keep the draft and show a retryable error. Save before starting an operation.
+
+**Library** exposes captured source separately from generated digests, including completeness, provenance, and video timestamps when available. Ask uses saved evidence and returns citations or insufficient evidence. Summaries default to English unless a custom prompt overrides that instruction; Target language controls on-demand translation.
+
+Technical logs retain prompt and response previews even when full payload logging is off. Downloads omit stored credentials by default, but private source text and technical logs can remain. Full local backups include credentials. See the seven guides linked from **Docs** for setup, connections, models, inbox processing, library reference, Settings, and Agent API.

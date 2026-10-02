@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getBookmarks, getFilterOptions } from "@/lib/bookmarks";
+import { bookmarkQuerySchema, bookmarkQueryInputFromParams } from "@/lib/bookmark-query";
 import { prisma } from "@/lib/db";
 import { embeddingInvalidation } from "@/lib/embedding-index";
 
@@ -191,7 +192,7 @@ async function handleGet(request: Request) {
         ? "Send Authorization: Bearer <AGENT_API_TOKEN> or x-agent-token."
         : "Allowed from localhost. Set AGENT_API_TOKEN to require a token.",
       reads: [
-        "GET ?resource=bookmarks&q=&source=&status=&category=&folderId=&page=&pageSize=&semantic=true",
+        "GET ?resource=bookmarks&q=&source=&status=&category=&folderId=&page=&pageSize=&semantic=true&textMode=substring|phrase|word&sort=&dir=&video=true",
         "GET ?resource=bookmark&id=<bookmarkId>",
         "GET ?resource=folders",
         "GET ?resource=runs&source=&status=&type=&take=",
@@ -206,19 +207,11 @@ async function handleGet(request: Request) {
   }
 
   if (resource === "bookmarks") {
-    const data = await getBookmarks({
-      query: url.searchParams.get("q") ?? "",
-      category: url.searchParams.get("category") ?? "",
-      folderId: url.searchParams.get("folderId") ?? "",
-      source: url.searchParams.get("source") ?? "",
-      status: url.searchParams.get("status") ?? "",
-      video: url.searchParams.get("video") === "true",
-      semantic: url.searchParams.get("semantic") === "true",
-      sort: url.searchParams.get("sort"),
-      dir: url.searchParams.get("dir"),
-      page: url.searchParams.get("page"),
-      pageSize: url.searchParams.get("pageSize"),
-    });
+    const parsed = bookmarkQuerySchema.safeParse(bookmarkQueryInputFromParams(Object.fromEntries(url.searchParams)));
+    if (!parsed.success) {
+      return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+    }
+    const data = await getBookmarks(parsed.data);
     return NextResponse.json({ ok: true, ...data });
   }
 
@@ -231,8 +224,9 @@ async function handleGet(request: Request) {
   }
 
   if (resource === "folders") {
-    const source = url.searchParams.get("source") ?? undefined;
-    const filters = await getFilterOptions(source);
+    const parsed = bookmarkQuerySchema.safeParse({ source: url.searchParams.get("source") });
+    if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+    const filters = await getFilterOptions(parsed.data.source);
     return NextResponse.json({ ok: true, folders: filters.folders });
   }
 

@@ -1,0 +1,12 @@
+
+> xbook@0.4.3 lint
+> eslint
+
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/app/api/settings/route.ts
+  88:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/unit/oauth-backend-real-db.test.ts
+  107:30  warning  '_omitted' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)

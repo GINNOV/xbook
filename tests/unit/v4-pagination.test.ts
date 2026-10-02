@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { getBookmarks } from "@/lib/bookmarks";
 import { getBookmarksPageData } from "@/app/lib/bookmarks-fetcher";
@@ -27,9 +28,14 @@ vi.mock("@/lib/db", async () => {
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: path }) }) };
 });
 
-vi.mock("@/lib/llm", () => ({
-  generateEmbedding: vi.fn(),
-}));
+vi.mock("@/lib/llm", () => {
+  const generateEmbedding = vi.fn();
+  return {
+    generateEmbedding,
+    generateEmbeddingResult: async (text: string) => ({ vector: await generateEmbedding(text), identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 } }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+  };
+});
 
 const vector = (values: number[]) => Buffer.from(new Float32Array(values).buffer);
 
@@ -42,7 +48,7 @@ beforeEach(async () => {
   await prisma.bookmark.createMany({ data: Array.from({ length: 3 }, (_, i) => ({
     id: `row-${i}`, source: "x", tweetUrl: `https://x.com/${i}`, summary: "query",
     importedAt: new Date(`2026-01-0${i + 1}`), embedding: vector([1, i]),
-  })) });
+  })).map(indexedFixture) });
 });
 
 afterAll(async () => {

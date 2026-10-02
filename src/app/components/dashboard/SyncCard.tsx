@@ -27,7 +27,7 @@ export function SyncCard({ tab, enrichSize, pend, total, last, settings, readine
         />
       </div>
       <p className="mt-2 text-xs text-on-surface-variant italic">
-        Last sync: {last ? new Date(last).toLocaleString() : "Not yet"}
+        Last {tab === "yt" ? "YouTube" : "X"} import activity: {last ? new Date(last).toLocaleString() : "Not recorded"}
       </p>
     </div>
   );

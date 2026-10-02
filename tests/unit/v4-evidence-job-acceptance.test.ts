@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { captureTranscriptJson } from "@/lib/youtubeTranscript";
 import { withSourceEvidence, selectQuestionEvidence, readSourceEvidence, formatEvidenceSection } from "@/lib/source-evidence";
@@ -24,7 +25,16 @@ vi.mock("@/lib/db", async () => {
   connection.close();
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: path }) }) };
 });
-vi.mock("@/lib/llm", () => ({ generateEmbedding: vi.fn().mockResolvedValue([1, 0]), answerLibraryQuestion: vi.fn().mockImplementation(async ({ candidates }) => ({ answer: "Tail answer", citations: [{ id: candidates[0].id, reason: "Source passage" }] })) }));
+vi.mock("@/lib/llm", () => {
+  const generateEmbedding = vi.fn().mockResolvedValue([1, 0]);
+  return ({
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+ generateEmbedding, answerLibraryQuestion: vi.fn().mockImplementation(async ({ candidates }) => ({ answer: "Tail answer", citations: [{ id: candidates[0].id, reason: "Source passage" }] })) });
+});
 import { answerLibraryQuestion } from "@/lib/llm";
 beforeEach(async () => {
   vi.clearAllMocks();
@@ -44,7 +54,7 @@ describe("V6 independent evidence acceptance", () => {
     const selected = selectQuestionEvidence(rawJson, "What password does project xenolith use?", 800);
     expect(selected[0].text).toContain("lavender-seven");
     expect(selected.map(formatEvidenceSection).join("\n").length).toBeLessThanOrEqual(800);
-    await prisma.bookmark.createMany({data:Array.from({length:12}, (_,i)=>({id:`video-${i}`,source:"yt",tweetUrl:`https://youtube.com/watch?v=fixture${i}`,summary:"Generic",rawJson,embedding:Buffer.from(new Float32Array([1,0]).buffer)}))});
+    await prisma.bookmark.createMany({data:Array.from({length:12}, (_,i)=>({id:`video-${i}`,source:"yt",tweetUrl:`https://youtube.com/watch?v=fixture${i}`,summary:"Generic",rawJson,embedding:Buffer.from(new Float32Array([1,0]).buffer)})).map(indexedFixture)});
     const response = await ask(new Request("http://localhost/api/bookmarks/ask", {method:"POST",body:JSON.stringify({source:"yt",question:"What password does project xenolith use?"})}));
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -54,6 +64,17 @@ describe("V6 independent evidence acceptance", () => {
     expect(candidates.flatMap(c=>c.sourceEvidence??[]).map(formatEvidenceSection).join("\n").length).toBeLessThanOrEqual(9612);
     expect(body.citations[0].excerpt).toContain("lavender-seven");
     expect(body.citations[0].timestampSeconds).toBe(selected[0].startSeconds);
+  });
+  it("timestamps a citation using its quoted later passage rather than the first selected passage", async () => {
+    const rawJson = withSourceEvidence(null, { status: "complete", reason: null, capturedAt: new Date().toISOString(), totalCharacters: 100, storedCharacters: 100,
+      sections: [{ text: "Reactor calibration begins with careful controls.", startSeconds: 10, endSeconds: 20 },
+        { text: "The final calibration measurement is 73 kelvin.", startSeconds: 120, endSeconds: 124 }] });
+    await prisma.bookmark.create({ data: indexedFixture({ id: "later-passage", source: "yt", tweetUrl: "https://youtube.com/watch?v=fixture", summary: "Calibration", rawJson }) });
+    vi.mocked(answerLibraryQuestion).mockResolvedValueOnce({ answer: "73 kelvin", citations: [{ id: "later-passage", reason: "Final measurement", quote: "final calibration measurement is 73 kelvin" }] });
+    const response = await ask(new Request("http://localhost/api/bookmarks/ask", { method: "POST", body: JSON.stringify({ source: "yt", question: "What is the reactor calibration?" }) }));
+    const candidates = vi.mocked(answerLibraryQuestion).mock.calls[0][0].candidates;
+    expect(candidates[0].sourceEvidence?.[0].startSeconds).toBe(10);
+    expect(await response.json()).toMatchObject({ citations: [{ id: "later-passage", timestampSeconds: 120, excerpt: "final calibration measurement is 73 kelvin" }] });
   });
   it("reports absent and malformed evidence without treating it as a complete capture", () => {
     expect(readSourceEvidence('{"xbookSourceEvidence":{"version":999}}')).toBeNull();

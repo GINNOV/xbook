@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { textMatches } from "@/lib/bookmark-text";
 import { decodeEmbedding } from "@/lib/embedding-vectors";
 import { classifyRunStatus } from "@/lib/run-status";
+import { resolveRunStatus } from "@/lib/run-outcome";
 import { formatRunOutcome } from "@/app/lib/formatters";
 import { metadataFromPlaylistItem, allowsConfidentDigest } from "@/lib/youtube-metadata";
 import { boundSourceText, isExternalContentUrl } from "@/lib/article-extract";
@@ -26,9 +27,10 @@ describe("repair behavior", () => {
   });
 
   it("does not call a total failure completed", () => {
+    expect(resolveRunStatus({ status: "completed", updated: 0, failed: 100 })).toBe("failed");
     expect(classifyRunStatus({ updated: 0, failed: 100, remaining: 0 })).toBe("failed");
     expect(classifyRunStatus({ updated: 2, failed: 1, remaining: 4 })).toBe("paused");
-    expect(formatRunOutcome({ status: "completed", updated: 0, failed: 100, processed: 100, total: 100 })).toBe("Failed · 100 failed");
+    expect(formatRunOutcome({ status: "completed", updated: 0, failed: 100, processed: 100, total: 100 })).toBe("100 failed");
     expect(formatRunOutcome({ status: "completed", updated: 18, failed: 2, processed: 20, total: 50, notes: "Completed." })).toBe("18 updated · 2 failed");
   });
 

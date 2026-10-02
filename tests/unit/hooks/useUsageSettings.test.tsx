@@ -13,14 +13,15 @@ describe("useUsageSettings", () => {
     vi.mocked(useSettingsContext).mockReturnValue({
       setMessage: mockSetMessage,
     } as any);
-    global.fetch = vi.fn();
+    localStorage.clear();
+    global.fetch = vi.fn(async (url: RequestInfo | URL) => String(url).includes("?take=") ? new Response(JSON.stringify({ runs: [] })) : new Response(JSON.stringify({ ok: true })));
   });
 
   it("should mark latest bookmark as baseline", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    vi.mocked(fetch).mockImplementation(async (url) => String(url).includes("?take=") ? new Response(JSON.stringify({ runs: [] })) : ({
       ok: true,
       json: async () => ({ ok: true }),
-    } as any);
+    } as any));
 
     const { result } = renderHook(() => useUsageSettings());
 
@@ -33,10 +34,10 @@ describe("useUsageSettings", () => {
   });
 
   it("should reset sync baseline", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    vi.mocked(fetch).mockImplementation(async (url) => String(url).includes("?take=") ? new Response(JSON.stringify({ runs: [] })) : ({
       ok: true,
       json: async () => ({ ok: true }),
-    } as any);
+    } as any));
 
     const { result } = renderHook(() => useUsageSettings());
 
@@ -48,19 +49,11 @@ describe("useUsageSettings", () => {
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining("reset"));
   });
 
-  it("should sync missing embeddings", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ ok: true, updated: 5, failed: 0 }),
-    } as any);
-
+  it("observes a complete embedding run and submits its full scope once", async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => new Response(JSON.stringify(String(url).includes("?take=") ? { runs: [] } : { run: { id: "settings-embedding", source: null, type: "embedding_sync", status: "completed", total: 5, processed: 5, updated: 5, failed: 0, skipped: 0 } })));
     const { result } = renderHook(() => useUsageSettings());
-
-    await act(async () => {
-      await result.current.syncEmbeddings();
-    });
-
-    expect(fetch).toHaveBeenCalledWith("/api/bookmarks/embeddings/sync", { method: "POST" });
-    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining("Processed: 5"));
+    await act(async () => { await result.current.syncEmbeddings(); });
+    expect(fetch).toHaveBeenCalledWith("/api/bookmarks/embeddings/sync?full=true", expect.objectContaining({ method: "POST", headers: { "Idempotency-Key": expect.any(String) } }));
+    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining("5/5 updated"));
   });
 });

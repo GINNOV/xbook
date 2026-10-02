@@ -1,3 +1,4 @@
+import { resolveRunStatus } from "@/lib/run-outcome";
 import Link from "next/link";
 import type { OperationRun } from "@prisma/client";
 import { XLogo, YouTubeLogo } from "../Icons";
@@ -128,9 +129,9 @@ export function RecentActivity({ operationRuns }: Props) {
 
               <div className="flex md:justify-end">
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusClass(run.status)} bg-opacity-10 border border-current`}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusClass(resolveRunStatus(run))} bg-opacity-10 border border-current`}
                 >
-                  {run.status}
+                  {resolveRunStatus(run)}
                 </span>
               </div>
             </Link>

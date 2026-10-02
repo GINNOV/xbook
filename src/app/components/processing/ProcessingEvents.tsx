@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useOperationObserver } from "../../hooks/useOperationObserver";
+import OperationStatus from "../OperationStatus";
 import { statusClass, formatDate } from "@/app/lib/formatters";
 import CopyToClipboard from "../CopyToClipboard";
 import { Linkify } from "../Linkify";
@@ -13,20 +15,16 @@ type Props = {
 export function ProcessingEvents({ events, requests, search = "" }: Props) {
   const [filter, setFilter] = useState<"all" | "failed" | "skipped">("all");
   const router = useRouter();
+  const operation = useOperationObserver({ kind: "enrich", discover: false });
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
 
   const handleReprocess = async (bookmarkId: string) => {
     setReprocessingId(bookmarkId);
     try {
-      const res = await fetch(`/api/enrich/one?bookmarkId=${bookmarkId}`, { method: "POST" });
-      if (!res.ok) {
-        const json = await res.json();
-        alert(json.error || "Reprocess failed");
-      } else {
-        router.refresh();
-      }
-    } catch (err: any) {
-      alert(err.message || "Reprocess failed");
+      await operation.submit(`/api/enrich/one?bookmarkId=${encodeURIComponent(bookmarkId)}`);
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Reprocess failed");
     } finally {
       setReprocessingId(null);
     }
@@ -88,6 +86,7 @@ export function ProcessingEvents({ events, requests, search = "" }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      <OperationStatus operation={operation} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold tracking-tight">Processing Timeline</h3>
@@ -130,7 +129,7 @@ export function ProcessingEvents({ events, requests, search = "" }: Props) {
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => handleReprocess(group.bookmark.id)}
-                            disabled={reprocessingId === group.bookmark.id}
+                            disabled={!!reprocessingId || operation.active || operation.submitting}
                             className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest whitespace-nowrap disabled:opacity-50 cursor-pointer"
                           >
                             {reprocessingId === group.bookmark.id ? "Reprocessing..." : "Reprocess ↻"}

@@ -4,12 +4,13 @@ import { rmSync, readFileSync, readdirSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import Database from "better-sqlite3";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { POST as edit } from "@/app/api/enrich/edit/route";
 import { POST as agent } from "@/app/api/agent/route";
-import { POST as one } from "@/app/api/enrich/one/route";
-import { POST as bulk } from "@/app/api/enrich/route";
-import { POST as sync } from "@/app/api/bookmarks/embeddings/sync/route";
+import { POST as submit_one } from "@/app/api/enrich/one/route";
+import { POST as submit_bulk } from "@/app/api/enrich/route";
+import { POST as submit_sync } from "@/app/api/bookmarks/embeddings/sync/route";
 import { summarizeBookmark, generateEmbedding } from "@/lib/llm";
 import { contentSnapshot, embeddingContentHash, saveEmbeddingIfUnchanged } from "@/lib/embedding-index";
 
@@ -31,7 +32,19 @@ vi.mock("@/lib/db", async () => {
   db.close();
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: databasePath }) }) };
 });
-vi.mock("@/lib/llm", () => ({ summarizeBookmark: vi.fn(), generateEmbedding: vi.fn(), validateModelAvailability: vi.fn() }));
+vi.mock("@/lib/llm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/llm")>();
+  const generateEmbedding = vi.fn();
+  return ({
+    ...actual,
+    validateLlmConnection: vi.fn().mockResolvedValue(true),
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+ summarizeBookmark: vi.fn(), generateEmbedding, validateModelAvailability: vi.fn() });
+});
 
 const embedding = Buffer.from(new Float32Array([1, 0]).buffer);
 const initial = { summary: "Original", category: "Science", tags: "old" };
@@ -39,8 +52,8 @@ const request = (path: string, body?: unknown) => new Request(`http://localhost$
   method: "POST", headers: { host: "localhost" }, body: body === undefined ? undefined : JSON.stringify(body),
 });
 async function seed() {
-  return prisma.bookmark.create({ data: { id: "a", tweetUrl: "https://x.com/a", ...initial,
-    embedding, embeddingContentHash: embeddingContentHash(initial), embeddingIndexedAt: new Date(), readAt: new Date("2025-01-01") } });
+  return prisma.bookmark.create({ data: indexedFixture({ id: "a", tweetUrl: "https://x.com/a", text: "Original source discussing controlled scientific measurements.", ...initial,
+    embedding, embeddingContentHash: embeddingContentHash(initial), embeddingIndexedAt: new Date(), readAt: new Date("2025-01-01") }) });
 }
 async function humanEdit() {
   return edit(request("/api/enrich/edit", { bookmarkId: "a", summary: "Human", category: "Science", tags: "new" }));
@@ -62,7 +75,7 @@ beforeEach(async () => {
   await prisma.operationRun.deleteMany();
   await prisma.bookmark.deleteMany();
   await prisma.settings.deleteMany();
-  await prisma.settings.create({ data: { id: "default" } });
+  await prisma.settings.create({ data: { id: "default", llmModel: "fixture-model" } });
 });
 afterAll(async () => { await prisma.$disconnect(); rmSync(fixture.directory, { recursive: true, force: true }); });
 
@@ -105,7 +118,7 @@ describe("index freshness with real SQLite", () => {
   it("agent non-index writes and unchanged upserts retain vector metadata", async () => {
     await seed();
     expect((await agent(request("/api/agent", { action: "updateBookmark", bookmarkId: "a", data: { text: "Metadata" } }))).status).toBe(200);
-    expect((await agent(request("/api/agent", { action: "upsertBookmark", bookmark: { id: "a", tweetUrl: "https://x.com/a", ...initial } }))).status).toBe(200);
+    expect((await agent(request("/api/agent", { action: "upsertBookmark", bookmark: { id: "a", tweetUrl: "https://x.com/a", text: "Original source discussing controlled scientific measurements.", ...initial } }))).status).toBe(200);
     const row = await prisma.bookmark.findUniqueOrThrow({ where: { id: "a" } });
     expect(row.embedding).not.toBeNull(); expect(row.embeddingContentHash).toBe(embeddingContentHash(initial));
   });
@@ -119,6 +132,27 @@ describe("index freshness with real SQLite", () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({ skipped: true, ok: false });
     await expectHumanPreserved();
+    expect(await prisma.operationRun.findFirst()).toMatchObject({ updated: 0, skipped: 1 });
+  });
+
+  it.each([
+    { label: "source text", change: { text: "Refreshed authoritative source" } },
+    { label: "provider metadata", change: { rawJson: JSON.stringify({ provider: "new import" }) } },
+    { label: "captured evidence", change: { captureJson: JSON.stringify({ captured: "New source evidence" }) } },
+  ])("rejects obsolete enrichment when $label changes during the LLM call", async ({ change }) => {
+    await seed();
+    vi.mocked(summarizeBookmark).mockImplementation(async () => {
+      await prisma.bookmark.update({ where: { id: "a" }, data: change });
+      return { summary: "Obsolete source digest", category: "Other", tags: ["obsolete"], embedding: [0, 1] };
+    });
+    const response = await one(request("/api/enrich/one?bookmarkId=a"));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ ok: false, skipped: true });
+    const row = await prisma.bookmark.findUniqueOrThrow({ where: { id: "a" } });
+    expect(row.summary).toBe("Original");
+    expect(row).toMatchObject(change);
+    expect(row.readAt).toEqual(new Date("2025-01-01"));
+    expect(row.summarySource).toBeNull();
     expect(await prisma.operationRun.findFirst()).toMatchObject({ updated: 0, skipped: 1 });
   });
 
@@ -162,3 +196,29 @@ describe("index freshness with real SQLite", () => {
     expect(saved.embedding).toBeNull(); expect(saved.embeddingContentHash).toBeNull(); expect(saved.embeddingIndexedAt).toBeNull();
   });
 });
+
+import { processOperationQueue } from "@/lib/operation-worker";
+async function one(request: Request) {
+  const response = await submit_one(request);
+  if (response.status !== 202) return response;
+  const body = await response.json();
+  await processOperationQueue();
+  const url = new URL(request.url); url.searchParams.set("runId", body.runId);
+  return submit_one(new Request(url, { method: "POST" }));
+}
+async function bulk(request: Request) {
+  const response = await submit_bulk(request);
+  if (response.status !== 202) return response;
+  const body = await response.json();
+  await processOperationQueue();
+  const url = new URL(request.url); url.searchParams.set("runId", body.runId);
+  return submit_bulk(new Request(url, { method: "POST" }));
+}
+async function sync(request: Request) {
+  const response = await submit_sync(request);
+  if (response.status !== 202) return response;
+  const body = await response.json();
+  await processOperationQueue();
+  const url = new URL(request.url); url.searchParams.set("runId", body.runId);
+  return submit_sync(new Request(url, { method: "POST" }));
+}

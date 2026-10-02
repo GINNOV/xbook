@@ -117,3 +117,20 @@ describe("formatRunOutcome", () => {
     ).toBe("5 processed");
   });
 });
+
+
+describe("corrected legacy outcome labels", () => {
+  it("uses counters to expose old total failures and partial results", async () => {
+    const { resolveRunStatus } = await import("@/app/lib/formatters");
+    expect(resolveRunStatus({ status: "completed", processed: 100, updated: 0, failed: 100 })).toBe("failed");
+    expect(resolveRunStatus({ status: "completed", updated: 1, failed: 1 })).toBe("partial");
+    expect(resolveRunStatus({ status: "failed", processed: 0, notes: "Model missing" })).toBe("failed");
+    expect(resolveRunStatus({ status: "stopped", updated: 1, failed: 1 })).toBe("stopped");
+  });
+  it("exposes work remaining without inferring it from old scope totals", async () => {
+    const { resolveRunStatus } = await import("@/app/lib/formatters");
+    expect(resolveRunStatus({ status: "completed", updated: 1, notes: "paused (more remaining)" })).toBe("paused");
+    expect(formatRunOutcome({ status: "paused", total: 10, processed: 1, updated: 1 })).toBe("1/10 processed · 1 updated");
+    expect(resolveRunStatus({ status: "completed", updated: 1 })).toBe("completed");
+  });
+});

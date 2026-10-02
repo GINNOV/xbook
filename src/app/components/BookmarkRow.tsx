@@ -23,13 +23,12 @@ export function BookmarkRow({ bookmark: b, isSelected, onSelect, onToggleRead, o
   const fmt = (d?: Date | string | null) => d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "-";
 
   return (
-    <div role="button" tabIndex={0} onClick={() => onSelect(b.id)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(b.id))}
-      className={`grid min-w-[1050px] w-full ${LIBRARY_ROW_GRID} px-4 py-3 text-left text-sm transition hover:bg-surface-container-low ${isSelected ? "shadow-[inset_4px_0_0_var(--primary)]" : ""} ${b.readAt ? "opacity-70" : ""}`}>
+    <div      className={`grid min-w-[1050px] w-full ${LIBRARY_ROW_GRID} px-4 py-3 text-left text-sm transition hover:bg-surface-container-low ${isSelected ? "shadow-[inset_4px_0_0_var(--primary)]" : ""} ${b.readAt ? "opacity-70" : ""}`}>
       <SourceIcon source={b.source} />
-      <span className="truncate font-medium">{title}</span>
+      <button type="button" data-bookmark-reader={b.id} aria-label={`Read bookmark: ${title}`} aria-expanded={isSelected} onClick={() => onSelect(b.id)} className="min-w-0 truncate text-left font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{title}</button>
       <span className="truncate text-on-surface-variant">{author}</span>
       <span className="truncate text-on-surface-variant">{getYouTubeFolder(b) || b.folderName || "No folder"}</span>
-      <StatusColumn status={status} edited={!!b.editedAt} error={b.error} sim={b.similarity} />
+      <StatusColumn captureJson={b.captureJson} availability={b.availability} status={status} edited={!!b.editedAt} read={!!b.readAt} error={b.error} failures={b.enrichmentFailures} sim={b.similarity} />
       <span className="text-xs text-on-surface-variant">{fmt(b.createdAt)}</span>
       <span className="text-xs text-on-surface-variant">{fmt(b.importedAt)}</span>
       <RowActions b={b} busy={isBusy} onToggleRead={onToggleRead} onEdit={onEdit} />

@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { getBookmarks, searchBookmarksSemantically } from "@/lib/bookmarks";
 import { POST as ask } from "@/app/api/bookmarks/ask/route";
-import { POST as sync } from "@/app/api/bookmarks/embeddings/sync/route";
+import { POST as submit_sync } from "@/app/api/bookmarks/embeddings/sync/route";
 import { generateEmbedding, answerLibraryQuestion } from "@/lib/llm";
 import { rmSync } from "node:fs";
 
@@ -27,10 +28,21 @@ vi.mock("@/lib/db", async () => {
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: path }) }) };
 });
 
-vi.mock("@/lib/llm", () => ({
-  generateEmbedding: vi.fn(),
+vi.mock("@/lib/llm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/llm")>();
+  const generateEmbedding = vi.fn();
+  return ({
+    ...actual,
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+
+  generateEmbedding,
   answerLibraryQuestion: vi.fn(),
-}));
+});
+});
 
 const vector = (values: number[]) => Buffer.from(new Float32Array(values).buffer);
 
@@ -47,7 +59,7 @@ async function seedSearch() {
       summary: "Other folder", category: "Other", embedding: vector([0.9, 0.4]) },
     { id: "yt-pending", source: "yt", tweetUrl: "https://youtube.com/watch?v=pending",
       summary: null, category: "Science", folderId: "research", embedding: vector([1, 0]) },
-  ] });
+  ].map(indexedFixture) });
 }
 
 beforeEach(async () => {
@@ -104,7 +116,7 @@ describe("calibration repairs with real SQLite and provider fixtures", () => {
     await prisma.bookmark.createMany({ data: ["a", "b"].map((id) => ({
       id, source: "x", tweetUrl: `https://x.com/i/status/${id}`, summary: "Needs vector", category: "Testing",
     })) });
-    vi.mocked(generateEmbedding).mockRejectedValue(new Error("Provider timed out"));
+    vi.mocked(generateEmbedding).mockRejectedValue(new Error("Provider failed"));
     const response = await sync(new Request("http://localhost/api/bookmarks/embeddings/sync?source=x", { method: "POST" }));
     const body = await response.json();
     expect(body.ok).toBe(false);
@@ -124,7 +136,7 @@ describe("calibration repairs with real SQLite and provider fixtures", () => {
     await prisma.bookmark.createMany({ data: ["a", "b"].map((id) => ({
       id, source: "x", tweetUrl: `https://x.com/i/status/${id}`, summary: "Needs vector", category: "Testing",
     })) });
-    vi.mocked(generateEmbedding).mockRejectedValueOnce(new Error("Provider timed out")).mockResolvedValueOnce([1, 0]);
+    vi.mocked(generateEmbedding).mockRejectedValueOnce(new Error("Provider failed")).mockResolvedValueOnce([1, 0]);
     const response = await sync(new Request("http://localhost/api/bookmarks/embeddings/sync?source=x", { method: "POST" }));
     const body = await response.json();
     expect(body.ok).toBe(true);
@@ -132,10 +144,20 @@ describe("calibration repairs with real SQLite and provider fixtures", () => {
     expect(body.failed).toBe(1);
     expect(body.remaining).toBe(1);
     const run = await prisma.operationRun.findUniqueOrThrow({ where: { id: body.runId } });
-    expect(run.status).toBe("completed");
+    expect(run.status).toBe("partial");
     expect(run.processed).toBe(2);
     expect(run.updated).toBe(1);
     expect(run.failed).toBe(1);
     expect(await prisma.bookmark.count({ where: { embedding: { not: null } } })).toBe(1);
   });
 });
+
+import { processOperationQueue } from "@/lib/operation-worker";
+async function sync(request: Request) {
+  const response = await submit_sync(request);
+  if (response.status !== 202) return response;
+  const body = await response.json();
+  await processOperationQueue();
+  const url = new URL(request.url); url.searchParams.set("runId", body.runId);
+  return submit_sync(new Request(url, { method: "POST" }));
+}

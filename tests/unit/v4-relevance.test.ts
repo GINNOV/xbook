@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { indexedFixture } from "../fixtures/embedding";
 import { prisma } from "@/lib/db";
 import { getBookmarks } from "@/lib/bookmarks";
 import { getBookmarksPageData } from "@/app/lib/bookmarks-fetcher";
@@ -34,9 +35,18 @@ vi.mock("@/lib/db", async () => {
   return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: path }) }) };
 });
 
-vi.mock("@/lib/llm", () => ({
-  generateEmbedding: vi.fn(),
-}));
+vi.mock("@/lib/llm", () => {
+  const generateEmbedding = vi.fn();
+  return ({
+    generateEmbeddingResult: async (text: string, signal?: AbortSignal) => ({
+      vector: await generateEmbedding(text, signal),
+      identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 },
+    }),
+    getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
+
+  generateEmbedding,
+});
+});
 
 const vector = (values: number[]) => Buffer.from(new Float32Array(values).buffer);
 
@@ -58,7 +68,7 @@ async function seed() {
     { id: "a-best", summary: "Zebra relevance", authorUsername: "zed", embedding: vector([1, 0]), importedAt: new Date("2026-01-01") },
     { id: "b-mid", summary: "Middle relevance", authorUsername: "mid", embedding: vector([0.8, 0.6]), importedAt: new Date("2026-02-01") },
     { id: "c-new", summary: "Alpha relevance", authorUsername: "abc", embedding: vector([0, 1]), importedAt: new Date("2026-03-01") },
-  ].map((row) => ({ ...row, source: "yt", tweetUrl: `https://youtube.com/watch?v=${row.id}` })) });
+  ].map((row) => indexedFixture({ ...row, source: "yt", tweetUrl: `https://youtube.com/watch?v=${row.id}` })) });
 }
 
 const request = { query: "relevance", semantic: true, source: "yt", page: 1, pageSize: 2 };
@@ -101,7 +111,7 @@ describe("semantic relevance defaults across library paths", () => {
     await prisma.bookmark.createMany({ data: [
       ...Array.from({ length: 55 }, (_, i) => ({ id: `x-${i}`, source: "x", embedding: vector([1, 0]) })),
       ...Array.from({ length: 52 }, (_, i) => ({ id: `yt-${String(51 - i).padStart(2, "0")}`, source: "yt", embedding: vector([0.8, 0.6]) })),
-    ].map((row) => ({ ...row, tweetUrl: `https://example.com/${row.id}`, summary: "relevance" })) });
+    ].map((row) => indexedFixture({ ...row, tweetUrl: `https://example.com/${row.id}`, summary: "relevance" })) });
     const first = await getBookmarks({ ...request, pageSize: 25 });
     const second = await getBookmarks({ ...request, pageSize: 25, page: 2 });
     expect(first.total).toBe(50);
@@ -111,7 +121,7 @@ describe("semantic relevance defaults across library paths", () => {
 
   it("omits implicit sort hidden fields in semantic search controls", () => {
     const html = renderToStaticMarkup(createElement(FilterControls, {
-      categories: [], folders: [], counts: { total: 0, pending: 0, summarized: 0, uncategorized: 0, noFolder: 0, videos: 0, unread: 0, failed: 0, blocked: 0, unindexed: 0, stale: 0 },
+      categories: [], folders: [], counts: { total: 0, pending: 0, summarized: 0, uncategorized: 0, noFolder: 0, videos: 0 },
       q: "", source: "", category: "", status: "", video: false, semantic: true, folderId: "", sort: "import", dir: "desc",
     }));
     expect(html).toContain('name="semantic"');
@@ -122,7 +132,7 @@ describe("semantic relevance defaults across library paths", () => {
   it("preserves intentionally selected sort in semantic GET fields", () => {
     fixture.search = "sort=import&dir=asc";
     const html = renderToStaticMarkup(createElement(FilterControls, {
-      categories: [], folders: [], counts: { total: 0, pending: 0, summarized: 0, uncategorized: 0, noFolder: 0, videos: 0, unread: 0, failed: 0, blocked: 0, unindexed: 0, stale: 0 },
+      categories: [], folders: [], counts: { total: 0, pending: 0, summarized: 0, uncategorized: 0, noFolder: 0, videos: 0 },
       q: "", source: "", category: "", status: "", video: false, semantic: true, folderId: "", sort: "import", dir: "asc",
     }));
     expect(html).toContain('name="sort" value="import"');

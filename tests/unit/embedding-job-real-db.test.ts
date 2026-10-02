@@ -86,7 +86,7 @@ describe("durable embedding jobs", () => {
 
   it("renews the durable lease while a slow provider is awaited", async () => {
     const runId = await submit();
-    expect(await runEmbeddingJob(prisma, { runId, leaseMs: 60, generate: async () => { await pause(160); return [1, 0]; } })).toMatchObject({ kind: "finished", updated: 2 });
+    expect(await runEmbeddingJob(prisma, { runId, leaseMs: 1000, generate: async () => { await pause(1200); return [1, 0]; } })).toMatchObject({ kind: "finished", updated: 2 });
   });
 
   it("honors persisted stop requests before publishing an awaited vector", async () => {
@@ -101,7 +101,7 @@ describe("durable embedding jobs", () => {
 
   it("recovers after SIGKILL and a fresh process without repeating committed writes", async () => {
     const runId = await submit();
-    for (const name of ["embedding-index", "embedding-job"]) {
+    for (const name of ["embedding-vector", "embedding-index", "index-health", "embedding-job"]) {
       const source = readFileSync(join(process.cwd(), `src/lib/${name}.ts`), "utf8");
       const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
       writeFileSync(join(fixture.directory, `${name}.js`), compiled);
@@ -124,16 +124,22 @@ describe("durable embedding jobs", () => {
     `);
     const launch = (block: string) => spawn(process.execPath, [worker], { env: { ...process.env, NODE_PATH: join(process.cwd(), "node_modules"), JOB_DB: fixture.databasePath, JOB_RUN: runId, JOB_BLOCK: block }, stdio: ["ignore", "pipe", "pipe"] });
     const first = launch("yes");
+    const firstExit = once(first, "exit");
     let firstOutput = "";
+    first.stderr.on("data", (chunk: Buffer) => { firstOutput += chunk.toString(); });
     const reached = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error(`Worker did not checkpoint: ${firstOutput}`)), 5000);
       first.stdout.on("data", (chunk: Buffer) => { firstOutput += chunk.toString(); if (firstOutput.includes("BLOCKED")) { clearTimeout(timeout); resolve(); } });
       first.once("error", reject);
+      first.once("exit", () => {
+        clearTimeout(timeout);
+        if (!firstOutput.includes("BLOCKED")) reject(new Error(`Worker exited before checkpoint: ${firstOutput}`));
+      });
     });
     try {
       await reached;
       expect(await prisma.operationRun.findUnique({ where: { id: runId } })).toMatchObject({ updated: 1, processed: 1 });
-    } finally { first.kill("SIGKILL"); await once(first, "exit"); }
+    } finally { first.kill("SIGKILL"); await firstExit; }
     const committed = await prisma.bookmark.findFirstOrThrow({ where: { embedding: { not: null } } });
     await pause(220);
     const second = launch("no"); let output = ""; let errors = "";

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { decodeEmbedding, normalizeEmbeddingEndpoint, validateEmbeddingVector, type EmbeddingIdentity } from "./embedding-vector";
 import type { Bookmark, Prisma } from "@prisma/client";
 
 export type IndexedContent = Pick<Bookmark, "summary" | "category" | "tags">;
@@ -19,29 +20,24 @@ export function embeddingInvalidation(
     (field) => next[field] !== undefined && next[field] !== existing[field]
   );
   return changed
-    ? { embedding: null, embeddingContentHash: null, embeddingIndexedAt: null }
+    ? { embedding: null, embeddingContentHash: null, embeddingIndexedAt: null, embeddingModel: null, embeddingEndpoint: null, embeddingDimensions: null }
     : {};
 }
 
 export async function saveEmbeddingIfUnchanged(
   tx: Prisma.TransactionClient,
-  input: {
-    id: string;
-    snapshot: ContentSnapshot;
-    embedding: Uint8Array;
-    model?: string | null;
-    dimensions?: number;
-  }
+  input: { id: string; snapshot: ContentSnapshot; embedding: Uint8Array; identity?: EmbeddingIdentity }
 ) {
+  validateEmbeddingVector(decodeEmbedding(input.embedding), input.identity?.dimensions);
   const result = await tx.bookmark.updateMany({
     where: { id: input.id, ...input.snapshot },
     data: {
       embedding: Buffer.from(input.embedding),
       embeddingContentHash: embeddingContentHash(input.snapshot),
       embeddingIndexedAt: new Date(),
-      // Null stays null for an unknown legacy model. Do not invent an identity.
-      embeddingModel: input.model?.trim() || null,
-      embeddingDimensions: input.dimensions ?? null,
+      embeddingModel: input.identity?.model ?? null,
+      embeddingEndpoint: input.identity ? normalizeEmbeddingEndpoint(input.identity.endpoint) : null,
+      embeddingDimensions: input.identity?.dimensions ?? null,
     },
   });
   return result.count === 1;
@@ -53,36 +49,26 @@ export async function saveEnrichmentIfUnchanged(
     id: string;
     snapshot: ContentSnapshot;
     content: IndexedContent;
+    provenance?: string;
+    sourceSnapshot?: Pick<Bookmark, "text" | "rawJson" | "captureJson" | "source" | "tweetUrl" | "externalUrls" | "mediaDescription">;
     embedding: number[] | undefined;
-    replaceHuman?: boolean;
-    model?: string | null;
+    embeddingIdentity?: EmbeddingIdentity;
   }
 ) {
-  if (!input.replaceHuman) {
-    const human = await tx.bookmark.findFirst({
-      where: { id: input.id, editedAt: { not: null } },
-      select: { editedAt: true },
-    });
-    if (human) {
-      await tx.bookmark.updateMany({
-        where: { id: input.id, editedAt: human.editedAt },
-        data: { enrichmentError: null, enrichmentFailures: 0 },
-      });
-      return false;
-    }
-  }
+  if (input.embedding) validateEmbeddingVector(input.embedding, input.embeddingIdentity?.dimensions);
   const result = await tx.bookmark.updateMany({
-    where: { id: input.id, ...input.snapshot },
+    where: { id: input.id, ...input.snapshot, ...input.sourceSnapshot },
     data: {
       ...input.content,
+      ...(input.provenance ? { summarySource: input.provenance } : {}),
       embedding: input.embedding ? Buffer.from(new Float32Array(input.embedding).buffer) : null,
       embeddingContentHash: input.embedding ? embeddingContentHash(input.content) : null,
       embeddingIndexedAt: input.embedding ? new Date() : null,
-      embeddingModel: input.embedding && input.model?.trim() ? input.model.trim() : null,
-      embeddingDimensions: input.embedding ? input.embedding.length : null,
+      embeddingModel: input.embedding ? input.embeddingIdentity?.model ?? null : null,
+      embeddingEndpoint: input.embedding && input.embeddingIdentity ? normalizeEmbeddingEndpoint(input.embeddingIdentity.endpoint) : null,
+      embeddingDimensions: input.embedding ? input.embeddingIdentity?.dimensions ?? null : null,
       summarizedAt: new Date(),
       editedAt: null,
-      summarySource: input.replaceHuman ? "replaced" : "model",
       enrichmentError: null,
       enrichmentFailures: 0,
     },
@@ -92,4 +78,18 @@ export async function saveEnrichmentIfUnchanged(
 
 export function contentSnapshot(content: ContentSnapshot): ContentSnapshot {
   return { summary: content.summary, category: content.category, tags: content.tags, editedAt: content.editedAt };
+}
+
+export type IndexedBookmark = IndexedContent & Pick<Bookmark, "embedding" | "embeddingContentHash" | "embeddingIndexedAt" | "embeddingModel" | "embeddingEndpoint" | "embeddingDimensions">;
+export type IndexState = "usable" | "missing" | "legacy" | "stale" | "incompatible" | "malformed";
+
+export function bookmarkIndexState(bookmark: IndexedBookmark, identity: Pick<EmbeddingIdentity, "model" | "endpoint"> & { dimensions?: number }): IndexState {
+  if (!bookmark.embedding) return "missing";
+  if (!bookmark.embeddingModel || !bookmark.embeddingEndpoint || !bookmark.embeddingDimensions || !bookmark.embeddingContentHash || !bookmark.embeddingIndexedAt) return "legacy";
+  if (bookmark.embeddingContentHash !== embeddingContentHash(bookmark)) return "stale";
+  try {
+    if (bookmark.embeddingModel !== identity.model || normalizeEmbeddingEndpoint(bookmark.embeddingEndpoint) !== normalizeEmbeddingEndpoint(identity.endpoint) || (identity.dimensions !== undefined && bookmark.embeddingDimensions !== identity.dimensions)) return "incompatible";
+    validateEmbeddingVector(decodeEmbedding(bookmark.embedding), bookmark.embeddingDimensions);
+    return "usable";
+  } catch { return "malformed"; }
 }

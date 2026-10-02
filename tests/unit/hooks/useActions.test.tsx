@@ -1,132 +1,72 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { importOperationFixture } from "../../fixtures/import-operation";
 import { useActions } from "@/app/hooks/useActions";
 
-function mockJsonResponse(body: unknown, init: { ok?: boolean; status?: number } = {}) {
-  const text = JSON.stringify(body);
-  return {
-    ok: init.ok ?? true,
-    status: init.status ?? (init.ok === false ? 500 : 200),
-    statusText: init.ok === false ? "Error" : "OK",
-    text: async () => text,
-    json: async () => body,
-  } as any;
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+function mockProvider(response: () => Response) {
+  vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => { if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError"); return url.includes("?take=") ? json({ runs: [] }) : response(); }));
 }
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear(); });
+afterEach(() => vi.unstubAllGlobals());
 
 describe("useActions", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    global.fetch = vi.fn();
-    // Mock sessionStorage
-    global.sessionStorage = {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn(),
-      length: 0,
-      key: vi.fn(),
-    };
+  it("imports new bookmarks and reports the imported count", async () => {
+    const run = importOperationFixture({ imported: 5 });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => url.includes("?take=") ? json({ runs: [] }) : url.startsWith("/api/import?") ? json({ runId: run.id }, 202) : json({ run })));
+    const { result, unmount } = renderHook(() => useActions("x", 50));
+    let completion: ReturnType<typeof result.current.runImport>;
+    await act(async () => { completion = result.current.runImport(); await Promise.resolve(); });
+    await waitFor(() => expect(result.current.loading.x).toBe(false));
+    await completion!;
+    expect(fetch).toHaveBeenCalledWith("/api/import?source=x", expect.objectContaining({ method: "POST" }));
+    expect(result.current.message).toContain("5 new");
+    unmount();
   });
 
-  it("should run import", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(mockJsonResponse({ ok: true, imported: 5 }));
-
-    const { result } = renderHook(() => useActions("x", 50));
-
-    await act(async () => {
-      await result.current.runImport();
-    });
-
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/import?source=x"),
-      expect.objectContaining({ method: "POST" })
-    );
-    expect(result.current.message).toContain("Imported 5");
+  it("submits the entire inbox pipeline once without browser phase submissions", async () => {
+    const run = importOperationFixture({ pipeline: true });
+    const requests: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") requests.push(url);
+      return url.includes("?take=") ? json({ runs: [] }) : url.startsWith("/api/import?") ? json({ runId: run.id }, 202) : json({ run });
+    }));
+    const { result, unmount } = renderHook(() => useActions("x", 50));
+    await act(async () => { void result.current.runProcessInbox(); await Promise.resolve(); });
+    await waitFor(() => expect(result.current.loading.inboxX).toBe(false));
+    expect(requests).toEqual(["/api/import?source=x&pipeline=true"]);
+    unmount();
   });
 
-  it("should run enrich", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      mockJsonResponse({
-        ok: true,
-        processed: 1,
-        updated: 1,
-        remaining: 0,
-        finished: true,
-        errors: [],
-      })
-    );
-
-    const { result } = renderHook(() => useActions("yt", 200));
-
-    await act(async () => {
-      await result.current.runEnrich(false);
-    });
-
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/enrich?source=yt"),
-      expect.objectContaining({ method: "POST" })
-    );
-    expect(result.current.message).toContain("Enriched 1/1");
+  it("submits enrichment once and reports authoritative cumulative totals", async () => {
+    const run = { id: "actions-run", source: "yt", type: "enrichment_batch", status: "completed", total: 5, processed: 5, updated: 4, failed: 1, skipped: 0 };
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => { if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError"); return url.includes("?take=") ? json({ runs: [] }) : url.startsWith("/api/enrich?") ? json({ runId: run.id, remaining: 5 }, 202) : json({ run }); }));
+    const { result, unmount } = renderHook(() => useActions("yt", 200));
+    let completion: ReturnType<typeof result.current.runEnrich>;
+    await act(async () => { completion = result.current.runEnrich(false); await Promise.resolve(); });
+    await waitFor(() => expect(result.current.loading.enrichYt).toBe(false));
+    expect(await completion!).toMatchObject({ totalUpdated: 4, totalProcessed: 5, errorsCount: 1 });
+    expect(result.current.message).toContain("4/5 updated");
+    expect(vi.mocked(fetch).mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("source=yt&limit=200&full=false"), expect.objectContaining({ headers: { "Idempotency-Key": expect.any(String) } }));
+    unmount();
   });
 
-  it("should surface empty responses clearly instead of opaque JSON errors", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      text: async () => "",
-      json: async () => {
-        throw new Error("Unexpected end of JSON input");
-      },
-    } as any);
-
-    const { result } = renderHook(() => useActions("x", 50));
-
-    await act(async () => {
-      await result.current.runImport();
-    });
-
+  it("surfaces an empty import response with an actionable message", async () => {
+    mockProvider(() => new Response("", { status: 200 }));
+    const { result, unmount } = renderHook(() => useActions("x", 50));
+    await act(async () => { await result.current.runImport(); });
     expect(result.current.message).toMatch(/Empty response|timed out/i);
     expect(result.current.message).not.toMatch(/Unexpected end of JSON input/);
+    unmount();
   });
 
-  it("should continue multi-batch enrich while remaining > 0", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          ok: true,
-          runId: "r1",
-          processed: 2,
-          updated: 2,
-          remaining: 3,
-          finished: false,
-          errors: [],
-          batch: 1,
-          batches: 2,
-        })
-      )
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          ok: true,
-          runId: "r1",
-          processed: 3,
-          updated: 3,
-          remaining: 0,
-          finished: true,
-          errors: [],
-          batch: 2,
-          batches: 2,
-        })
-      );
-
-    const { result } = renderHook(() => useActions("x", 50));
-
-    await act(async () => {
-      await result.current.runEnrich(true);
-    });
-
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(result.current.message).toContain("Enriched 5/5");
-    expect(result.current.message).toContain("Remaining: 0");
+  it("requests the full frozen scope for Enrich all", async () => {
+    mockProvider(() => json({ ok: true, processed: 0, remaining: 0 }));
+    const { result, unmount } = renderHook(() => useActions("x", 50));
+    await act(async () => { await result.current.runEnrich(true, true); });
+    expect(fetch).toHaveBeenCalledWith("/api/enrich?source=x&limit=50&full=true&reprocess=true", expect.objectContaining({ method: "POST" }));
+    expect(result.current.message).toContain("No bookmarks need enrichment");
+    unmount();
   });
 });

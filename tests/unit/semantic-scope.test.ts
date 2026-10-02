@@ -1,3 +1,4 @@
+import { indexedFixture } from "../fixtures/embedding";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bookmark, Prisma } from "@prisma/client";
 import { getBookmarks, searchBookmarksSemantically } from "@/lib/bookmarks";
@@ -12,13 +13,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/db", () => ({ prisma: { bookmark: { findMany: mocks.findMany } } }));
 vi.mock("@/lib/llm", () => ({
   generateEmbedding: mocks.generateEmbedding,
+  generateEmbeddingResult: async (text: string) => ({ vector: await mocks.generateEmbedding(text), identity: { model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 } }),
+  getEffectiveEmbeddingIdentity: async () => ({ model: "fixture-model", endpoint: "http://localhost:1234/v1", dimensions: 2 }),
   answerLibraryQuestion: mocks.answerLibraryQuestion,
 }));
 
 type Candidate = Bookmark & { folder: null };
 
 function bookmark(id: string, source = "x", similarity = 1): Candidate {
-  return {
+  return indexedFixture({
     id, source, tweetUrl: `https://example.com/${id}`, text: "A related idea",
     authorName: null, authorUsername: "author", createdAt: null, likeCount: null,
     replyCount: null, retweetCount: null, quoteCount: null, lang: null,
@@ -27,11 +30,8 @@ function bookmark(id: string, source = "x", similarity = 1): Candidate {
     editedAt: null, readAt: null, mediaDescription: null, mediaJson: null,
     embedding: new Uint8Array(new Float32Array([similarity, Math.sqrt(1 - similarity ** 2)]).buffer),
     embeddingContentHash: null, embeddingIndexedAt: null,
-    enrichmentError: null, enrichmentFailures: 0,
-    embeddingModel: null, embeddingDimensions: null, playlistAddedAt: null,
-    uploaderChannelId: null, availability: null, captureJson: null, summarySource: null,
-    folder: null,
-  };
+    enrichmentError: null, enrichmentFailures: 0, folder: null,
+  });
 }
 
 function stubCandidates(rows: Candidate[], expectedScope: Prisma.BookmarkWhereInput = {}) {
@@ -48,6 +48,7 @@ function stubCandidates(rows: Candidate[], expectedScope: Prisma.BookmarkWhereIn
 describe("semantic retrieval scope", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.findMany.mockResolvedValue([]);
     mocks.generateEmbedding.mockResolvedValue([1, 0]);
     mocks.answerLibraryQuestion.mockResolvedValue({ answer: "Scoped answer", citations: [] });
   });
@@ -72,7 +73,7 @@ describe("semantic retrieval scope", () => {
   });
 
   it("combines source, category, folder, pending status, and video without adding a keyword predicate", async () => {
-    const pendingVideo = { ...bookmark("matching-video"), summary: "", externalUrls: "https://vimeo.com/123" };
+    const pendingVideo = indexedFixture({ ...bookmark("matching-video"), summary: "", externalUrls: "https://vimeo.com/123" });
     stubCandidates([pendingVideo], {
       AND: [
         { category: "Tech" }, { folderId: "folder" }, { source: "x" },
@@ -142,7 +143,7 @@ describe("semantic retrieval scope", () => {
     expect(body.matches).toHaveLength(12);
     expect(body.citations).toEqual([expect.objectContaining({ id: "yt-0", reason: "Relevant", source: "yt" })]);
     expect(mocks.answerLibraryQuestion).toHaveBeenCalledWith({
-      question: "video ideas", candidates: body.matches,
+      question: "video ideas", candidates: body.matches, signal: expect.any(AbortSignal),
     });
   });
 

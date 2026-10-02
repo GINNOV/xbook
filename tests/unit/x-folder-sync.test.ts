@@ -1,177 +1,37 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+// @vitest-environment node
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { rmSync } from "node:fs";
 import { POST } from "@/app/api/import/route";
 import { prisma } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
-
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    importRun: { create: vi.fn().mockResolvedValue({ id: "run-1" }), update: vi.fn() },
-    operationRun: { update: vi.fn() },
-    bookmarkFolder: {
-      upsert: vi.fn(),
-      findMany: vi.fn().mockResolvedValue([]),
-      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-    },
-    bookmark: {
-      findMany: vi.fn().mockResolvedValue([]),
-      upsert: vi.fn(),
-      create: vi.fn().mockResolvedValue({}),
-      update: vi.fn().mockResolvedValue({}),
-      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-    },
-    settings: { findUnique: vi.fn() },
-    usageMonth: { findUnique: vi.fn().mockResolvedValue({ usedBookmarks: 0 }) },
-  },
-}));
-
-vi.mock("@/lib/processing", () => ({
-  createOperationRun: vi.fn().mockResolvedValue({ id: "op-1" }),
-  logProcessingEvent: vi.fn(),
-  updateOperationRun: vi.fn(),
-  getActiveRun: vi.fn().mockResolvedValue(null),
-  incrementOperationRun: vi.fn(),
-}));
-
-vi.mock("@/lib/settings", () => ({
-  getSettings: vi.fn(),
-  getUsageMonth: vi.fn().mockResolvedValue({ usedBookmarks: 0 }),
-  updateSettings: vi.fn(),
-  incrementUsage: vi.fn(),
-}));
-
-// Mock global fetch
-global.fetch = vi.fn();
-
-describe("X Deep Folder Sync Integration", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // No lastBookmarkId → deep folder scan runs (first/full sync path).
-    const mockSettings = {
-      monthlyCap: 1000,
-      xAccessToken: "valid-token",
-      xUserId: "user-123",
-      xApiBase: "https://api.x.com/2",
-      lastBookmarkId: null,
-    };
-    (prisma.settings.findUnique as any).mockResolvedValue(mockSettings);
-    (vi.mocked(getSettings) as any).mockResolvedValue(mockSettings);
+import { importOperationAdapter } from "@/lib/import-job-adapter";
+import { readOperationJob, runOperationJob } from "@/lib/operation-job";
+const fixture = vi.hoisted(() => ({ directory: "" }));
+vi.mock("@/lib/db", async () => {
+  const fs = await import("node:fs"); const os = await import("node:os"); const path = await import("node:path");
+  const { default: Database } = await import("better-sqlite3"); const { PrismaClient } = await import("@prisma/client"); const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
+  fixture.directory = fs.mkdtempSync(path.join(os.tmpdir(), "xbook-x-import-")); const databasePath = path.join(fixture.directory, "test.db"); const db = new Database(databasePath);
+  const migrations = path.join(process.cwd(), "prisma/migrations"); for (const name of fs.readdirSync(migrations).filter((name) => /^\d/.test(name)).sort()) db.exec(fs.readFileSync(path.join(migrations, name, "migration.sql"), "utf8")); db.close();
+  return { prisma: new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: databasePath }) }) };
+});
+beforeEach(async () => { vi.restoreAllMocks(); await prisma.processingEvent.deleteMany(); await prisma.operationRun.deleteMany(); await prisma.bookmark.deleteMany(); await prisma.bookmarkFolder.deleteMany(); await prisma.usageMonth.deleteMany(); await prisma.settings.upsert({ where: { id: "default" }, create: { id: "default" }, update: {} }); await prisma.settings.update({ where: { id: "default" }, data: { monthlyCap: 1000, xAccessToken: "valid-token", xUserId: "user-123", xApiBase: "https://api.x.com/2", xTokenExpiresAt: null, lastBookmarkId: null } }); });
+afterAll(async () => { await prisma.$disconnect(); rmSync(fixture.directory, { recursive: true, force: true }); });
+const response = (data: unknown) => new Response(JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
+async function finish(runId: string) { let run = await prisma.operationRun.findUniqueOrThrow({ where: { id: runId } }); for (let step = 0; step < 10 && run.status === "queued"; step++) run = await runOperationJob(prisma, { runId, adapter: importOperationAdapter() }); return run; }
+describe("X durable folder imports", () => {
+  it("discovers folders, fetches IDs without forbidden parameters, hydrates new IDs, then imports global bookmarks", async () => {
+    const requests = vi.spyOn(global, "fetch").mockResolvedValueOnce(response({ data: [{ id: "11", name: "Tech" }] })).mockResolvedValueOnce(response({ data: [{ id: "1" }], meta: {} })).mockResolvedValueOnce(response({ data: [{ id: "1", text: "tech content" }] })).mockResolvedValueOnce(response({ data: [{ id: "2", text: "global content" }], meta: {} }));
+    const submitted = await POST(new Request("http://localhost/api/import?source=x", { method: "POST" })); expect(submitted.status).toBe(202); expect(requests).not.toHaveBeenCalled(); const { runId } = await submitted.json();
+    const run = await finish(runId); expect(run.status).toBe("completed"); expect(readOperationJob(run)?.import).toMatchObject({ imported: 2, pagesFetched: 2, foldersCompleted: 1 }); expect(await prisma.bookmark.count()).toBe(2); expect((await prisma.bookmarkFolder.findUnique({ where: { id: "11" } }))?.lastFetchedAt).toBeInstanceOf(Date);
+    const folderRequest = new URL(String(requests.mock.calls[1][0])); expect(folderRequest.pathname).toContain("/bookmarks/folders/11"); expect(folderRequest.searchParams.has("tweet.fields")).toBe(false); expect(folderRequest.searchParams.has("max_results")).toBe(false);
+    const hydrateRequest = new URL(String(requests.mock.calls[2][0])); expect(hydrateRequest.pathname).toBe("/2/tweets"); expect(hydrateRequest.searchParams.has("tweet.fields")).toBe(true);
+    const globalRequest = new URL(String(requests.mock.calls[3][0])); expect(globalRequest.pathname).toContain("/user-123/bookmarks"); expect(globalRequest.searchParams.has("tweet.fields")).toBe(true); expect(globalRequest.searchParams.has("max_results")).toBe(true);
+    expect((await prisma.usageMonth.findFirst())?.usedBookmarks).toBe(2);
   });
-
-  it("should discover folders and fetch bookmarks with correct URL parameters", async () => {
-    // 1. Mock Folder Discovery call
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "f1", name: "Tech" }] }),
-    } as any);
-
-    // 2. Mock Folder Content call (IDs ONLY)
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "t1" }], meta: {} }),
-    } as any);
-
-    // 3. Mock Hydration call (/tweets)
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "t1", text: "tech content" }] }),
-    } as any);
-
-    // 4. Mock Global Sync call
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "t2", text: "global content" }], meta: {} }),
-    } as any);
-
-    const req = new Request("http://localhost/api/import?source=x");
-    const res = await POST(req);
-    const json = await res.json();
-
-    if (!json.ok) {
-      // Surface API error in assertion message for easier debugging
-      throw new Error(`import failed: ${JSON.stringify(json)}`);
-    }
-    expect(json.ok).toBe(true);
-    expect(json.fetched).toBe(2);
-    expect(prisma.bookmarkFolder.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ["f1"] } },
-      data: { lastFetchedAt: expect.any(Date) },
-    });
-
-    // CRITICAL: Verify the folder list call DOES NOT have forbidden parameters
-    const folderListCall = new URL(vi.mocked(fetch).mock.calls[1][0] as string);
-    expect(folderListCall.pathname).toContain("/bookmarks/folders/f1");
-    expect(folderListCall.searchParams.has("tweet.fields")).toBe(false);
-    expect(folderListCall.searchParams.has("max_results")).toBe(false);
-
-    // CRITICAL: Verify the hydration call DOES have parameters
-    const hydrationCall = new URL(vi.mocked(fetch).mock.calls[2][0] as string);
-    expect(hydrationCall.pathname).toContain("/2/tweets");
-    expect(hydrationCall.searchParams.has("tweet.fields")).toBe(true);
-
-    // CRITICAL: Verify the global sync call DOES have parameters
-    const globalSyncCall = new URL(vi.mocked(fetch).mock.calls[3][0] as string);
-    expect(globalSyncCall.pathname).toContain("/user-123/bookmarks");
-    expect(globalSyncCall.searchParams.has("tweet.fields")).toBe(true);
-    expect(globalSyncCall.searchParams.has("max_results")).toBe(true);
-  });
-
-  it("delta sync links folder membership for known tweets without re-hydrating them", async () => {
-    const mockSettings = {
-      monthlyCap: 1000,
-      xAccessToken: "valid-token",
-      xUserId: "user-123",
-      xApiBase: "https://api.x.com/2",
-      lastBookmarkId: "baseline-tweet",
-    };
-    (prisma.settings.findUnique as any).mockResolvedValue(mockSettings);
-    (vi.mocked(getSettings) as any).mockResolvedValue(mockSettings);
-
-    (prisma.bookmark.findMany as any)
-      .mockResolvedValueOnce([{ id: "known-in-library" }, { id: "baseline-tweet" }])
-      .mockResolvedValueOnce([]); // existing among import candidates
-
-    vi.mocked(prisma.bookmark.updateMany).mockResolvedValue({ count: 1 } as any);
-
-    // 1) Folder discovery
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "f1", name: "Tech" }] }),
-    } as any);
-    // 2) Folder ID list (known tweet only — no /tweets hydration)
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [{ id: "known-in-library" }], meta: {} }),
-    } as any);
-    // 3) Global delta
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: [
-          { id: "new-tweet", text: "brand new" },
-          { id: "baseline-tweet", text: "already have" },
-        ],
-        meta: {},
-      }),
-    } as any);
-
-    const req = new Request("http://localhost/api/import?source=x");
-    const res = await POST(req);
-    const json = await res.json();
-
-    if (!json.ok) throw new Error(`import failed: ${JSON.stringify(json)}`);
-    expect(json.imported).toBe(1);
-
-    // No /2/tweets hydration for known-in-library
-    const paths = vi.mocked(fetch).mock.calls.map((c) => new URL(c[0] as string).pathname);
-    expect(paths.some((p) => p.includes("/2/tweets"))).toBe(false);
-    expect(prisma.bookmark.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: { in: ["known-in-library"] } }),
-        data: { folderId: "f1" },
-      })
-    );
-    expect(prisma.bookmark.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "new-tweet" } })
-    );
+  it("assigns known folder entries without paid hydration and refreshes global metadata preserving manual summaries", async () => {
+    await prisma.bookmark.createMany({ data: [{ id: "known", tweetUrl: "https://x.com/i/status/known", summary: "manual", editedAt: new Date() }, { id: "baseline", tweetUrl: "https://x.com/i/status/baseline", summary: "existing" }] });
+    const requests = vi.spyOn(global, "fetch").mockResolvedValueOnce(response({ data: [{ id: "11", name: "Tech" }] })).mockResolvedValueOnce(response({ data: [{ id: "known" }], meta: {} })).mockResolvedValueOnce(response({ data: [{ id: "new", text: "new content" }, { id: "baseline", text: "refreshed content" }], meta: {} }));
+    const { runId } = await (await POST(new Request("http://localhost/api/import?source=x", { method: "POST" }))).json(); const run = await finish(runId);
+    expect(run.status).toBe("completed"); expect(readOperationJob(run)?.import).toMatchObject({ imported: 1, refreshed: 2 }); expect(requests.mock.calls.map((call) => new URL(String(call[0])).pathname).some((path) => path === "/2/tweets")).toBe(false);
+    expect(await prisma.bookmark.findUnique({ where: { id: "known" } })).toMatchObject({ folderId: "11", summary: "manual", editedAt: expect.any(Date) }); expect(await prisma.bookmark.findUnique({ where: { id: "baseline" } })).toMatchObject({ text: "refreshed content", summary: "existing" }); expect(await prisma.bookmark.count()).toBe(3); expect((await prisma.usageMonth.findFirst())?.usedBookmarks).toBe(1);
   });
 });

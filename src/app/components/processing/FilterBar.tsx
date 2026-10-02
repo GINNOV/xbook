@@ -19,6 +19,8 @@ export function FilterBar({ status, source, errorsOnly, currentParams }: Props) 
         <span className="mr-2 text-xs font-semibold uppercase text-on-surface-variant">Status:</span>
         <Link href={getFilterUrl(currentParams, { status: null, errorsOnly: false })} className={btn(!status && !errorsOnly)}>All</Link>
         <Link href={getFilterUrl(currentParams, { status: "running", errorsOnly: false })} className={btn(status === "running")}>Running</Link>
+        <Link href={getFilterUrl(currentParams, { status: "partial", errorsOnly: false })} className={btn(status === "partial")}>Partial</Link>
+        <Link href={getFilterUrl(currentParams, { status: "paused", errorsOnly: false })} className={btn(status === "paused")}>Paused</Link>
         <Link href={getFilterUrl(currentParams, { status: "completed", errorsOnly: false })} className={btn(status === "completed")}>Completed</Link>
         <Link href={getFilterUrl(currentParams, { status: null, errorsOnly: true })} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${errorsOnly ? "bg-error text-white" : "bg-surface-container-high"}`}>Errors</Link>
       </div>

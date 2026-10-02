@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { toIsoDate } from "@/lib/folders";
 import { fetchYouTubePlaylists } from "@/lib/youtube";
 import { getSettings } from "@/lib/settings";
+import { localVideoIdentity } from "../lib/folder-links";
+import type { Folder } from "../hooks/useFoldersPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -20,53 +22,41 @@ export default async function FoldersPage({ searchParams }: PageProps) {
   
   const folders = await prisma.bookmarkFolder.findMany({
     where: { id: { not: { startsWith: "yt:pl:" } } },
-    include: { _count: { select: { bookmarks: true } } },
+    include: { _count: { select: { bookmarks: { where: { source: "x" } } } } },
     orderBy: { name: "asc" },
   });
-  const ytFolders = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      name: string | null;
-      total: number | string;
-      lastFetchedAt: Date | null;
-      lastProcessedAt: Date | null;
-    }>
-  >`
-    SELECT
-      bf.id AS id,
-      bf.name AS name,
-      COALESCE(cnt.total, 0) AS total,
-      bf.lastFetchedAt AS lastFetchedAt,
-      bf.lastProcessedAt AS lastProcessedAt
-    FROM BookmarkFolder bf
-    LEFT JOIN (
-      SELECT
-        COALESCE(folderId, 'yt:pl:' || json_extract(rawJson, '$.playlistId')) AS playlistKey,
-        COUNT(*) AS total
-      FROM Bookmark
-      WHERE source = 'yt'
-      GROUP BY COALESCE(folderId, 'yt:pl:' || json_extract(rawJson, '$.playlistId'))
-    ) cnt ON cnt.playlistKey = bf.id
-    WHERE bf.id LIKE 'yt:pl:%'
-    ORDER BY bf.name ASC
-  `;
-  const ytActivityById = new Map(
-    ytFolders.map((folder) => [
-      folder.id,
-      {
-        lastFetchedAt: toIsoDate(folder.lastFetchedAt),
-        lastProcessedAt: toIsoDate(folder.lastProcessedAt),
-      },
-    ])
-  );
+  const [ytFolders, ytBookmarks] = await Promise.all([
+    prisma.bookmarkFolder.findMany({ where: { id: { startsWith: "yt:pl:" } }, orderBy: { name: "asc" } }),
+    prisma.bookmark.findMany({ where: { source: "yt" }, select: { id: true, tweetUrl: true, folderId: true } }),
+  ]);
+  const localByFolder = new Map<string, { total: number; videos: Set<string> }>();
+  for (const bookmark of ytBookmarks) {
+    if (!bookmark.folderId) continue;
+    const group = localByFolder.get(bookmark.folderId) ?? { total: 0, videos: new Set<string>() };
+    group.total++;
+    group.videos.add(localVideoIdentity(bookmark));
+    localByFolder.set(bookmark.folderId, group);
+  }
   let ytLivePlaylists: Awaited<ReturnType<typeof fetchYouTubePlaylists>> | null = null;
   if (tab === "yt") {
-    try {
-      ytLivePlaylists = await fetchYouTubePlaylists();
-    } catch {
-      ytLivePlaylists = null;
-    }
+    try { ytLivePlaylists = await fetchYouTubePlaylists(); } catch { /* Local folders remain usable when the provider is unavailable. */ }
   }
+  const ytById = new Map<string, Folder>(ytFolders.map((folder) => [folder.id, {
+    id: folder.id, name: folder.name, total: localByFolder.get(folder.id)?.total ?? 0,
+    uniqueVideos: localByFolder.get(folder.id)?.videos.size ?? 0, sourceEntries: null,
+    lastFetchedAt: toIsoDate(folder.lastFetchedAt), lastProcessedAt: toIsoDate(folder.lastProcessedAt),
+  }]));
+  for (const playlist of ytLivePlaylists ?? []) {
+    const id = `yt:pl:${playlist.id}`;
+    const local = ytById.get(id);
+    ytById.set(id, { id, name: playlist.title ?? local?.name ?? null,
+      total: localByFolder.get(id)?.total ?? 0, uniqueVideos: localByFolder.get(id)?.videos.size ?? 0,
+      sourceEntries: playlist.itemCount ?? null,
+      lastFetchedAt: local?.lastFetchedAt ?? null, lastProcessedAt: local?.lastProcessedAt ?? null });
+  }
+  const playlistRows = [...ytById.values()].sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  const localEntries = ytBookmarks.length;
+  const uniqueVideos = new Set(ytBookmarks.map(localVideoIdentity)).size;
 
   return (
     <main className="min-h-screen bg-surface-container-low px-4 py-6 lg:px-8 lg:py-8">
@@ -76,8 +66,8 @@ export default async function FoldersPage({ searchParams }: PageProps) {
             Folder Management
           </h1>
           <p className="mt-3 max-w-3xl text-sm text-on-surface-variant">
-            Configure and monitor bookmark ingestion sources. Folder imports skip existing
-            items and continue fetching missing ones until the end or your monthly cap.
+            Sync names, import source entries, summarize local items, or rebuild their search index.
+            Imports preserve existing summaries and continue from saved progress within your cap.
           </p>
         </header>
 
@@ -121,27 +111,9 @@ export default async function FoldersPage({ searchParams }: PageProps) {
             />
           ) : (
             <YouTubeFoldersPanel
-              folders={
-                ytLivePlaylists
-                  ? ytLivePlaylists.map((playlist) => {
-                      const id = `yt:pl:${playlist.id}`;
-                      const activity = ytActivityById.get(id);
-                      return {
-                        id,
-                        name: playlist.title ?? null,
-                        total: playlist.itemCount ?? 0,
-                        lastFetchedAt: activity?.lastFetchedAt ?? null,
-                        lastProcessedAt: activity?.lastProcessedAt ?? null,
-                      };
-                    })
-                  : ytFolders.map((folder) => ({
-                      id: folder.id,
-                      name: folder.name,
-                      total: Number(folder.total),
-                      lastFetchedAt: toIsoDate(folder.lastFetchedAt),
-                      lastProcessedAt: toIsoDate(folder.lastProcessedAt),
-                    }))
-              }
+              folders={playlistRows}
+              localEntries={localEntries}
+              uniqueVideos={uniqueVideos}
               soundOnComplete={settings?.soundOnComplete ?? false}
               soundOnError={settings?.soundOnError ?? false}
             />

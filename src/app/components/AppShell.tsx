@@ -95,7 +95,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         if (!mounted || !json) return;
         const app = json.app ?? "unknown";
         const desktop = json.desktop && json.desktop !== json.app ? ` · desktop ${json.desktop}` : "";
-        setVersionLabel(`App ${app}${desktop} · ${json.runtime ?? "node"} · ${json.database ?? "sqlite"}`);
+        const backend = json.backend ? ` · port ${json.backend.port} · PID ${json.backend.pid} · ${String(json.backend.commit).slice(0, 8)}` : "";
+        setVersionLabel(`App ${app}${desktop} · ${json.runtime ?? "node"} · ${json.database ?? "sqlite"}${backend}`);
       })
       .catch(() => {
         if (mounted) setVersionLabel("Version unavailable");

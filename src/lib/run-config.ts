@@ -1,4 +1,5 @@
 import type { AppSettings } from "@/lib/settings";
+import { diagnosticEndpoint } from "./connection-diagnostics";
 
 /** Snapshot of LLM / run knobs stored on OperationRun.configJson. */
 export type OperationRunConfig = {
@@ -50,7 +51,7 @@ export function formatLlmEndpoint(baseUrl?: string | null): string | null {
     if (port === "8000") return `${host}:8000`;
     return port && port !== "80" && port !== "443" ? `${host}:${port}` : host;
   } catch {
-    return stripTrailingSlash(baseUrl.trim());
+    return "Invalid endpoint. Check Settings.";
   }
 }
 
@@ -92,7 +93,7 @@ export function runConfigParts(config?: OperationRunConfig | null): RunConfigPar
     parts.push({
       key: "host",
       label: endpoint,
-      title: config.baseUrl || config.embeddingBaseUrl || endpoint,
+      title: diagnosticEndpoint(config.baseUrl || config.embeddingBaseUrl || endpoint),
     });
   }
 
@@ -185,7 +186,7 @@ export function buildEnrichmentRunConfig(
   const envBase = cleanEnv(process.env.OPENAI_BASE_URL);
   return {
     model: cleanEnv(settings?.llmModel) ?? envModel,
-    baseUrl: cleanEnv(settings?.llmBaseUrl) ?? envBase ?? "http://localhost:1234/v1",
+    baseUrl: diagnosticEndpoint(cleanEnv(settings?.llmBaseUrl) ?? envBase ?? "http://localhost:1234/v1"),
     concurrency: knobs.concurrency,
     batchSize: knobs.batchSize,
     batchIndex: knobs.batchIndex ?? 0,
@@ -227,9 +228,9 @@ export function buildEmbeddingRunConfig(
   const embedBase = cleanEnv(settings?.llmEmbeddingBaseUrl) ?? chatBase;
   return {
     embeddingModel: cleanEnv(settings?.llmEmbeddingModel),
-    embeddingBaseUrl: embedBase,
+    embeddingBaseUrl: diagnosticEndpoint(embedBase),
     // Drive host display via embeddingBaseUrl when model is unset.
-    baseUrl: embedBase,
+    baseUrl: diagnosticEndpoint(embedBase),
   };
 }
 

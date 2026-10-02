@@ -1,0 +1,91 @@
+import { expect, test } from "@playwright/test";
+import { createServer, type Server } from "node:http";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+const databaseUrl = process.env.XBOOK_E2E_DATABASE_URL;
+if (!databaseUrl) throw new Error("Missing disposable E2E database");
+const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: databaseUrl }) });
+let server: Server;
+let origin: string;
+let requests: { path: string; model: string; input?: unknown }[] = [];
+test.beforeAll(async () => {
+  server = createServer(async (request, response) => {
+    let text = ""; for await (const chunk of request) text += chunk;
+    const body = JSON.parse(text || "{}");
+    requests.push({ path: request.url ?? "", model: body.model, input: body.input });
+    response.setHeader("Content-Type", "application/json");
+    if (request.url?.endsWith("/chat/completions")) response.end(JSON.stringify({ id: "r8-chat", object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }] }));
+    else if (request.url === "/embed/v1/embeddings") response.end(JSON.stringify({ data: [{ index: 0, embedding: [1, 0.5] }], model: body.model }));
+    else { response.statusCode = 404; response.end(JSON.stringify({ error: { message: "Fixture embedding model unavailable", type: "invalid_request_error" } })); }
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address(); if (!address || typeof address === "string") throw new Error("No provider port");
+  origin = `http://127.0.0.1:${address.port}`;
+});
+test.beforeEach(async () => {
+  requests = [];
+  const settings = { llmModel: "r8-saved-chat", llmBaseUrl: `${origin}/saved/v1`, llmApiKey: "r8-private-fixture", llmEmbeddingModel: "r8-embedding", llmEmbeddingBaseUrl: "", llmMaxTokens: 4000, llmConcurrency: 1, llmContextWindow: 128000, llmResponseLimit: 2000, monthlyCap: 10, ytMonthlyCap: 10, enrichBatchSize: 25, xAccessToken: "r8-expired-fixture", xTokenExpiresAt: new Date("2020-01-01"), ytAccessToken: "r8-expired-fixture", ytTokenExpiresAt: new Date("2020-01-01") };
+  await prisma.settings.upsert({ where: { id: "default" }, update: settings, create: { id: "default", ...settings } });
+});
+test.afterAll(async () => { await prisma.settings.update({ where: { id: "default" }, data: { xAccessToken: null, ytAccessToken: null, llmApiKey: null } }); server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); await prisma.$disconnect(); });
+
+test("tests the displayed chat and embedding drafts independently without saving or secret disclosure", async ({ page }) => {
+  await page.goto("/settings?tab=ai");
+  await expect(page.getByRole("tab", { name: /^AI/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("X: expired", { exact: true })).toBeVisible();
+  await expect(page.getByText("YouTube: expired", { exact: true })).toBeVisible();
+  await page.getByLabel("LLM model", { exact: true }).fill("r8-draft-chat");
+  await page.getByLabel("LLM base URL", { exact: true }).fill(`${origin}/draft/v1`);
+  await page.getByRole("button", { name: "Test chat with displayed values" }).click();
+  await expect(page.getByText("Chat: tested", { exact: true })).toBeVisible();
+  expect(requests[0]).toMatchObject({ path: "/draft/v1/chat/completions", model: "r8-draft-chat" });
+  await page.getByRole("button", { name: "Test embeddings with displayed values" }).click();
+  await expect(page.getByText("Embeddings: unavailable", { exact: true })).toBeVisible();
+  expect(requests[1]).toMatchObject({ path: "/draft/v1/embeddings", model: "r8-embedding" });
+  await expect(page.getByText("Chat: tested", { exact: true })).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain("r8-private-fixture");
+  await page.screenshot({ path: "docs/repair-evidence/r8-chat-embedding-state.png", fullPage: true });
+  await page.getByRole("tab", { name: /Limits/ }).click();
+  await page.getByRole("tab", { name: /^AI/ }).click();
+  await expect(page.getByLabel("LLM model", { exact: true })).toHaveValue("r8-draft-chat");
+  await expect(page.getByText("Chat: tested", { exact: true })).toBeVisible();
+  await page.getByLabel("Embedding base URL", { exact: true }).fill(`${origin}/embed/v1`);
+  await page.getByRole("button", { name: "Test embeddings with displayed values" }).click();
+  await expect(page.getByText("Embeddings: tested", { exact: true })).toBeVisible();
+  expect(requests[2]).toMatchObject({ path: "/embed/v1/embeddings", model: "r8-embedding", input: "xbook embedding test" });
+  await page.getByLabel("LLM model", { exact: true }).fill("");
+  await page.getByRole("button", { name: "Test chat with displayed values" }).click();
+  await expect(page.getByText("Chat: Enter the displayed model and endpoint before testing.")).toBeVisible();
+  expect(requests).toHaveLength(3);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+  await expect(page).toHaveURL(/settings/);
+  await expect(page.getByLabel("LLM model", { exact: true })).toHaveValue("");
+  expect((await prisma.settings.findUniqueOrThrow({ where: { id: "default" } })).llmModel).toBe("r8-saved-chat");
+});
+
+test("presets and numbers remain drafts until visible save success; failed saves retain edits", async ({ page }) => {
+  await page.goto("/settings?tab=ai");
+  await page.getByRole("button", { name: "Ollama", exact: true }).click();
+  await expect(page.getByText("Unsaved changes", { exact: true }).first()).toBeVisible();
+  await page.getByRole("tab", { name: /Limits/ }).click();
+  await page.getByLabel("Enrichment batch size", { exact: true }).fill("1.5");
+  let saves = 0;
+  page.on("request", (request) => { if (request.method() === "POST" && request.url().endsWith("/api/settings")) saves++; });
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByText(/Enrichment batch size must be a whole number/).first()).toBeVisible();
+  expect(saves).toBe(0);
+  await page.getByLabel("Enrichment batch size", { exact: true }).fill("20");
+  await page.route("**/api/settings", (route) => route.request().method() === "POST" ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ ok: false, error: "Fixture storage unavailable; retry save" }) }) : route.continue());
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Fixture storage unavailable; retry save" })).toBeVisible();
+  await expect(page.getByText("Unsaved changes", { exact: true })).toBeVisible();
+  await page.unroute("**/api/settings");
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Settings saved." })).toBeVisible();
+  await expect(page.getByText("Unsaved changes", { exact: true })).toHaveCount(0);
+  const saved = await prisma.settings.findUniqueOrThrow({ where: { id: "default" } });
+  expect(saved).toMatchObject({ enrichBatchSize: 20, llmBaseUrl: "http://127.0.0.1:11434/v1", llmConcurrency: 1 });
+  expect(requests).toHaveLength(0);
+  await page.screenshot({ path: "docs/repair-evidence/r8-save-feedback.png", fullPage: true });
+});

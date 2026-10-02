@@ -14,6 +14,8 @@ type Props = {
   liveXUsage: unknown;
   costPerCall: number | null;
   usageSource?: "live" | "local";
+  importUsed?: number;
+  importCap?: number;
   enrichBatchSize: number;
   lastSync: Date | string | null;
   /** Current bookmarks with enrichmentError set */
@@ -22,6 +24,8 @@ type Props = {
   blockedCount: number;
   indexedCount?: number;
   unindexedCount?: number;
+  missingCount?: number;
+  staleCount?: number;
   settings: { soundOnComplete: boolean | null; soundOnError: boolean | null } | null;
   readiness?: SetupReadiness;
 };
@@ -37,12 +41,16 @@ export function StatsGrid({
   liveXUsage,
   costPerCall,
   usageSource = "local",
+  importUsed,
+  importCap,
   enrichBatchSize,
   lastSync,
   failedCount,
   blockedCount,
   indexedCount = 0,
   unindexedCount = 0,
+  missingCount = 0,
+  staleCount = 0,
   settings,
   readiness,
 }: Props) {
@@ -56,6 +64,8 @@ export function StatsGrid({
         live={!!liveXUsage}
         cost={costPerCall}
         usageSource={usageSource}
+        importUsed={importUsed}
+        importCap={importCap}
         sum={summarized}
         pend={pending}
         total={total}
@@ -71,12 +81,15 @@ export function StatsGrid({
       />
       <EnrichmentSummary
         source={tab}
+        total={total}
         sum={summarized}
         pend={pending}
         failed={failedCount}
         skipped={blockedCount}
         indexed={indexedCount}
         unindexed={unindexedCount}
+        missing={missingCount}
+        stale={staleCount}
         soundOnComplete={settings?.soundOnComplete ?? false}
         soundOnError={settings?.soundOnError ?? false}
       />

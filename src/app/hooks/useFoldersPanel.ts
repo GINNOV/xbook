@@ -2,127 +2,58 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
+import { useOperationObserver } from "./useOperationObserver";
+import { operationMessage } from "../lib/operation-observer";
 
 export interface Folder {
   id: string;
   name: string | null;
   total?: number;
+  uniqueVideos?: number;
+  sourceEntries?: number | null;
   lastFetchedAt?: string | null;
   lastProcessedAt?: string | null;
 }
+const namesResponseSchema = z.object({ total: z.number().optional(), error: z.string().optional() });
 
-async function readJson(res: Response): Promise<any> {
-  const text = await res.text();
-  if (!text.trim()) {
-    throw new Error(
-      res.ok
-        ? `Empty response from server (${res.status}). The request may have timed out — try again.`
-        : `Server error ${res.status} ${res.statusText || ""}`.trim()
-    );
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(
-      `Invalid JSON from server (${res.status}): ${text.slice(0, 160).replace(/\s+/g, " ")}`
-    );
-  }
-}
-
-export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, soundOnError?: boolean) {
+export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, soundOnError?: boolean, source: "x" | "yt" = "x") {
   const router = useRouter();
+  const operation = useOperationObserver({ source });
   const [msg, setMsg] = useState<{ text: string; isError: boolean } | null>(null);
-  const [loading, setLoading] = useState({ syncing: false, all: false, importing: null as string | null, processing: null as string | null });
-
-  const setLoad = (key: keyof typeof loading, val: string | boolean | null) => setLoading(prev => ({ ...prev, [key]: val }));
+  const [loading, setLoading] = useState<{ syncing: boolean; all: boolean; importing: Folder["id"] | null; processing: Folder["id"] | null; indexing: Folder["id"] | null }>({ syncing: false, all: false, importing: null, processing: null, indexing: null });
+  const setLoad = (key: keyof typeof loading, value: string | boolean | null) => setLoading((previous) => ({ ...previous, [key]: value }));
   const log = (text: string, isError = false) => setMsg({ text, isError });
-
   const syncFolders = async () => {
-    setLoad("syncing", true); log("");
+    setLoad("syncing", true); setMsg(null);
     try {
-      const res = await fetch("/api/folders/sync", { method: "POST" });
-      const json = await readJson(res);
-      if (!res.ok) throw new Error(json.error || "Sync failed");
-      log(`Synced ${json.total} folders. Reloading...`);
-      window.location.reload();
-    } catch (e) {
-      log(e instanceof Error ? e.message : String(e), true);
-    } finally {
-      setLoad("syncing", false);
-    }
-  };
-
-  const importFolder = async (fid: string) => {
-    setLoad("importing", fid); log("");
-    try {
-      const res = await fetch(`/api/folders/import?folderId=${fid}`, { method: "POST" });
-      const json = await readJson(res);
-      if (res.status === 409) throw new Error(json.error || "A sync is already in progress.");
-      if (!res.ok) throw new Error(json.error || "Import failed");
-      log(`Imported ${json.imported}. Refreshed ${json.refreshed}. X calls: ${json.pagesFetched}.`);
+      const response = await fetch(source === "x" ? "/api/folders/sync" : "/api/youtube/folders/sync", { method: "POST" });
+      const json = namesResponseSchema.parse(await response.json());
+      if (!response.ok) throw new Error(json.error ?? "Name sync failed");
+      log(`Synced ${json.total ?? 0} ${source === "x" ? "folder" : "playlist"} names. Existing imports and summaries are preserved.`);
       router.refresh();
-    } catch (e) {
-      log(e instanceof Error ? e.message : String(e), true);
-    } finally {
-      setLoad("importing", null);
-    }
+    } catch (error) { log(error instanceof Error ? error.message : String(error), true); }
+    finally { setLoad("syncing", false); }
   };
-
-  const importAllFolders = async () => {
-    if (!folders.length) return;
-    setLoad("all", true); log("");
+  const runAction = async (kind: "import" | "summarize" | "index", folderId?: string) => {
+    const key = kind === "import" ? folderId ? "importing" : "all" : kind === "index" ? "indexing" : "processing";
+    setLoad(key, folderId ?? true); setMsg(null);
     try {
-      let imp = 0, ref = 0, pgs = 0;
-      for (const f of folders) {
-        log(`Importing ${f.name || f.id}...`);
-        const res = await fetch(`/api/folders/import?folderId=${encodeURIComponent(f.id)}`, { method: "POST" });
-        const json = await readJson(res);
-        if (res.status === 409) throw new Error(json.error || "A sync is already in progress.");
-        if (!res.ok) throw new Error(`${f.name || f.id}: ${json.error}`);
-        imp += Number(json.imported || 0); ref += Number(json.refreshed || 0); pgs += Number(json.pagesFetched || 0);
+      const scope = `source=${source}${folderId ? `&folderId=${encodeURIComponent(folderId)}` : "&all=true"}`;
+      const url = kind === "import" ? `/api/folders/import?${scope}` : kind === "index" ? `/api/bookmarks/embeddings/sync?${scope}&full=true` : `/api/enrich?${scope}&full=true`;
+      const run = await operation.submit(url);
+      if (run) {
+        if (soundOnComplete && run.status === "completed") playSuccessSound();
+        if (soundOnError && ["failed", "partial", "paused"].includes(run.status)) playErrorSound();
+        log(operationMessage(run), run.status !== "completed");
+      } else {
+        const folder = folders.find((candidate) => candidate.id === folderId);
+        log(`No items need ${kind === "summarize" ? "summarizing" : kind === "index" ? "indexing" : "importing"}${folder ? ` in ${folder.name ?? "this folder"}` : ""}.`);
       }
-      log(`Imported all: ${imp} new, ${ref} refreshed. X calls: ${pgs}.`);
       router.refresh();
-    } catch (e) {
-      log(e instanceof Error ? e.message : String(e), true);
-    } finally {
-      setLoad("all", false);
-    }
+    } catch (error) { log(error instanceof Error ? error.message : String(error), true); }
+    finally { setLoad(key, key === "all" ? false : null); }
   };
-
-  const processFolder = async (fid: string) => {
-    setLoad("processing", fid); log("");
-    try {
-      let rid: string | null = null, proc = 0, upd = 0, errs = 0, batches = 0, halted = false;
-      while (batches < 50) {
-        const fetchUrl: string = `/api/enrich?source=x&folderId=${encodeURIComponent(fid)}${rid ? `&runId=${rid}` : ""}`;
-        const res = await fetch(fetchUrl, { method: "POST" });
-        const json = await readJson(res);
-        if (json?.stopped || (res.status === 409 && json?.stopped)) break;
-        if (res.status === 409) throw new Error(json.error || "Enrichment is already in progress.");
-        if (!res.ok) { if (soundOnError) playErrorSound(); throw new Error(json.error || "Process failed"); }
-        if (!rid) rid = json.runId;
-        const p = Number(json.processed || 0), u = Number(json.updated || 0), e = Array.isArray(json.errors) ? json.errors.length : 0;
-        const rem = Number(json.remaining);
-        proc += p; upd += u; errs += e; batches += 1;
-        if (e > 0 && soundOnError) playErrorSound();
-        if (json.continuedByServer) {
-          log(`Folder enrichment continues on the server. ${upd}/${proc} updated. Remaining: ${Number.isFinite(rem) ? rem : "unknown"}.`);
-          break;
-        }
-        if (json.finished || p === 0 || (Number.isFinite(rem) && rem === 0)) break;
-        if (e > 0 && e === p) { halted = true; break; }
-      }
-      if (soundOnComplete && !halted) playSuccessSound();
-      log(`Processed: ${upd}/${proc}. Batches: ${batches}. Errors: ${errs}.${halted ? " Halted." : ""}`);
-      router.refresh();
-    } catch (e) {
-      log(e instanceof Error ? e.message : String(e), true);
-    } finally {
-      setLoad("processing", null);
-    }
-  };
-
-  return { msg, loading, syncFolders, importFolder, importAllFolders, processFolder };
+  return { operation, msg, loading, syncFolders, importFolder: (id: string) => runAction("import", id), importAllFolders: () => runAction("import"), processFolder: (id: string) => runAction("summarize", id), indexFolder: (id: string) => runAction("index", id) };
 }

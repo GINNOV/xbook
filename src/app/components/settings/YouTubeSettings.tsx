@@ -8,8 +8,10 @@ import { DiagnosticsProbe } from "./youtube/DiagnosticsProbe";
 import { YouTubeLogo } from "../Icons";
 import { ConnectionBadge, ConnectionBanner, SettingsSection } from "./SharedFields";
 
-function youtubeConnectionState(connected: boolean, waiting: boolean) {
-  if (connected) return "connected" as const;
+import { connectionState } from "../../lib/settings-draft";
+
+function youtubeConnectionState(tested: boolean, waiting: boolean) {
+  if (tested) return "connected" as const;
   if (waiting) return "waiting" as const;
   return "disconnected" as const;
 }
@@ -22,10 +24,11 @@ function formatExpiry(value?: string | Date | null) {
 }
 
 export function YouTubeSettings() {
-  const { form, updateField, saving } = useSettingsContext();
+  const { form, updateField, saving, connectionTests } = useSettingsContext();
   const yt = useYouTubeSettings();
   const connected = Boolean(form.ytAccessToken);
-  const state = youtubeConnectionState(connected, yt.oauthWaiting);
+  const honestState = connectionState("yt", form, connectionTests.yt);
+  const state = youtubeConnectionState(honestState === "tested", yt.oauthWaiting);
   const expiry = formatExpiry(form.ytTokenExpiresAt);
 
   return (
@@ -36,7 +39,7 @@ export function YouTubeSettings() {
       badge={
         <ConnectionBadge
           state={state}
-          label={state === "connected" ? "Connected" : state === "waiting" ? "Waiting in browser" : "Not connected"}
+          label={yt.oauthWaiting ? "Waiting in browser" : honestState === "configured" ? "Configured, not tested" : honestState}
         />
       }
       defaultOpen={connected || yt.oauthWaiting}
@@ -46,10 +49,10 @@ export function YouTubeSettings() {
           state={state}
           title={
             state === "connected"
-              ? "YouTube is connected"
+              ? "YouTube connection tested"
               : state === "waiting"
                 ? "Finish sign-in in your browser"
-                : "YouTube is not connected"
+                : honestState === "expired" ? "YouTube token expired" : honestState === "unavailable" ? "YouTube connection unavailable" : connected ? "YouTube configured, not tested" : "YouTube disconnected"
           }
           detail={
             state === "connected"
@@ -58,7 +61,7 @@ export function YouTubeSettings() {
                 : "Access token is stored. Playlists and saved videos can be imported."
               : state === "waiting"
                 ? "Approve access in the browser window that just opened. This panel turns green when Google comes back."
-                : "Save your Google client details, then connect. Sign-in always happens in the system browser."
+                : connected ? "Test the displayed connection to verify access. Expired tokens may refresh during testing; reconnect if refresh fails. Saved library items are preserved." : "Save your Google client details, then connect. Sign-in always happens in the system browser."
           }
         />
         <h3 className="text-sm font-semibold">OAuth credentials</h3>

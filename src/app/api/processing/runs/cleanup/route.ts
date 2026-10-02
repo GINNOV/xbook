@@ -13,6 +13,7 @@ export async function POST() {
     const updated = await prisma.operationRun.updateMany({
       where: {
         status: { in: ["running", "queued"] },
+        jobJson: null,
       },
       data: {
         status: "failed",
@@ -22,7 +23,8 @@ export async function POST() {
     });
 
     // Clear any abandoned memory signals
-    enrichmentSignals.clear();
+    for (const controller of enrichmentSignals.values()) controller.abort();
+    await prisma.importRun.updateMany({ where: { finishedAt: null }, data: { finishedAt: new Date(), notes: "Interrupted legacy import cleared. Start a new import." } });
 
     return NextResponse.json({ 
       ok: true, 

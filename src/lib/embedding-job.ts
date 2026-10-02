@@ -1,3 +1,5 @@
+import { getIndexHealth } from "./index-health";
+import type { EmbeddingIdentity, GeneratedEmbedding } from "./embedding-vector";
 import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient, OperationRun } from "@prisma/client";
 import { z } from "zod";
@@ -32,25 +34,14 @@ function counts(job: Job) {
     skipped: job.items.filter((item) => item.status === "skipped").length,
   };
 }
-export function embeddingPendingWhere(source?: string | null, includeUnverified = false): Prisma.BookmarkWhereInput {
-  const missing = { ...(source ? { source } : {}), embedding: null, AND: [{ summary: { not: null } }, { NOT: { summary: "" } }] };
-  if (!includeUnverified) return missing;
-  return {
-    OR: [
-      missing,
-      {
-        ...(source ? { source } : {}),
-        embedding: { not: null },
-        embeddingModel: null,
-        AND: [{ summary: { not: null } }, { NOT: { summary: "" } }],
-      },
-    ],
-  };
+export function embeddingPendingWhere(source?: string | null): Prisma.BookmarkWhereInput {
+  return { ...(source ? { source } : {}), embedding: null, AND: [{ summary: { not: null } }, { NOT: { summary: "" } }] };
 }
 
 export async function submitEmbeddingJob(db: PrismaClient, input: {
-  source: string | null; limit: number; config?: object; includeUnverified?: boolean;
+  source: string | null; limit: number; config?: object; rebuild?: boolean; identity?: Pick<EmbeddingIdentity, "model" | "endpoint">;
 }): Promise<{ kind: "empty" } | { kind: "ready"; runId: string } | { kind: "conflict"; runId: string; error: string }> {
+  const identity = input.identity;
   for (let attempt = 0; ; attempt += 1) {
     try {
       return await db.$transaction(async (tx) => {
@@ -66,13 +57,14 @@ export async function submitEmbeddingJob(db: PrismaClient, input: {
       if ((active.source === "system" ? null : active.source) !== input.source) return { kind: "conflict", runId: active.id, error: "An embedding sync for a different source is active. Finish or stop that run first." };
       return { kind: "ready", runId: active.id };
     }
-    const pending = await tx.bookmark.findMany({ where: embeddingPendingWhere(input.source, input.includeUnverified), take: input.limit, orderBy: [{ importedAt: "desc" }, { id: "asc" }], select: { id: true } });
+    const health = await getIndexHealth(tx, identity, input.source);
+    const pending = await tx.bookmark.findMany({ where: input.rebuild ? { ...(input.source ? { source: input.source } : {}), AND: [{ summary: { not: null } }, { NOT: { summary: "" } }] } : { id: { in: health.rebuildIds } }, take: input.limit, orderBy: [{ importedAt: "desc" }, { id: "asc" }], select: { id: true } });
     if (!pending.length) return { kind: "empty" };
     const job: Job = { version: 1, items: pending.map(({ id }) => ({ id, status: "pending" })), owner: null, leaseUntil: 0, error: null };
     const run = await tx.operationRun.create({ data: {
       type: "embedding_sync", source: input.source ?? "system", status: "queued", total: pending.length,
       notes: `Syncing embeddings for ${pending.length} bookmarks.`,
-      configJson: JSON.stringify({ ...input.config, embeddingJob: job }),
+      configJson: JSON.stringify({ ...input.config, embeddingModel: identity?.model ?? null, embeddingBaseUrl: identity?.endpoint ?? null, rebuild: input.rebuild ?? false, embeddingJob: job }),
     } });
     return { kind: "ready", runId: run.id };
       });
@@ -84,7 +76,7 @@ export async function submitEmbeddingJob(db: PrismaClient, input: {
 }
 
 export async function runEmbeddingJob(db: PrismaClient, input: {
-  runId: string; generate: (text: string) => Promise<number[]>; leaseMs?: number; renewLease?: boolean; model?: string | null;
+  runId: string; generate: (text: string) => Promise<number[] | GeneratedEmbedding>; leaseMs?: number; renewLease?: boolean;
 }) {
   const leaseMs = input.leaseMs ?? 30_000;
   const owner = randomUUID();
@@ -129,9 +121,14 @@ export async function runEmbeddingJob(db: PrismaClient, input: {
       if (before.status !== "running" || beforeConfig.embeddingJob.owner !== owner || beforeConfig.embeddingJob.leaseUntil <= Date.now() || leaseLost) break;
       const bookmark = await db.bookmark.findUnique({ where: { id: item.id } });
       let vector: number[] | undefined;
+      let identity: GeneratedEmbedding["identity"] | undefined;
       let error: string | null = null;
       if (bookmark?.summary?.trim()) {
-        try { vector = await input.generate(`${bookmark.summary}\n${bookmark.category}\n${bookmark.tags ?? ""}`); }
+        try {
+          const generated = await input.generate(`${bookmark.summary}\n${bookmark.category}\n${bookmark.tags ?? ""}`);
+          vector = Array.isArray(generated) ? generated : generated.vector;
+          identity = Array.isArray(generated) ? undefined : generated.identity;
+        }
         catch (cause) { error = cause instanceof Error ? cause.message : "Embedding failed"; }
       }
       if (renewing) await renewing;
@@ -148,7 +145,7 @@ export async function runEmbeddingJob(db: PrismaClient, input: {
         let saved = false;
         if (bookmark && vector) {
           try {
-            saved = await saveEmbeddingIfUnchanged(tx, { id: bookmark.id, snapshot: contentSnapshot(bookmark), embedding: Buffer.from(new Float32Array(vector).buffer), model: input.model, dimensions: vector.length });
+            saved = await saveEmbeddingIfUnchanged(tx, { id: bookmark.id, snapshot: contentSnapshot(bookmark), embedding: Buffer.from(new Float32Array(vector).buffer), identity });
           } catch (cause) {
             error = cause instanceof Error ? cause.message : "Database write failed";
           }

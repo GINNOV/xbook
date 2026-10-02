@@ -5,6 +5,8 @@ import { primaryButtonClass, secondaryButtonClass } from "../SharedFields";
 
 type Props = {
   saving: boolean;
+  oauthWaiting: boolean;
+  stopWaiting: () => void;
   connectYouTubeOAuth: () => void | Promise<void>;
   clearYouTubeOAuth: () => void | Promise<void>;
   testYt: () => void | Promise<void>;
@@ -18,6 +20,7 @@ type Props = {
 
 export function ActionButtons({
   saving,
+  oauthWaiting, stopWaiting,
   connectYouTubeOAuth,
   clearYouTubeOAuth,
   testYt,
@@ -41,9 +44,10 @@ export function ActionButtons({
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-3">
-      <button type="button" onClick={connectYouTubeOAuth} className={primaryButtonClass}>{saving ? "Saving…" : "Save & Connect YouTube"}</button>
-      <button type="button" onClick={clearYouTubeOAuth} className={secondaryButtonClass}>Disconnect</button>
-      <button type="button" onClick={testYt} disabled={testingYt} className={secondaryButtonClass}>{testingYt ? "Testing…" : "Test connection"}</button>
+      <button type="button" disabled={saving || oauthWaiting} onClick={connectYouTubeOAuth} className={primaryButtonClass}>{saving ? "Saving…" : "Save & Connect YouTube"}</button>
+      <button type="button" disabled={saving || oauthWaiting} onClick={clearYouTubeOAuth} className={secondaryButtonClass}>Disconnect</button>
+      {oauthWaiting && <button type="button" onClick={stopWaiting} className={secondaryButtonClass}>Stop waiting for sign-in</button>}
+      <button type="button" onClick={testYt} disabled={testingYt} className={secondaryButtonClass}>{testingYt ? "Testing…" : "Test displayed YouTube connection"}</button>
       <button type="button" onClick={runYtDiagnostics} disabled={runningYtDiagnostics} className={secondaryButtonClass}>{runningYtDiagnostics ? "Running…" : "Run diagnostics"}</button>
       <button type="button" onClick={copyUrl} disabled={generatingYtUrl} className={`${secondaryButtonClass} ${copied ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "text-emerald-800"}`}>
         {generatingYtUrl ? "Generating…" : copied ? "Copied link" : "Copy OAuth URL"}

@@ -53,7 +53,8 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 - Vitest runs unit and disposable-SQLite integration tests in `tests/unit`: `npm test`, or `npx vitest run tests/unit/<file>.test.ts` for focused checks.
 - Database export regression: `npm test -- tests/unit/db-export.test.ts`. Backup naming: `npm test -- tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
 - Playwright runs Chromium workflow checks in `tests/e2e`: `npm run test:e2e`. Playwright creates, migrates, and deletes a temporary database automatically. Use Node 24 for native SQLite checks.
-- TypeScript: `npx tsc --noEmit`. Production verification: `npm run build`. Tests use synthetic data and mock providers by default.
+- Durable operation acceptance: `npm test -- tests/unit/operation-job-real-db.test.ts tests/unit/import-job-real-db.test.ts`. UI workflows: `npx playwright test tests/e2e/operation-observer.spec.ts tests/e2e/folder-import.spec.ts tests/e2e/settings-draft.spec.ts`. These use isolated SQLite databases and loopback or mocked providers.
+- TypeScript: `npx tsc --noEmit`. Production verification: `npm run build`. Tests use synthetic data and mock providers by default. The Playwright server explicitly blanks account/model environment keys and uses closed loopback provider defaults, so copied .env files cannot enable real account or model calls. Provider workflows configure their loopback fixtures in the disposable database.
 
 
 ## Commit & Pull Request Guidelines
@@ -62,6 +63,6 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 
 ## Security & Configuration Tips
 - Store secrets in `.env.local` (see `.env.local.example`).
-- Required: `X_BEARER_TOKEN`, `X_USER_ID`, `OPENAI_MODEL`.
+- Configure accounts and model endpoints in Settings. Environment variables are optional developer fallbacks. X bookmark import requires user OAuth; a bearer token alone is insufficient.
 - LM Studio default endpoint is `http://localhost:1234/v1`.
 - Ollama default OpenAI-compatible endpoint is `http://localhost:11434/v1`.

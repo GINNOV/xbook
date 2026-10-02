@@ -1,0 +1,9 @@
+
+> xbook@0.4.3 lint
+> eslint
+
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/lib/llm.ts
+  403:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { z } from "zod";
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { BookmarkTextMode } from "@/lib/bookmark-query";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
 import { isBookmarkSortKey, type BookmarkSortKey, type SortDir } from "@/lib/bookmark-sort";
-import { SUBSTRING_MATCH_HELP, type TextMatch } from "@/lib/bookmark-text";
 
 type SearchMode = "keyword" | "semantic" | "ask";
 
@@ -19,26 +20,14 @@ type Props = {
   status: string;
   video: boolean;
   semantic: boolean;
+  textMode?: BookmarkTextMode;
   folderId: string;
   sort: BookmarkSortKey;
   dir: SortDir;
-  match?: TextMatch;
-  semanticError?: string | null;
 };
 
-type AskCitation = {
-  id: string;
-  reason: string;
-  tweetUrl: string;
-  summary: string | null;
-  text: string | null;
-  category: string | null;
-  authorUsername: string | null;
-  source: string;
-  excerpt?: string | null;
-  timestampSeconds?: number | null;
-  captureStatus?: "complete" | "partial" | "missing" | null;
-};
+const askCitationSchema = z.object({ id: z.string(), reason: z.string(), tweetUrl: z.string().url(), summary: z.string().nullable(), text: z.string().nullable(), category: z.string().nullable(), authorUsername: z.string().nullable(), source: z.string(), excerpt: z.string().nullable().optional(), timestampSeconds: z.number().nonnegative().nullable().optional(), captureStatus: z.enum(["complete", "partial", "missing"]).nullable().optional() });
+type AskCitation = z.infer<typeof askCitationSchema>;
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -84,7 +73,7 @@ function FacetPill({
 }
 
 function buildFilterHref(
-  base: { source: string; q: string; status: string; video: boolean; semantic: boolean; sort: string; dir: string },
+  base: { source: string; q: string; status: string; video: boolean; semantic: boolean; textMode: BookmarkTextMode; sort: string; dir: string },
   patch: Record<string, string | null>
 ) {
   const params = new URLSearchParams();
@@ -93,6 +82,7 @@ function buildFilterHref(
   if (base.status) params.set("status", base.status);
   if (base.video) params.set("video", "true");
   if (base.semantic) params.set("semantic", "true");
+  if (base.textMode !== "substring") params.set("textMode", base.textMode);
   if (base.sort) params.set("sort", base.sort);
   if (base.dir) params.set("dir", base.dir);
 
@@ -115,10 +105,9 @@ export function FilterControls({
   status,
   video,
   semantic,
+  textMode = "substring",
   folderId,
   dir,
-  match = "substring",
-  semanticError,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -134,6 +123,18 @@ export function FilterControls({
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [askCitations, setAskCitations] = useState<AskCitation[]>([]);
 
+  const askRequest = useRef<AbortController | null>(null);
+  const [answeredQuestion, setAnsweredQuestion] = useState("");
+  useEffect(() => { askRequest.current?.abort(); setAskBusy(false); }, [query, source, mode]);
+  const previousScope = useRef({ source, q });
+  useLayoutEffect(() => {
+    if (previousScope.current.source === source && previousScope.current.q === q) return;
+    previousScope.current = { source, q };
+    askRequest.current?.abort();
+    setAskAnswer(null); setAskCitations([]); setAskError(null); setQuery(q);
+  }, [source, q]);
+  useEffect(() => () => askRequest.current?.abort(), []);
+
   const clearHref = (() => {
     const params = new URLSearchParams();
     if (source) params.set("source", source);
@@ -144,8 +145,8 @@ export function FilterControls({
   })();
   const hasFilter = q || category || folderId || status || video || semantic;
   const base = useMemo(
-    () => ({ source, q, status, video, semantic: mode === "semantic", sort: carriedSort, dir: carriedDir }),
-    [source, q, status, video, mode, carriedSort, carriedDir]
+    () => ({ source, q, status, video, semantic: mode === "semantic", textMode, sort: carriedSort, dir: carriedDir }),
+    [source, q, status, video, mode, textMode, carriedSort, carriedDir]
   );
 
   const sel =
@@ -182,24 +183,24 @@ export function FilterControls({
     }
     setAskBusy(true);
     setAskError(null);
-    setAskAnswer(null);
-    setAskCitations([]);
+    askRequest.current?.abort();
+    const controller = new AbortController(); askRequest.current = controller;
     try {
       const res = await fetch("/api/bookmarks/ask", {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, source: source || null }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || `Ask failed (${res.status})`);
-      }
-      setAskAnswer(json.answer as string);
-      setAskCitations((json.citations as AskCitation[]) || []);
+      const json: unknown = await res.json();
+      if (!res.ok) throw new Error(z.object({ error: z.string() }).safeParse(json).data?.error ?? `Ask failed (${res.status})`);
+      const result = z.object({ ok: z.literal(true), answer: z.string().min(1), citations: z.array(askCitationSchema) }).parse(json);
+      if (controller.signal.aborted || askRequest.current !== controller) return;
+      setAskAnswer(result.answer); setAskCitations(result.citations); setAnsweredQuestion(question);
     } catch (e) {
-      setAskError(e instanceof Error ? e.message : "Ask failed");
+      if (!controller.signal.aborted && askRequest.current === controller) setAskError(e instanceof Error ? e.message : "Ask failed");
     } finally {
-      setAskBusy(false);
+      if (askRequest.current === controller) setAskBusy(false);
     }
   };
 
@@ -214,12 +215,6 @@ export function FilterControls({
 
   return (
     <section className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm">
-      {semanticError ? (
-        <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">{semanticError}</p>
-      ) : null}
-      {match === "substring" ? (
-        <p className="mb-3 text-xs text-on-surface-variant">{SUBSTRING_MATCH_HELP}</p>
-      ) : null}
       <form method="GET" action="/bookmarks" onSubmit={onSubmit} className="space-y-3">
         {source ? <input type="hidden" name="source" value={source} /> : null}
         {mode === "semantic" ? <input type="hidden" name="semantic" value="true" /> : null}
@@ -232,6 +227,7 @@ export function FilterControls({
             <input
               type="text"
               name="q"
+              aria-label={mode === "ask" ? "Ask your library" : "Search bookmarks"}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
@@ -255,7 +251,15 @@ export function FilterControls({
             </div>
           </div>
 
-          <select name="category" defaultValue={category} className={sel}>
+          {mode === "keyword" ? (
+            <select aria-label="Text matching" name="textMode" defaultValue={textMode} className={sel}>
+              <option value="substring">Substring</option>
+              <option value="phrase">Exact phrase</option>
+              <option value="word">Exact words</option>
+            </select>
+          ) : <input type="hidden" name="textMode" value={textMode} />}
+
+          <select aria-label="Category" name="category" defaultValue={category} className={sel}>
             <option value="">All categories</option>
             {categories.map((c) => (
               <option key={c.name} value={c.name}>
@@ -264,7 +268,7 @@ export function FilterControls({
             ))}
           </select>
 
-          <select name="status" defaultValue={status} className={sel}>
+          <select aria-label="Library state" name="status" defaultValue={status} className={sel}>
             <option value="">All status</option>
             <option value="pending">Pending</option>
             <option value="summarized">Summarized</option>
@@ -275,18 +279,13 @@ export function FilterControls({
             <option value="stale">Stale index</option>
           </select>
 
-          <select name="match" defaultValue={match} className={sel} aria-label="Text match" title={SUBSTRING_MATCH_HELP}>
-            <option value="substring">Substring</option>
-            <option value="word">Whole word</option>
-            <option value="phrase">Exact phrase</option>
-          </select>
 
-          <select name="video" defaultValue={video ? "true" : ""} className={sel}>
+          <select aria-label="Content type" name="video" defaultValue={video ? "true" : ""} className={sel}>
             <option value="">All content</option>
             <option value="true">Videos only</option>
           </select>
 
-          <select name="folderId" defaultValue={folderId} className={sel}>
+          <select aria-label="Folder" name="folderId" defaultValue={folderId} className={sel}>
             <option value="">All folders</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>
@@ -320,6 +319,12 @@ export function FilterControls({
             </button>
           ) : null}
         </div>
+        {mode === "keyword" ? (
+          <p className="text-xs text-on-surface-variant">
+            Substring matches part of a word. Exact words matches every whole word.
+            Exact phrase matches adjacent words in order within one field. Matching ignores case and separates punctuation.
+          </p>
+        ) : null}
       </form>
 
       {/* Ask AI conversation panel */}
@@ -328,9 +333,10 @@ export function FilterControls({
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Chat find · uses your configured LLM + embeddings
           </p>
-          {askError ? <p className="text-sm text-error">{askError}</p> : null}
+          {askError ? <div role="alert" className="text-sm text-error"><p>{askError}</p><button type="button" disabled={askBusy} onClick={() => void runAsk()} className="mt-2 underline">Retry question</button></div> : null}
           {askAnswer ? (
             <div className="space-y-3">
+              <p className="text-xs text-on-surface-variant">Saved answer for: {answeredQuestion}</p>
               <div className="rounded-lg bg-surface-container-lowest px-4 py-3 text-sm leading-6 text-on-surface whitespace-pre-wrap">
                 {askAnswer}
               </div>
