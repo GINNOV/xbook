@@ -18,6 +18,8 @@ This document is for developers who want to set up, build, or contribute to XBoo
 
 ## Setup
 
+Use Node.js 24 for development and native SQLite verification. Newer unsupported Node major versions can fail to compile `better-sqlite3`.
+
 Install dependencies:
 
 ```bash
@@ -168,7 +170,7 @@ npm run test:crap
 npx prisma migrate dev
 ```
 
-Playwright starts its own dev server on `http://localhost:3100`.
+Playwright creates and migrates a temporary SQLite database, starts its own dev server on `http://localhost:3100`, and deletes the fixture database after the run. It does not use the checkout or desktop database.
 
 ## Product promo video (Remotion)
 

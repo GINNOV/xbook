@@ -44,7 +44,9 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 - Linting: ESLint via `eslint-config-next`.
 
 ## Testing Guidelines
-- No automated tests are configured yet. If you add tests, place them near the feature or in a `__tests__` folder and document the runner and command in this file.
+- Vitest runs unit and disposable-SQLite integration tests in `tests/unit`: `npm test`, or `npx vitest run tests/unit/<file>.test.ts` for focused checks.
+- Playwright runs Chromium workflow checks in `tests/e2e`: `npm run test:e2e`. Playwright creates, migrates, and deletes a temporary database automatically. Use Node 24 for native SQLite checks.
+- TypeScript: `npx tsc --noEmit`. Production verification: `npm run build`. Tests use synthetic data and mock providers by default.
 
 ## Commit & Pull Request Guidelines
 - Commit messages in history are short, imperative sentences (e.g., "added hash system"). Follow that pattern unless you introduce a formal convention.

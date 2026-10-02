@@ -7,7 +7,11 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     importRun: { create: vi.fn().mockResolvedValue({ id: "run-1" }), update: vi.fn() },
     operationRun: { update: vi.fn() },
-    bookmarkFolder: { upsert: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
+    bookmarkFolder: {
+      upsert: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     bookmark: {
       findMany: vi.fn().mockResolvedValue([]),
       upsert: vi.fn(),
@@ -88,6 +92,10 @@ describe("X Deep Folder Sync Integration", () => {
     }
     expect(json.ok).toBe(true);
     expect(json.fetched).toBe(2);
+    expect(prisma.bookmarkFolder.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["f1"] } },
+      data: { lastFetchedAt: expect.any(Date) },
+    });
 
     // CRITICAL: Verify the folder list call DOES NOT have forbidden parameters
     const folderListCall = new URL(vi.mocked(fetch).mock.calls[1][0] as string);

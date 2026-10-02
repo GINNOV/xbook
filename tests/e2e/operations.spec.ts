@@ -2,12 +2,18 @@ import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-const adapter = new PrismaBetterSqlite3({ url: "./dev.db" });
+const databaseUrl = process.env.XBOOK_E2E_DATABASE_URL;
+if (!databaseUrl) throw new Error("Missing disposable E2E database");
+const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
 test.describe("Operations & Logs", () => {
   test.beforeEach(async () => {
-    // Seed some active and completed runs with numeric-compatible IDs
+    await prisma.settings.upsert({
+      where: { id: "default" },
+      update: { llmModel: "e2e-model" },
+      create: { id: "default", llmModel: "e2e-model" },
+    });
     await prisma.operationRun.createMany({
       data: [
         { id: "999001", type: "enrichment_batch", source: "x", status: "running", startedAt: new Date() },
@@ -16,10 +22,10 @@ test.describe("Operations & Logs", () => {
     });
 
     await prisma.bookmark.upsert({
-      where: { id: "e2e-bookmark-x" },
+      where: { id: "e2e-operations-bookmark-x" },
       update: {
         source: "x",
-        tweetUrl: "https://x.com/i/web/status/e2e-bookmark-x",
+        tweetUrl: "https://x.com/i/web/status/e2e-operations-bookmark-x",
         text: "E2E bookmark source text for UI validation.",
         authorUsername: "e2e_author",
         summary: null,
@@ -27,9 +33,9 @@ test.describe("Operations & Logs", () => {
         tags: null,
       },
       create: {
-        id: "e2e-bookmark-x",
+        id: "e2e-operations-bookmark-x",
         source: "x",
-        tweetUrl: "https://x.com/i/web/status/e2e-bookmark-x",
+        tweetUrl: "https://x.com/i/web/status/e2e-operations-bookmark-x",
         text: "E2E bookmark source text for UI validation.",
         authorUsername: "e2e_author",
       },
@@ -41,7 +47,7 @@ test.describe("Operations & Logs", () => {
       where: { id: { in: ["999001", "999002"] } }
     });
     await prisma.bookmark.deleteMany({
-      where: { id: "e2e-bookmark-x" }
+      where: { id: "e2e-operations-bookmark-x" }
     });
   });
 
@@ -56,15 +62,15 @@ test.describe("Operations & Logs", () => {
     await page.waitForURL(/source=x/);
     await expect(page.url()).toContain("source=x");
     
-    // Check that X items are visible (by title) and YT items are not
-    await expect(page.getByTitle("YouTube")).not.toBeVisible();
+    await expect(page.locator('a[href*="runId=999001"]')).toBeVisible();
+    await expect(page.locator('a[href*="runId=999002"]')).toHaveCount(0);
 
     // Filter by YouTube
     await page.getByRole("link", { name: "YouTube", exact: true }).click();
     await page.waitForURL(/source=yt/);
     await expect(page.url()).toContain("source=yt");
-    await expect(page.getByTitle("YouTube").first()).toBeVisible();
-    await expect(page.getByTitle("X", { exact: true })).not.toBeVisible();
+    await expect(page.locator('a[href*="runId=999002"]')).toBeVisible();
+    await expect(page.locator('a[href*="runId=999001"]')).toHaveCount(0);
   });
 
   test("Stop all operations button appears and works", async ({ page }) => {
@@ -97,83 +103,55 @@ test.describe("Operations & Logs", () => {
     await clearBtn.click();
     await page.getByRole("button", { name: "Clear History", exact: true }).click();
     
-    // List should be empty (excluding the system e2e-operation-run if it exists, or just check the list text)
-    // Actually the button clears EVERYTHING, so we should re-seed if we want ui.spec.ts to pass.
-    // A better way is to run ui.spec.ts first or make them independent.
     await expect(page.getByText("No runs match filters.")).toBeVisible();
     
     const count = await prisma.operationRun.count();
     expect(count).toBe(0);
   });
 
-  test("Multi-batch enrichment consolidates into a single run", async ({ page }) => {
-    // We'll mock the enrichment API to return a runId and then simulate multiple batches
-    let callCount = 0;
+  test("Multi-batch enrichment reuses one run ID", async ({ page }) => {
+    const requests: URL[] = [];
     const testRunId = "consolidated-run-id";
-    
-    await page.route("**/api/enrich*", async (route) => {
-      callCount++;
-      if (callCount === 1) {
-        // First call creates the run
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ ok: true, runId: testRunId, processed: 1, updated: 1, remaining: 1, errors: [] })
-        });
-      } else {
-        // Subsequent calls use the same runId
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ ok: true, runId: testRunId, processed: 0, updated: 0, remaining: 0, errors: [] })
-        });
-      }
-    });
-// Start enrichment
-await page.goto("/");
-const enrichBtn = page.getByRole("button", { name: /Enrich all X/ });
-await expect(enrichBtn).toBeVisible();
 
-await enrichBtn.click();
-
-// Wait for the message to indicate completion (from showToast or setMessage)
-await expect(page.getByText("Processing finished.")).toBeVisible();
-
-// We expect 2 calls (because remaining was 1 then 0)
-expect(callCount).toBe(2);
-});
-
-  test("Stopping a run aborts the in-flight LLM request", async ({ page }) => {
-    await page.route("**/api/enrich*", async (route) => {
-      // Simulate a long-running request
-      
-      // Wait for a bit to allow the user to click stop
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (route.request().isNavigationRequest()) {
-         return route.continue();
-      }
-
+    await page.route("**/api/enrich?**", async (route) => {
+      requests.push(new URL(route.request().url()));
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ ok: true, runId: "abort-test", processed: 1, updated: 1, remaining: 0, errors: [] })
+        body: JSON.stringify({
+          ok: true,
+          runId: testRunId,
+          processed: 1,
+          updated: 1,
+          remaining: requests.length === 1 ? 1 : 0,
+          errors: [],
+        }),
       });
     });
 
-    // This is hard to test perfectly via E2E because the signal is on the server side.
-    // But we can check that the UI stops polling and the status changes.
+    await page.goto("/");
+    await page.getByRole("button", { name: "Advanced actions" }).click();
+    await page.getByRole("button", { name: /Enrich all X/ }).click();
+    await expect(page.getByText("Processing finished.")).toBeVisible();
+
+    expect(requests).toHaveLength(2);
+    expect(requests[0].searchParams.get("runId")).toBeNull();
+    expect(requests[1].searchParams.get("runId")).toBe(testRunId);
+    expect(requests.every((url) => url.searchParams.get("source") === "x")).toBe(true);
+  });
+
+  test("Stopping active runs persists the stopped status", async ({ page }) => {
     await page.goto("/processing");
-    const stopAllBtn = page.getByRole("button", { name: "Stop all operations" });
-    await expect(stopAllBtn).toBeVisible();
-    
-    await stopAllBtn.click();
+    await page.getByRole("button", { name: "Stop all operations" }).click();
     await page.getByRole("button", { name: "Stop All", exact: true }).click();
-    
-    await expect(page.locator(".font-bold", { hasText: "stopped" }).first()).toBeVisible();
-    
-    // On the server, the signal would have been called. 
-    // To truly verify the AbortSignal, we would need a unit test for the API route or a more complex mock.
-    // Given the constraints, the fact that the status is 'stopped' in the DB is the primary success criteria.
+
+    const runRow = page.locator('a[href*="runId=999001"]');
+    await expect(runRow).toContainText("stopped");
+    const run = await prisma.operationRun.findUnique({ where: { id: "999001" } });
+    expect(run?.status).toBe("stopped");
+  });
+
+  test.afterAll(async () => {
+    await prisma.$disconnect();
   });
 });

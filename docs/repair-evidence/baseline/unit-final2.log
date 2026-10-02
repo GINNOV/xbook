@@ -1,0 +1,14 @@
+
+> xbook@0.4.3 test
+> vitest run
+
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+
+ Test Files  45 passed (45)
+      Tests  307 passed (307)
+   Start at  16:23:20
+   Duration  7.71s (transform 3.46s, setup 2.54s, import 8.13s, tests 20.47s, environment 15.96s)
+
