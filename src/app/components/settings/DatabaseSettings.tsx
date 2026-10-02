@@ -38,6 +38,7 @@ export function DatabaseSettings() {
   } = useDatabaseSettings();
 
   const [customName, setCustomName] = useState("");
+  const [includeSecrets, setIncludeSecrets] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
@@ -71,17 +72,32 @@ export function DatabaseSettings() {
           <div className="space-y-4 rounded-lg border border-black/5 bg-slate-50/50 p-4">
             <h4 className="text-sm font-semibold text-slate-700">Backup active database</h4>
             <p className="text-xs text-slate-500">
-              Generate a copy of the database. You can download it to your local machine or save it on the server.
+              Download a portable SQLite snapshot or save a recovery backup beside the backend database. Desktop recovery backups stay on this computer and can contain stored credentials and technical logs.
             </p>
             
             <div className="flex flex-col gap-3">
               <a
-                href="/api/settings/database/backup"
+                href={`/api/settings/database/backup?${new URLSearchParams({ customName, includeSecrets: String(includeSecrets) })}`}
                 download
                 className={`${secondaryButtonClass} text-center inline-block w-full`}
               >
                 Download active database (.db)
               </a>
+
+              <label className="flex items-start gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={includeSecrets}
+                  onChange={(event) => setIncludeSecrets(event.target.checked)}
+                />
+                Include API keys and account tokens in download
+              </label>
+              <p className="text-xs text-slate-500">
+                {includeSecrets
+                  ? "Anyone with this file can use your connected accounts. Store it securely and do not share it."
+                  : "Downloads exclude API keys and account tokens. Reconnect your accounts after restoring on another device."}
+                {" "}Local recovery backups retain credentials and technical logs.
+              </p>
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-slate-600">
@@ -101,7 +117,7 @@ export function DatabaseSettings() {
                     disabled={creating}
                     className={secondaryButtonClass}
                   >
-                    {creating ? "Creating..." : "Save to server"}
+                    {creating ? "Creating..." : "Save local backup"}
                   </button>
                 </div>
               </div>
@@ -139,11 +155,11 @@ export function DatabaseSettings() {
 
         {/* Server backups list */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-slate-700">Saved local backups on server</h4>
+          <h4 className="text-sm font-semibold text-slate-700">Saved local recovery backups</h4>
           {loading ? (
             <p className="text-xs text-slate-500">Loading backups...</p>
           ) : backups.length === 0 ? (
-            <p className="text-xs text-slate-400 italic">No local backups stored on server yet.</p>
+            <p className="text-xs text-slate-400 italic">No local recovery backups saved yet.</p>
           ) : (
             <div className="overflow-hidden rounded-lg border border-black/5">
               <table className="min-w-full divide-y divide-black/5 text-sm text-left">

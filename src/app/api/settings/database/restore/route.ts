@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
+import os from "node:os";
+import { DatabaseMaintenanceError } from "@/lib/database-maintenance";
+import { InvalidRestoreError } from "@/lib/restore-validation";
+import { z } from "zod";
 import { restoreBackup, getBackupDir } from "@/lib/db-backup";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +16,8 @@ export async function POST(request: Request) {
     if (contentType.includes("multipart/form-data")) {
       // 1. Restore from file upload
       const formData = await request.formData();
-      const file = formData.get("file") as File | null;
-      if (!file) {
+      const file = formData.get("file");
+      if (!(file instanceof File)) {
         return NextResponse.json({ ok: false, error: "No file uploaded" }, { status: 400 });
       }
 
@@ -36,34 +40,34 @@ export async function POST(request: Request) {
         );
       }
 
-      // Write to a temporary file in the backup directory
-      const tempPath = path.join(getBackupDir(), `temp_restore_${Date.now()}.db`);
-      fs.writeFileSync(tempPath, buffer);
+      // Use a private temporary upload directory.
+      const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "xbook-upload-"));
+      const tempPath = path.join(temporaryDirectory, "candidate.db");
+      fs.writeFileSync(tempPath, buffer, { mode: 0o600 });
 
       try {
         await restoreBackup(tempPath);
       } finally {
         // Clean up temp file
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
+        fs.rmSync(temporaryDirectory, { recursive: true, force: true });
       }
 
       return NextResponse.json({ ok: true, message: "Database successfully restored from uploaded file" });
     } else if (contentType.includes("application/json")) {
       // 2. Restore from server backup
       const body = await request.json().catch(() => ({}));
-      const { filename } = body;
-      if (!filename) {
+      const parsed = z.object({ filename: z.string().min(1) }).safeParse(body);
+      if (!parsed.success) {
         return NextResponse.json({ ok: false, error: "Filename is required" }, { status: 400 });
       }
 
+      const { filename } = parsed.data;
       const backupDir = getBackupDir();
       const backupPath = path.join(backupDir, filename);
 
       // Security traversal check
       const relative = path.relative(backupDir, backupPath);
-      if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      if (path.basename(filename) !== filename || relative.startsWith("..") || path.isAbsolute(relative)) {
         return NextResponse.json({ ok: false, error: "Invalid backup file path" }, { status: 400 });
       }
 
@@ -71,6 +75,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, error: "Backup file not found on server" }, { status: 404 });
       }
 
+      const canonicalBackupDir = fs.realpathSync(backupDir);
+      if (path.dirname(fs.realpathSync(backupPath)) !== canonicalBackupDir) {
+        return NextResponse.json({ ok: false, error: "Invalid backup file path" }, { status: 400 });
+      }
       await restoreBackup(backupPath);
       return NextResponse.json({ ok: true, message: `Database successfully restored from local backup: ${filename}` });
     } else {
@@ -80,7 +88,7 @@ export async function POST(request: Request) {
     console.error("Database restore error:", error);
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { status: error instanceof DatabaseMaintenanceError ? 409 : error instanceof InvalidRestoreError ? 400 : 500 }
     );
   }
 }
