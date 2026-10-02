@@ -46,7 +46,7 @@ export async function operationPost(request: Request, kind: "enrich" | "embeddin
     if (!Number.isInteger(limit) || limit < 1 || !Number.isInteger(concurrency) || concurrency < 1 || concurrency > 32) return NextResponse.json({ ok: false, error: "Invalid batch size or concurrency. Correct AI settings." }, { status: 400 });
     let embedding: Awaited<ReturnType<typeof getEffectiveEmbeddingIdentity>>;
     let chat: Awaited<ReturnType<typeof captureLlmConnection>> | undefined;
-    try { embedding = await getEffectiveEmbeddingIdentity(); chat = kind === "enrich" ? await captureLlmConnection() : undefined; }
+    try { embedding = await getEffectiveEmbeddingIdentity(); if (kind === "embedding" && !embedding) throw new Error("Missing embedding model. Select an embedding model in AI settings; keyword search remains available."); chat = kind === "enrich" ? await captureLlmConnection() : undefined; }
     catch (error) {
       const message = error instanceof Error ? error.message : "Model configuration unavailable";
       const failedRun = await prisma.$transaction(async (tx) => {
@@ -65,7 +65,7 @@ export async function operationPost(request: Request, kind: "enrich" | "embeddin
       ids = [singleBookmark.id];
     } else if (kind === "embedding") {
       const health = await getIndexHealth(prisma, embedding, source);
-      const rows = await prisma.bookmark.findMany({ where: query.rebuild === "true" ? { ...(source ? { source } : {}), AND: [{ summary: { not: null } }, { NOT: { summary: "" } }] } : { id: { in: health.rebuildIds } },
+      const rows = await prisma.bookmark.findMany({ where: { ...(query.folderId ? { folderId: query.folderId } : {}), ...(query.rebuild === "true" ? { ...(source ? { source } : {}), AND: [{ summary: { not: null } }, { NOT: { summary: "" } }] } : { id: { in: health.rebuildIds } }) },
         orderBy: [{ importedAt: "desc" }, { id: "asc" }], select: { id: true } });
       ids = rows.map(({ id }) => id);
     } else {
@@ -77,7 +77,7 @@ export async function operationPost(request: Request, kind: "enrich" | "embeddin
       scope: { source, folderId: query.folderId, replaceEdited: query.replaceEdited === "true" },
       settings: { ...(chat ? { chat } : {}), embedding, concurrency, batchSize: limit }, ids,
       idempotencyKey, request: requestSpec,
-      config: kind === "embedding" ? { ...buildEmbeddingRunConfig(settings), embeddingModel: embedding.model, embeddingBaseUrl: embedding.endpoint, baseUrl: embedding.endpoint } : { ...buildEnrichmentRunConfig(settings, { concurrency, batchSize: limit }), model: chat?.model, baseUrl: chat?.baseUrl } });
+      config: kind === "embedding" ? { ...buildEmbeddingRunConfig(settings), embeddingModel: embedding?.model, embeddingBaseUrl: embedding?.endpoint, baseUrl: embedding?.endpoint } : { ...buildEnrichmentRunConfig(settings, { concurrency, batchSize: limit }), model: chat?.model, baseUrl: chat?.baseUrl } });
     if (submitted.kind === "empty") return NextResponse.json({ ok: true, updated: 0, failed: 0, remaining: 0, source: source ?? "all", message: kind === "embedding" ? "No bookmarks need embedding sync." : "No bookmarks need processing." });
     if (!submitted.run) throw new Error("Missing submitted run");
     if (submitted.kind === "conflict") return NextResponse.json({ ok: false, runId: submitted.run.id, busy: true, error: submitted.error }, { status: 409 });
@@ -100,7 +100,11 @@ export async function operationPost(request: Request, kind: "enrich" | "embeddin
   const current = readOperationJob(run);
   if (!current) throw new Error("Invalid job checkpoint");
   const counts = jobCounts(current);
-  const remaining = kind === "embedding" ? (await getIndexHealth(prisma, operationSettingsSchema.parse(current.settings).embedding, current.scope.source)).rebuildIds.length : counts.remaining;
+  let remaining = counts.remaining;
+  if (kind === "embedding") {
+    const health = await getIndexHealth(prisma, operationSettingsSchema.parse(current.settings).embedding, current.scope.source);
+    remaining = current.scope.folderId ? await prisma.bookmark.count({ where: { folderId: current.scope.folderId, id: { in: health.rebuildIds } } }) : health.rebuildIds.length;
+  }
   const failed = run.status === "failed";
   const stopped = run.status === "stopped";
   const pending = run.status === "queued" || run.status === "running";

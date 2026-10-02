@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { parseEmbeddingJobConfig } from "./embedding-job";
 import { prisma } from "./db";
 import { enrichmentSignals } from "./signals";
+import { importOperationAdapter } from "./import-job-adapter";
 import { operationAdapter } from "./operation-adapters";
 import { readOperationJob, runOperationJob } from "./operation-job";
 
@@ -42,7 +43,7 @@ export async function processOperationQueue() {
     }
     if (job.preflightRetryAt > Date.now()) continue;
     if (job.items.some((item) => item.status === "pending") && job.items.every((item) => item.status !== "pending" || item.retryAt > Date.now())) continue;
-    try { await runOperationJob(prisma, { runId: run.id, adapter: operationAdapter(job), controllers: enrichmentSignals }); }
+    try { await runOperationJob(prisma, { runId: run.id, adapter: job.kind === "import" ? importOperationAdapter() : operationAdapter(job), controllers: enrichmentSignals }); }
     catch (error) {
       await prisma.operationRun.updateMany({ where: { id: run.id, revision: run.revision, leaseOwner: null }, data: { status: "failed", finishedAt: new Date(), notes: error instanceof Error ? error.message : "Invalid job settings. Correct AI settings and restart." } });
     }

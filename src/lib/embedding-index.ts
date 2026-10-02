@@ -49,15 +49,18 @@ export async function saveEnrichmentIfUnchanged(
     id: string;
     snapshot: ContentSnapshot;
     content: IndexedContent;
+    provenance?: string;
+    sourceSnapshot?: Pick<Bookmark, "text" | "rawJson" | "captureJson" | "source" | "tweetUrl" | "externalUrls" | "mediaDescription">;
     embedding: number[] | undefined;
     embeddingIdentity?: EmbeddingIdentity;
   }
 ) {
   if (input.embedding) validateEmbeddingVector(input.embedding, input.embeddingIdentity?.dimensions);
   const result = await tx.bookmark.updateMany({
-    where: { id: input.id, ...input.snapshot },
+    where: { id: input.id, ...input.snapshot, ...input.sourceSnapshot },
     data: {
       ...input.content,
+      ...(input.provenance ? { summarySource: input.provenance } : {}),
       embedding: input.embedding ? Buffer.from(new Float32Array(input.embedding).buffer) : null,
       embeddingContentHash: input.embedding ? embeddingContentHash(input.content) : null,
       embeddingIndexedAt: input.embedding ? new Date() : null,

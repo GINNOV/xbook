@@ -48,6 +48,7 @@ function stubCandidates(rows: Candidate[], expectedScope: Prisma.BookmarkWhereIn
 describe("semantic retrieval scope", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.findMany.mockResolvedValue([]);
     mocks.generateEmbedding.mockResolvedValue([1, 0]);
     mocks.answerLibraryQuestion.mockResolvedValue({ answer: "Scoped answer", citations: [] });
   });
@@ -142,7 +143,7 @@ describe("semantic retrieval scope", () => {
     expect(body.matches).toHaveLength(12);
     expect(body.citations).toEqual([expect.objectContaining({ id: "yt-0", reason: "Relevant", source: "yt" })]);
     expect(mocks.answerLibraryQuestion).toHaveBeenCalledWith({
-      question: "video ideas", candidates: body.matches,
+      question: "video ideas", candidates: body.matches, signal: expect.any(AbortSignal),
     });
   });
 

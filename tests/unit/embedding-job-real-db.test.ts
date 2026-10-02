@@ -86,7 +86,7 @@ describe("durable embedding jobs", () => {
 
   it("renews the durable lease while a slow provider is awaited", async () => {
     const runId = await submit();
-    expect(await runEmbeddingJob(prisma, { runId, leaseMs: 60, generate: async () => { await pause(160); return [1, 0]; } })).toMatchObject({ kind: "finished", updated: 2 });
+    expect(await runEmbeddingJob(prisma, { runId, leaseMs: 1000, generate: async () => { await pause(1200); return [1, 0]; } })).toMatchObject({ kind: "finished", updated: 2 });
   });
 
   it("honors persisted stop requests before publishing an awaited vector", async () => {

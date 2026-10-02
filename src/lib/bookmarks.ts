@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { bookmarkIndexState } from "./embedding-index";
 import { decodeEmbedding, validateEmbeddingVector } from "./embedding-vector";
+import { readSourceEvidence, questionTerms } from "./source-evidence";
 import { getIndexHealth } from "./index-health";
 import { effectiveBookmarkPagination } from "./bookmark-pagination";
 import type { Prisma, ProcessingEvent } from "@prisma/client";
@@ -28,8 +29,8 @@ export function cosineSimilarity(vecA: number[], vecB: number[]) {
   return dot / (Math.sqrt(nA) * Math.sqrt(nB));
 }
 
-export async function searchBookmarksSemantically(query: string, scope: BookmarkSearchScope = {}) {
-  const generated = await generateEmbeddingResult(query);
+export async function searchBookmarksSemantically(query: string, scope: BookmarkSearchScope = {}, signal?: AbortSignal) {
+  const generated = await generateEmbeddingResult(query, signal);
   const qe = generated.vector;
   const where = await buildWhereClause({ ...scope, query: undefined });
   const bs = await prisma.bookmark.findMany({ where: { AND: [where, { embedding: { not: null } }] }, select: { id: true, summary: true, category: true, tags: true, embedding: true, embeddingModel: true, embeddingEndpoint: true, embeddingDimensions: true, embeddingContentHash: true, embeddingIndexedAt: true } });
@@ -42,6 +43,22 @@ export async function searchBookmarksSemantically(query: string, scope: Bookmark
   if (bs.length && !results.length) throw new Error("No compatible embeddings. Rebuild the index for the current model; keyword search remains available.");
   const full = await prisma.bookmark.findMany({ where: { id: { in: results.map(r => r.id) } }, include: { folder: true } });
   return results.map(r => { const f = full.find(fb => fb.id === r.id); return f ? { ...f, similarity: r.similarity } : null; }).filter((b): b is NonNullable<typeof b> => !!b);
+}
+
+/** Exact captured evidence can enter Ask even when its generated summary has no match. */
+export async function searchQuestionEvidence(question: string, scope: BookmarkSearchScope = {}) {
+  const terms = questionTerms(question).slice(0, 12);
+  if (!terms.length) return [];
+  const where = await buildWhereClause(scope);
+  const rows = await prisma.bookmark.findMany({ where: { AND: [where, { OR: terms.flatMap((term) => [
+    { text: { contains: term } }, { summary: { contains: term } }, { captureJson: { contains: term } }, { rawJson: { contains: term } },
+  ]) }] }, take: 5000, orderBy: { id: "asc" } });
+  return rows.map((row) => {
+    const evidence = readSourceEvidence(row.rawJson, row.captureJson);
+    const text = [row.text, ...(evidence?.capture.sections.map((section) => section.text) ?? [])].join(" ");
+    const words = new Set(text.normalize("NFKC").toLocaleLowerCase("en-US").match(/[\p{L}\p{N}_]+/gu) ?? []);
+    return { row, score: terms.filter((term) => words.has(term)).length };
+  }).filter((entry) => entry.score > 0).sort((a, b) => b.score - a.score || a.row.id.localeCompare(b.row.id)).slice(0, 8).map((entry) => entry.row);
 }
 
 /**
@@ -123,7 +140,7 @@ async function buildWhereClause(p: BookmarkSearchScope & { query?: string }) {
   if (p.folderId) clauses.push({ folderId: p.folderId });
   if (p.source) clauses.push({ source: p.source });
   if (p.status === "stale" || p.status === "unindexed") {
-    const health = await getIndexHealth(prisma, await getEffectiveEmbeddingIdentity(), p.source);
+    const health = await getIndexHealth(prisma, await getEffectiveEmbeddingIdentity().catch(() => undefined), p.source);
     clauses.push({ id: { in: p.status === "stale" ? health.staleIds : health.rebuildIds } });
   }
   const statusFilter = buildStatusFilter(p.status);
@@ -147,8 +164,9 @@ const mapB = (b: BookmarkRecord) => ({
   ...b, folderName: b.folder?.name ?? null, importedAt: b.importedAt?.toISOString() ?? null,
   createdAt: b.createdAt?.toISOString() ?? null, summarizedAt: b.summarizedAt?.toISOString() ?? null,
   editedAt: b.editedAt?.toISOString() ?? null, readAt: b.readAt?.toISOString() ?? null,
-  // Prefer durable bookmark field; fall back to latest failed processing event.
-  error: b.enrichmentError || b.processingEvents?.[0]?.message || null,
+  enrichmentFailures: b.enrichmentFailures,
+  // Historical failures remain in Processing; a successful retry clears current error.
+  error: b.enrichmentError || null,
 });
 
 const bookmarkInclude = {

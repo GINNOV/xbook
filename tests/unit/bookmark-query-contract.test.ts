@@ -181,7 +181,7 @@ describe("shared query contract through SQLite, Library and agent GET", () => {
     const html = renderToStaticMarkup(await BookmarksPage({ searchParams: Promise.resolve({ ...parameters, q: "nomic", semantic: "true", textMode: "word", sort: "author", dir: "asc" }) }));
     expect(html).toContain("Semantic search is unavailable");
     expect(html).toContain('href="/settings"');
-    for (const name of ["Search bookmarks", "Category", "Enrichment status", "Content type", "Folder", "Text matching"]) {
+    for (const name of ["Search bookmarks", "Category", "Library state", "Content type", "Folder", "Text matching"]) {
       expect(html).toContain(`aria-label="${name}"`);
     }
     expect(html).toContain('name="sort" value="author"');

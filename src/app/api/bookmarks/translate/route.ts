@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     const translatedText = await translateText({
       text: bookmark.text || "",
       targetLanguage,
+      signal: request.signal,
       processing: { runId: run.id, bookmarkId: bookmark.id },
     });
 

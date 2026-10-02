@@ -43,4 +43,16 @@ describe("waitForYouTubeToken", () => {
 
     expect(result).toBeNull();
   });
+  it("cancels observation immediately without clearing credentials or starting another poll", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn().mockResolvedValue({ json: async () => ({ settings: { ytAccessToken: "old", ytTokenExpiresAt: "2020-01-01" } }) });
+    const pending = waitForYouTubeToken({ previousExpiresAt: "2020-01-01", intervalMs: 10000, signal: controller.signal, fetchImpl });
+    const rejected = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    controller.abort();
+    await rejected;
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith("/api/settings", { cache: "no-store", signal: controller.signal });
+  });
+
 });

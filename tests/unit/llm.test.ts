@@ -25,7 +25,7 @@ vi.mock("@/lib/db", () => ({
         llmApiKey: "test-key",
         llmModel: "test-model",
         llmSystemPrompt: "test-system",
-        llmContextWindow: 1000,
+        llmContextWindow: 4096,
         llmResponseLimit: 100,
         llmMaxTokens: 100,
         logLlmPayloads: true,
@@ -40,7 +40,7 @@ vi.mock("@/lib/settings", () => ({
     llmApiKey: "test-key",
     llmModel: "test-model",
     llmSystemPrompt: "test-system",
-    llmContextWindow: 1000,
+    llmContextWindow: 4096,
     llmResponseLimit: 100,
     llmMaxTokens: 100,
     logLlmPayloads: true,
@@ -80,7 +80,7 @@ describe("LLM Service", () => {
     llmApiKey: "test-key",
     llmModel: "test-model",
     llmSystemPrompt: null,
-    llmContextWindow: 1000,
+    llmContextWindow: 4096,
     llmResponseLimit: 100,
     llmMaxTokens: 100,
     logLlmPayloads: true,
@@ -158,7 +158,7 @@ describe("LLM Service", () => {
       usage: { total_tokens: 10 },
     });
 
-    const promise = expect(summarizeBookmark({ text: "test tweet" })).rejects.toThrow(/No starting '{' found/);
+    const promise = expect(summarizeBookmark({ text: "test tweet" })).rejects.toThrow(/Failed to parse LLM response/);
     await vi.runAllTimersAsync();
     await promise;
     vi.useRealTimers();
@@ -181,7 +181,7 @@ describe("LLM Service", () => {
   it("does not retry authentication failures inside enrichment", async () => {
     const create = OpenAI.prototype.chat.completions.create;
     vi.mocked(create).mockRejectedValueOnce(new Error("401 Unauthorized"));
-    await expect(summarizeBookmark({ text: "Fixture" })).rejects.toThrow("401 Unauthorized");
+    await expect(summarizeBookmark({ text: "Fixture" })).rejects.toThrow("HTTP 401");
     expect(create).toHaveBeenCalledTimes(1);
   });
 

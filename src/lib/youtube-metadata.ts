@@ -28,7 +28,7 @@ const cacheSchema = z.discriminatedUnion("kind", [
   z.object({ version: z.literal(1), kind: z.literal("found"), video: videoMetadataSchema }),
   z.object({ version: z.literal(1), kind: z.literal("missing") }),
 ]);
-const rawSchema = z.object({ item: playlistItemSchema.optional(), xbookVideoMetadata: z.unknown().optional() }).passthrough();
+const rawSchema = z.object({ item: playlistItemSchema.optional().catch(undefined), xbookVideoMetadata: z.unknown().optional() }).passthrough();
 
 function clean(value: string | undefined) { return value?.trim() || undefined; }
 function parseDate(value: string | undefined) {
@@ -68,18 +68,20 @@ export function readYouTubeRaw(rawJson: string | null) {
 }
 export function metadataFromStoredRaw(rawJson: string | null): YouTubeItemMetadata | null {
   const raw = readYouTubeRaw(rawJson);
-  if (!raw?.item) return null;
-  const metadata = metadataFromPlaylistItem(raw.item);
+  if (!raw) return null;
   const cached = cacheSchema.safeParse(raw.xbookVideoMetadata);
+  if (!raw.item && !cached.success) return null;
+  const metadata = metadataFromPlaylistItem(raw.item ?? {});
   if (!cached.success) return metadata;
   if (cached.data.kind === "missing") {
-    return { ...metadata, availability: metadata.availability === "available" ? "unavailable" : metadata.availability };
+    return { ...metadata, availability: ["deleted", "private", "unavailable"].includes(metadata.availability) ? metadata.availability : "unavailable" };
   }
   const snippet = cached.data.video.snippet;
   const author = clean(snippet.channelTitle);
   return {
     ...metadata, authorName: author, authorUsername: author,
-    uploaderChannelId: clean(snippet.channelId), createdAt: parseDate(snippet.publishedAt), availability: "available",
+    uploaderChannelId: clean(snippet.channelId), createdAt: parseDate(snippet.publishedAt),
+    availability: ["deleted", "private", "unavailable"].includes(metadata.availability) ? metadata.availability : "available",
   };
 }
 
@@ -89,8 +91,12 @@ export function cachedVideoMetadata(rawJson: string | null) {
 }
 export function withVideoMetadata(rawJson: string | null, video: AuthoritativeVideoMetadata | null) {
   const cache: z.infer<typeof cacheSchema> = video ? { version: 1, kind: "found", video } : { version: 1, kind: "missing" };
-  const raw = readYouTubeRaw(rawJson);
-  return JSON.stringify({ ...(raw ?? { xbookOriginalRawJson: rawJson }), item: raw?.item ?? {}, xbookVideoMetadata: cache });
+  let original: Record<string, unknown> | null = null;
+  try {
+    const parsed = z.record(z.string(), z.unknown()).safeParse(JSON.parse(rawJson ?? "null"));
+    if (parsed.success) original = parsed.data;
+  } catch { /* Preserve malformed original data separately when adding the cache. */ }
+  return JSON.stringify({ ...(original ?? { xbookOriginalRawJson: rawJson }), item: original?.item ?? {}, xbookVideoMetadata: cache });
 }
 
 export function allowsConfidentDigest(input: {

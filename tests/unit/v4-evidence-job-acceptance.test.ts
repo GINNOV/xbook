@@ -65,6 +65,17 @@ describe("V6 independent evidence acceptance", () => {
     expect(body.citations[0].excerpt).toContain("lavender-seven");
     expect(body.citations[0].timestampSeconds).toBe(selected[0].startSeconds);
   });
+  it("timestamps a citation using its quoted later passage rather than the first selected passage", async () => {
+    const rawJson = withSourceEvidence(null, { status: "complete", reason: null, capturedAt: new Date().toISOString(), totalCharacters: 100, storedCharacters: 100,
+      sections: [{ text: "Reactor calibration begins with careful controls.", startSeconds: 10, endSeconds: 20 },
+        { text: "The final calibration measurement is 73 kelvin.", startSeconds: 120, endSeconds: 124 }] });
+    await prisma.bookmark.create({ data: indexedFixture({ id: "later-passage", source: "yt", tweetUrl: "https://youtube.com/watch?v=fixture", summary: "Calibration", rawJson }) });
+    vi.mocked(answerLibraryQuestion).mockResolvedValueOnce({ answer: "73 kelvin", citations: [{ id: "later-passage", reason: "Final measurement", quote: "final calibration measurement is 73 kelvin" }] });
+    const response = await ask(new Request("http://localhost/api/bookmarks/ask", { method: "POST", body: JSON.stringify({ source: "yt", question: "What is the reactor calibration?" }) }));
+    const candidates = vi.mocked(answerLibraryQuestion).mock.calls[0][0].candidates;
+    expect(candidates[0].sourceEvidence?.[0].startSeconds).toBe(10);
+    expect(await response.json()).toMatchObject({ citations: [{ id: "later-passage", timestampSeconds: 120, excerpt: "final calibration measurement is 73 kelvin" }] });
+  });
   it("reports absent and malformed evidence without treating it as a complete capture", () => {
     expect(readSourceEvidence('{"xbookSourceEvidence":{"version":999}}')).toBeNull();
     const capture = captureTranscriptJson({events:[]});

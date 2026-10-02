@@ -1,4 +1,7 @@
 import OpenAI from "openai";
+import { diagnosticEndpoint, modelEndpointSchema, providerFailure } from "./connection-diagnostics";
+import type { CapturedSource } from "./capture-contract";
+import { reduceSourceSections } from "./section-summary";
 import { setTimeout as waitForRetry } from "node:timers/promises";
 import { normalizeEmbeddingEndpoint, validateEmbeddingVector, type EmbeddingIdentity, type GeneratedEmbedding } from "./embedding-vector";
 import { z } from "zod";
@@ -58,6 +61,7 @@ export type SummarizeInput = {
   authorUsername?: string;
   externalUrls?: string[];
   sourceText?: string;
+  sourceSections?: TranscriptSection[];
   mediaDescription?: string;
   folderName?: string;
   signal?: AbortSignal;
@@ -124,7 +128,7 @@ const PROMPTS = {
 
 export const llmConnectionSchema = z.object({
   model: z.string().trim().min(1),
-  baseUrl: z.string().url(),
+  baseUrl: modelEndpointSchema,
   maxTokens: z.number().int().positive(),
   contextWindow: z.number().int().positive(),
   responseLimit: z.number().int().nonnegative(),
@@ -168,6 +172,7 @@ async function getLlmConfig(connection?: LlmConnection) {
 
 /** Separate OpenAI-compatible client for embeddings (often a different host/model than chat). */
 export type EmbeddingConnection = { model: string; endpoint: string; apiKey?: string };
+class MissingEmbeddingModelError extends Error {}
 
 async function getEmbeddingConfig(connection?: EmbeddingConnection) {
   const env = envSchema.parse({
@@ -184,18 +189,20 @@ async function getEmbeddingConfig(connection?: EmbeddingConnection) {
   // Prefer dedicated embedding model; never fall back to a chat model id (usually unsupported).
   const model =
     cleanEnv(settings.llmEmbeddingModel ?? undefined) ??
-    cleanEnv(process.env.OPENAI_EMBEDDING_MODEL) ??
-    "text-embedding-3-small";
+    cleanEnv(process.env.OPENAI_EMBEDDING_MODEL);
+  if (!connection?.model && !model) throw new MissingEmbeddingModelError("Missing embedding model. Select an embedding model in Settings; keyword search remains available.");
 
   const effective = connection ?? { model, endpoint: baseUrl, apiKey };
   const client = new OpenAI({
     apiKey: effective.apiKey ?? apiKey,
-    baseURL: effective.endpoint,
+    baseURL: modelEndpointSchema.parse(effective.endpoint),
     timeout: 60000,
     maxRetries: 0,
   });
-  return { client, model: effective.model, baseUrl: normalizeEmbeddingEndpoint(effective.endpoint) };
+  return { client, model: z.string().trim().min(1).parse(effective.model), baseUrl: normalizeEmbeddingEndpoint(effective.endpoint) };
 }
+
+class ModelConfigurationError extends Error {}
 
 export async function validateModelAvailability(signal?: AbortSignal) {
   return validateLlmConnection(signal);
@@ -207,14 +214,15 @@ export async function validateLlmConnection(signal?: AbortSignal, connection?: L
     const models = await config.client.models.list({ signal });
     const isLoaded = models.data.some((m) => m.id === config.model);
     if (!isLoaded) {
-      throw new Error(`Model error: Model "${config.model}" is not currently available at ${config.baseUrl}. Please check your model server.`);
+      throw new ModelConfigurationError(`Model error: Model "${config.model}" is not currently available at ${diagnosticEndpoint(config.baseUrl)}. Please check your model server.`);
     }
     return true;
   } catch (error) {
+    if (error instanceof ModelConfigurationError) throw error;
     if (error instanceof Error && error.message.includes("No models loaded")) {
       throw new Error("Model error: No models are currently loaded on the server. Please load a model before starting.");
     }
-    throw error;
+    throw new Error(providerFailure(error, config.baseUrl));
   }
 }
 
@@ -236,7 +244,7 @@ async function callLlm(params: {
     type: "llm",
     status: "sent_to_llm",
     message: `Sent request to LLM for ${type}.`,
-    metadata: { model: config.model, baseUrl: config.baseUrl },
+    metadata: { model: config.model, baseUrl: diagnosticEndpoint(config.baseUrl) },
   });
 
   const startedAt = Date.now();
@@ -267,7 +275,7 @@ async function callLlm(params: {
       prompt
     };
   } catch (error) {
-    let message = error instanceof Error ? error.message : "Unknown LLM error";
+    let message = error instanceof InvalidEnrichmentResponseError ? error.message : providerFailure(error, config.baseUrl);
     if (message.includes("No models loaded")) {
       message = "Model error: No models are currently loaded on the server. Please load your model first.";
     }
@@ -323,10 +331,13 @@ class InvalidEnrichmentResponseError extends Error {}
 export async function summarizeBookmark(input: {
   connection?: LlmConnection;
   embeddingConnection?: EmbeddingConnection;
+  skipEmbedding?: boolean;
   text?: string;
   authorUsername?: string;
   externalUrls?: string[];
   sourceText?: string;
+  sourceSections?: TranscriptSection[];
+  sourceCapture?: Pick<CapturedSource, "method" | "language"> & Pick<CapturedSource["capture"], "status" | "reason">;
   mediaDescription?: string;
   folderName?: string;
   signal?: AbortSignal;
@@ -337,26 +348,34 @@ export async function summarizeBookmark(input: {
 }) {
   const config = await getLlmConfig(input.connection);
 
-  // Use Context Window to slice input (approx 4 chars per token)
-  const maxChars = config.contextWindow * 4;
-  const textChars = Math.floor(maxChars * 0.4);
-  const sourceChars = Math.floor(maxChars * 0.6);
-
-  const promptBody = [
-    `Text: ${(input.text ?? "").slice(0, textChars)}`,
-    `Folder/Playlist: ${input.folderName ?? ""}`,
-    `Author: ${input.authorUsername ?? ""}`,
-    `Links: ${(input.externalUrls ?? []).join(", ")}`,
+  const responseTokens = Math.min(config.maxTokens, config.responseLimit > 0 ? config.responseLimit : config.maxTokens, Math.max(1, Math.floor(config.contextWindow / 4)));
+  const instruction = config.customPrompt ?? PROMPTS.DEFAULT_ENRICHMENT;
+  const sectionInstruction = 'Summarize this source section as compact factual notes, preserving specific names, numbers and timestamps. Do not add facts. Return only JSON {"notes":"string"}.';
+  const captureContext = input.sourceCapture ? `Source method: ${input.sourceCapture.method}. Completeness: ${input.sourceCapture.status}. ${(input.sourceCapture.reason ?? "").slice(0, 500)}. Do not imply complete access to missing or partial sources.` : "";
+  const metadata = `${captureContext}\nFolder/Playlist: ${input.folderName ?? ""}\nAuthor: ${input.authorUsername ?? ""}\nLinks: ${(input.externalUrls ?? []).join(", ")}`;
+  const budget = Math.floor((config.contextWindow - responseTokens - 256) * 3) - config.systemPrompt.length - Math.max(instruction.length + metadata.length, sectionInstruction.length + 100);
+  const source = [
+    `Text: ${input.text ?? ""}`,
     `Media Description: ${input.mediaDescription ?? ""}`,
-    `Linked content (excerpts): ${(input.sourceText ?? "").slice(0, sourceChars)}`,
+    `Linked content: ${input.sourceText ?? input.sourceSections?.map(formatEvidenceSection).join("\n") ?? ""}`,
   ].join("\n");
-
-  const prompt = `${config.customPrompt ?? PROMPTS.DEFAULT_ENRICHMENT}\n\n${promptBody}`;
+  const sourceNotes = await reduceSourceSections({ text: source, budget, signal: input.signal,
+    summarize: async (section, position, total) => {
+      const result = await callLlm({ prompt: `${sectionInstruction}\nSection ${position}/${total}:\n${section}`, temperature: 0.1,
+        maxTokens: Math.min(responseTokens, Math.max(1, Math.floor(budget / 12))), signal: input.signal,
+        processing: input.processing, type: "source_section", connection: input.connection });
+      const parsed = z.object({ notes: z.string().min(1).max(Math.floor(budget / 2)) }).parse(extractJson(result.content));
+      await logLlmRequest({ runId: input.processing?.runId, bookmarkId: input.processing?.bookmarkId, model: result.config.model,
+        baseUrl: result.config.baseUrl, prompt: result.prompt, response: result.content, parsed, durationMs: result.durationMs,
+        tokenUsage: result.usage, includePayloads: result.config.logLlmPayloads });
+      return parsed.notes;
+    } });
+  const prompt = `${instruction}\n\n${metadata}\n${sourceNotes}`;
 
   const maxAttempts = 3;
   let attempt = 0;
   let lastError: any = null;
-  let currentMaxTokens: number | undefined = undefined;
+  let currentMaxTokens: number | undefined = responseTokens;
   let currentTemperature = 0.2;
 
   while (attempt < maxAttempts) {
@@ -390,14 +409,14 @@ export async function summarizeBookmark(input: {
       let parsed: any;
       try {
         parsed = extractJson(result.content);
-      } catch (e: any) {
-        throw new InvalidEnrichmentResponseError(`Failed to parse LLM response: ${e.message}. Raw: "${result.content.slice(0, 150)}..."`);
+      } catch {
+        throw new InvalidEnrichmentResponseError("Failed to parse LLM response. Retry or adjust the prompt and model settings.");
       }
 
       let enrichment: Enrichment;
       try { enrichment = normalizeEnrichment(parsed, input); }
       catch (error) { throw new InvalidEnrichmentResponseError(error instanceof Error ? error.message : "Invalid enrichment JSON fields"); }
-      const generated = await generateEmbeddingResult(
+      const generated = input.skipEmbedding ? undefined : await generateEmbeddingResult(
         `${enrichment.summary}\n${enrichment.category}\n${(enrichment.tags || []).join(", ")}`,
         input.signal,
         input.embeddingConnection
@@ -426,7 +445,7 @@ export async function summarizeBookmark(input: {
       // retries locally; cancellation and configuration errors return immediately.
       if (input.signal?.aborted || !(error instanceof InvalidEnrichmentResponseError)) throw error;
       currentTemperature = 0.1;
-      currentMaxTokens = config.responseLimit > 0 ? Math.min(config.responseLimit, config.maxTokens) : config.maxTokens;
+      currentMaxTokens = responseTokens;
 
       if (attempt < maxAttempts) {
         const delay = attempt * 1500;
@@ -491,7 +510,7 @@ export type LibraryAskCandidate = {
 
 export type LibraryAskResult = {
   answer: string;
-  citations: { id: string; reason: string }[];
+  citations: { id: string; reason: string; quote?: string }[];
 };
 
 /** Natural-language Q&A over retrieved library candidates (chat find path). */
@@ -500,23 +519,19 @@ export async function answerLibraryQuestion(input: {
   candidates: LibraryAskCandidate[];
   signal?: AbortSignal;
 }): Promise<LibraryAskResult> {
-  const catalog = input.candidates
-    .map((c, i) => {
-      const body = (c.summary || c.text || "").replace(/\s+/g, " ").trim().slice(0, 500);
-      return [
-        `[${i + 1}] id=${c.id}`,
-        `source=${c.source}`,
-        c.authorUsername ? `author=${c.authorUsername}` : null,
-        c.category ? `category=${c.category}` : null,
-        c.tweetUrl ? `url=${c.tweetUrl}` : null,
-        `content=${body || "(empty)"}`,
-        c.captureStatus ? `transcript_capture=${c.captureStatus}${c.captureReason ? ` (${c.captureReason})` : ""}` : null,
-        c.sourceEvidence?.length ? `selected_source_excerpts=\n${c.sourceEvidence.map(formatEvidenceSection).join("\n")}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-    })
-    .join("\n");
+  const connection = await captureLlmConnection();
+  const responseTokens = Math.min(connection.maxTokens, connection.responseLimit || connection.maxTokens, Math.max(1, Math.floor(connection.contextWindow / 4)));
+  const available = Math.floor((connection.contextWindow - responseTokens - 256) * 3) - input.question.length - connection.systemPrompt.length - 1800;
+  const selectedCandidates = input.candidates.slice(0, Math.max(1, Math.min(12, Math.floor(available / 900))));
+  const perCandidate = Math.min(2400, Math.floor(available / Math.max(1, selectedCandidates.length)));
+  const insufficient: LibraryAskResult = { answer: "Insufficient evidence. The saved sources do not support an answer to this question.", citations: [] };
+  if (!input.candidates.length || perCandidate < 80) return insufficient;
+  const supplied = new Map<string, string>();
+  const catalog = selectedCandidates.map((candidate, index) => {
+    const evidence = (candidate.sourceEvidence?.length ? candidate.sourceEvidence.map(formatEvidenceSection).join("\n") : candidate.source === "yt" ? "" : candidate.text ?? "").slice(0, Math.max(0, perCandidate - 800));
+    supplied.set(candidate.id, evidence);
+    return `[${index + 1}] id=${candidate.id.slice(0, 200)} source=${candidate.source.slice(0, 32)} capture=${candidate.captureStatus ?? "original post"} ${(candidate.captureReason ?? "").slice(0, 300)}\nGenerated preview: ${(candidate.summary ?? "").slice(0, 120)}\nSOURCE EVIDENCE:\n${evidence || "(no source evidence)"}`;
+  }).join("\n");
 
   const prompt = [
     "You are a librarian for a personal bookmark library (X posts + YouTube saves).",
@@ -527,40 +542,31 @@ export async function answerLibraryQuestion(input: {
     "Transcript excerpts are selected passages, not the whole video. Respect missing or partial capture and never claim uncaptured details are known.",
     "",
     "Return ONLY valid JSON (no markdown fences):",
-    '{ "answer": "string", "citations": [ { "id": "bookmark-id", "reason": "why this item helps" } ] }',
-    "Include at most 8 citations. Use only ids from the list.",
+    '{ "answer": "string", "insufficientEvidence": false, "citations": [ { "id": "bookmark-id", "reason": "why this supports the answer", "quote": "exact source excerpt" } ] }',
+    "Include at most 8 citations. Every citation must quote exact SOURCE EVIDENCE from that item. Generated previews cannot establish facts. If sources do not support the answer, return insufficientEvidence true and no citations.",
     "",
     `QUESTION:\n${input.question}`,
     "",
     `CANDIDATES:\n${catalog || "(none)"}`,
   ].join("\n");
 
+  if (![...supplied.values()].some((text) => text.trim()) || prompt.length + connection.systemPrompt.length > (connection.contextWindow - responseTokens - 256) * 3) return insufficient;
+
   const result = await callLlm({
     prompt,
     temperature: 0.2,
     signal: input.signal,
     type: "library_ask",
+    connection, maxTokens: responseTokens,
   });
 
-  let parsed: LibraryAskResult = { answer: result.content.trim(), citations: [] };
+  let parsed: LibraryAskResult = insufficient;
   try {
-    const raw = extractJson(result.content) as {
-      answer?: string;
-      citations?: { id?: string; reason?: string }[];
-    };
-    const allowed = new Set(input.candidates.map((c) => c.id));
-    parsed = {
-      answer: (raw.answer ?? result.content).trim(),
-      citations: Array.isArray(raw.citations)
-        ? raw.citations
-            .filter((c) => c?.id && allowed.has(c.id))
-            .map((c) => ({ id: c.id!, reason: (c.reason ?? "").trim() || "Relevant match" }))
-            .slice(0, 8)
-        : [],
-    };
-  } catch {
-    // Fall back to prose answer if the model ignored JSON.
-  }
+    const raw = z.object({ answer: z.string().min(1), insufficientEvidence: z.boolean().optional().default(false),
+      citations: z.array(z.object({ id: z.string(), reason: z.string(), quote: z.string().min(1) })).max(8) }).parse(extractJson(result.content));
+    const citations = raw.citations.filter((citation) => supplied.get(citation.id)?.includes(citation.quote));
+    if (!raw.insufficientEvidence && citations.length && citations.length === raw.citations.length) parsed = { answer: raw.answer.trim(), citations };
+  } catch { /* Invalid or unsupported output fails closed with an evidence explanation. */ }
 
   await logLlmRequest({
     model: result.config.model,
@@ -577,8 +583,8 @@ export async function answerLibraryQuestion(input: {
 }
 
 export async function getEffectiveEmbeddingIdentity() {
-  const { model, baseUrl } = await getEmbeddingConfig();
-  return { model, endpoint: baseUrl };
+  try { const { model, baseUrl } = await getEmbeddingConfig(); return { model, endpoint: baseUrl }; }
+  catch (error) { if (error instanceof MissingEmbeddingModelError) return undefined; throw error; }
 }
 
 export async function generateEmbedding(text: string, signal?: AbortSignal) {
@@ -612,7 +618,7 @@ export async function generateEmbeddingResult(text: string, signal?: AbortSignal
       );
     }
     throw new Error(
-      `Embedding failed via ${config.baseUrl} model "${config.model}": ${rawMessage}`
+      providerFailure(error, config.baseUrl)
     );
   }
 }

@@ -52,7 +52,7 @@ const request = (path: string, body?: unknown) => new Request(`http://localhost$
   method: "POST", headers: { host: "localhost" }, body: body === undefined ? undefined : JSON.stringify(body),
 });
 async function seed() {
-  return prisma.bookmark.create({ data: indexedFixture({ id: "a", tweetUrl: "https://x.com/a", ...initial,
+  return prisma.bookmark.create({ data: indexedFixture({ id: "a", tweetUrl: "https://x.com/a", text: "Original source discussing controlled scientific measurements.", ...initial,
     embedding, embeddingContentHash: embeddingContentHash(initial), embeddingIndexedAt: new Date(), readAt: new Date("2025-01-01") }) });
 }
 async function humanEdit() {
@@ -118,7 +118,7 @@ describe("index freshness with real SQLite", () => {
   it("agent non-index writes and unchanged upserts retain vector metadata", async () => {
     await seed();
     expect((await agent(request("/api/agent", { action: "updateBookmark", bookmarkId: "a", data: { text: "Metadata" } }))).status).toBe(200);
-    expect((await agent(request("/api/agent", { action: "upsertBookmark", bookmark: { id: "a", tweetUrl: "https://x.com/a", ...initial } }))).status).toBe(200);
+    expect((await agent(request("/api/agent", { action: "upsertBookmark", bookmark: { id: "a", tweetUrl: "https://x.com/a", text: "Original source discussing controlled scientific measurements.", ...initial } }))).status).toBe(200);
     const row = await prisma.bookmark.findUniqueOrThrow({ where: { id: "a" } });
     expect(row.embedding).not.toBeNull(); expect(row.embeddingContentHash).toBe(embeddingContentHash(initial));
   });
@@ -132,6 +132,27 @@ describe("index freshness with real SQLite", () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({ skipped: true, ok: false });
     await expectHumanPreserved();
+    expect(await prisma.operationRun.findFirst()).toMatchObject({ updated: 0, skipped: 1 });
+  });
+
+  it.each([
+    { label: "source text", change: { text: "Refreshed authoritative source" } },
+    { label: "provider metadata", change: { rawJson: JSON.stringify({ provider: "new import" }) } },
+    { label: "captured evidence", change: { captureJson: JSON.stringify({ captured: "New source evidence" }) } },
+  ])("rejects obsolete enrichment when $label changes during the LLM call", async ({ change }) => {
+    await seed();
+    vi.mocked(summarizeBookmark).mockImplementation(async () => {
+      await prisma.bookmark.update({ where: { id: "a" }, data: change });
+      return { summary: "Obsolete source digest", category: "Other", tags: ["obsolete"], embedding: [0, 1] };
+    });
+    const response = await one(request("/api/enrich/one?bookmarkId=a"));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ ok: false, skipped: true });
+    const row = await prisma.bookmark.findUniqueOrThrow({ where: { id: "a" } });
+    expect(row.summary).toBe("Original");
+    expect(row).toMatchObject(change);
+    expect(row.readAt).toEqual(new Date("2025-01-01"));
+    expect(row.summarySource).toBeNull();
     expect(await prisma.operationRun.findFirst()).toMatchObject({ updated: 0, skipped: 1 });
   });
 

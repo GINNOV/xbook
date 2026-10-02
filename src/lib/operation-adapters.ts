@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeEmbeddingEndpoint } from "./embedding-vector";
 import { prisma } from "./db";
 import { contentSnapshot, saveEmbeddingIfUnchanged, saveEnrichmentIfUnchanged } from "./embedding-index";
 import { captureBookmarkSourceEvidence } from "./source-evidence";
@@ -12,19 +13,6 @@ export const operationSettingsSchema = z.object({
   batchSize: z.number().int().min(1).max(10000).default(50),
 });
 
-async function sourceText(urls: string[], signal: AbortSignal) {
-  const captures: string[] = [];
-  for (const value of urls.slice(0, 2)) {
-    try {
-      const url = new URL(value);
-      if (!/^https?:$/.test(url.protocol) || /(^|\.)(x\.com|twitter\.com|t\.co)$/.test(url.hostname)) continue;
-      const response = await fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
-      if (!response.ok) continue;
-      captures.push((await response.text()).replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 3000));
-    } catch { if (signal.aborted) throw new Error("Operation aborted"); }
-  }
-  return captures.join("\n---\n") || undefined;
-}
 
 export function operationAdapter(job: OperationJob): JobAdapter {
   const settings = operationSettingsSchema.parse(job.settings);
@@ -45,26 +33,29 @@ export function operationAdapter(job: OperationJob): JobAdapter {
     execute: async (id, operation, signal, runId, persistPreparation) => {
       const bookmark = await prisma.bookmark.findUnique({ where: { id }, include: { folder: true } });
       if (!bookmark || (bookmark.editedAt && !operation.scope.replaceEdited)) return async () => "skipped";
-      let captured: Awaited<ReturnType<typeof captureBookmarkSourceEvidence>> | undefined;
-      let linkedText: string | undefined;
       let urls: string[] = [];
       try { const parsed = z.array(z.string()).safeParse(JSON.parse(bookmark.externalUrls ?? "[]")); if (parsed.success) urls = parsed.data; } catch { /* Older malformed provider URLs. */ }
-      if (bookmark.source === "yt") {
-        captured = await captureBookmarkSourceEvidence(bookmark, signal);
-        linkedText = captured.sourceText;
-        const rawJson = captured.rawJson;
-        if (persistPreparation && !await persistPreparation(async (tx) => {
-          await tx.bookmark.updateMany({ where: { id, rawJson: bookmark.rawJson }, data: { rawJson } });
-        })) throw new Error("Operation ownership lost during capture");
-      } else linkedText = await sourceText(urls, signal);
+      const sourceSnapshot = { text: bookmark.text, rawJson: bookmark.rawJson, captureJson: bookmark.captureJson,
+        source: bookmark.source, tweetUrl: bookmark.tweetUrl, externalUrls: bookmark.externalUrls, mediaDescription: bookmark.mediaDescription };
+      const captured = await captureBookmarkSourceEvidence(bookmark, signal);
+      const linkedText = captured.sourceText;
+      if (persistPreparation && !await persistPreparation(async (tx) => {
+        const saved = await tx.bookmark.updateMany({ where: { id, ...sourceSnapshot }, data: { captureJson: captured.captureJson } });
+        if (!saved.count) throw new Error("Source changed during capture. Retry using its current content.");
+      })) throw new Error("Operation ownership lost during capture");
+      if (!captured.eligible) throw new Error(captured.blockedReason ?? "No adequate source evidence was captured.");
       const enrichment = await summarizeBookmark({ text: bookmark.source === "yt" && linkedText ? undefined : bookmark.text ?? undefined,
         authorUsername: bookmark.authorUsername ?? undefined, folderName: bookmark.folder?.name ?? undefined, mediaDescription: bookmark.mediaDescription ?? undefined,
-        externalUrls: urls, sourceText: linkedText, signal, connection: settings.chat, embeddingConnection: settings.embedding, processing: { runId, bookmarkId: id } });
+        externalUrls: urls, sourceText: linkedText, sourceSections: captured.sections, sourceCapture: { method: captured.method, language: captured.capture.language ?? null, status: captured.capture.status, reason: captured.capture.reason }, signal, connection: settings.chat, embeddingConnection: settings.embedding, skipEmbedding: Boolean(operation.import?.pipeline), processing: { runId, bookmarkId: id } });
       return async (tx) => {
         const saved = await saveEnrichmentIfUnchanged(tx, { id, snapshot: contentSnapshot(bookmark),
+          sourceSnapshot: { ...sourceSnapshot, captureJson: persistPreparation ? captured.captureJson : bookmark.captureJson },
           content: { summary: enrichment.summary, category: enrichment.category ?? null, tags: enrichment.tags?.join(", ") ?? null },
-          embedding: enrichment.embedding, embeddingIdentity: enrichment.embeddingIdentity });
-        if (saved && captured) await tx.bookmark.updateMany({ where: { id, rawJson: bookmark.rawJson }, data: { rawJson: captured.rawJson } });
+          embedding: enrichment.embedding, embeddingIdentity: enrichment.embeddingIdentity,
+          provenance: JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), runId, method: captured.method,
+            captureStatus: captured.capture.status, captureReason: captured.capture.reason, model: settings.chat?.model,
+            endpoint: settings.chat ? normalizeEmbeddingEndpoint(settings.chat.baseUrl) : null, replacedHumanEdit: Boolean(bookmark.editedAt && operation.scope.replaceEdited) }) });
+        if (saved) await tx.bookmark.updateMany({ where: { id, rawJson: bookmark.rawJson }, data: { captureJson: captured.captureJson } });
         return saved ? "updated" : "skipped";
       };
     },

@@ -1,5 +1,8 @@
+import { readProviderJson } from "./provider-response";
 import { z } from "zod";
-import { getSettings, updateSettings } from "@/lib/settings";
+import { getSettings, type AppSettings } from "@/lib/settings";
+import { prisma } from "./db";
+import { oauthJson, requestOAuthTokens, saveRefreshedTokens } from "./oauth-tokens";
 
 const envSchema = z.object({
   X_BEARER_TOKEN: z.string().min(1).optional(),
@@ -56,54 +59,14 @@ function formatXApiError(status: number, body: string) {
   return `X API error ${status}: ${body}`;
 }
 
-async function updateTokens(json: any, refreshToken: string) {
-  const expiresAt = json.expires_in ? new Date(Date.now() + json.expires_in * 1000) : null;
-  await updateSettings({
-    xAccessToken: json.access_token ?? null,
-    xRefreshToken: json.refresh_token ?? refreshToken,
-    xTokenExpiresAt: expiresAt,
-    xScope: json.scope ?? null,
-    xTokenType: json.token_type ?? null,
-  });
-  if (!json.access_token) throw new Error("Token refresh did not return an access token.");
-  return json.access_token;
-}
-
-async function clearInvalidXTokens() {
-  await updateSettings({
-    xAccessToken: null,
-    xRefreshToken: null,
-    xTokenExpiresAt: null,
-    xScope: null,
-    xTokenType: null,
-  });
-}
-
 async function refreshAccessToken(input: {
-  apiBase: string; clientId: string; clientSecret?: string | null; refreshToken: string;
+  apiBase: string; clientId: string; clientSecret?: string | null; refreshToken: string; snapshot: AppSettings; signal?: AbortSignal;
 }) {
   const body = new URLSearchParams({ grant_type: "refresh_token", client_id: input.clientId, refresh_token: input.refreshToken });
   const headers: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
-  if (input.clientSecret) {
-    const basic = Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64");
-    headers.Authorization = `Basic ${basic}`;
-  }
-  const res = await fetch(`${input.apiBase}/oauth2/token`, { method: "POST", headers, body, cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text();
-    // Stale/revoked refresh tokens leave Settings looking "connected" while every
-    // import fails. Clear them so Setup status / soft-disable ask for reconnect.
-    const invalid =
-      text.includes("invalid_request") ||
-      text.includes("invalid_grant") ||
-      text.includes("Value passed for the token was invalid");
-    if (invalid) {
-      await clearInvalidXTokens();
-      throw new Error("X authorization expired. Reconnect X OAuth in Settings → Connections.");
-    }
-    throw new Error(`Token refresh failed: ${text}`);
-  }
-  return updateTokens(await res.json(), input.refreshToken);
+  if (input.clientSecret) headers.Authorization = `Basic ${Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64")}`;
+  const tokens = await requestOAuthTokens(`${input.apiBase}/oauth2/token`, { method: "POST", headers, body }, input.signal);
+  return saveRefreshedTokens("x", tokens, input.snapshot, input.signal);
 }
 
 async function getRawAuthData() {
@@ -117,42 +80,41 @@ async function getRawAuthData() {
   return { env, settings: await getSettings() };
 }
 
-async function refreshIfNeeded(apiBase: string, env: any, settings: any) {
-  const accessToken = settings.xAccessToken ?? null;
-  const expiresAt = settings.xTokenExpiresAt ? new Date(settings.xTokenExpiresAt) : null;
-  const isExpiringSoon = expiresAt && Date.now() >= expiresAt.getTime() - 2 * 60 * 1000;
-  const canRefresh = accessToken && isExpiringSoon && settings.xRefreshToken && (settings.xClientId ?? env.X_CLIENT_ID);
-  if (canRefresh) {
-    return refreshAccessToken({
-      apiBase,
-      clientId: settings.xClientId ?? env.X_CLIENT_ID ?? "",
-      clientSecret: settings.xClientSecret ?? env.X_CLIENT_SECRET ?? null,
-      refreshToken: settings.xRefreshToken ?? "",
-    });
+async function refreshIfNeeded(apiBase: string, env: z.infer<typeof envSchema>, settings: AppSettings, signal?: AbortSignal) {
+  const expiresAt = settings.xTokenExpiresAt?.getTime();
+  const needsRefresh = !settings.xAccessToken || (expiresAt !== undefined && Date.now() >= expiresAt - 120000);
+  const clientId = settings.xClientId ?? env.X_CLIENT_ID;
+  if (needsRefresh && settings.xRefreshToken && clientId) {
+    return refreshAccessToken({ apiBase, clientId, clientSecret: settings.xClientSecret ?? env.X_CLIENT_SECRET,
+      refreshToken: settings.xRefreshToken, snapshot: settings, signal });
   }
-  return accessToken;
+  if (expiresAt !== undefined && Date.now() >= expiresAt) throw new Error("X authorization expired. Reconnect X OAuth in Settings → Connections.");
+  return settings.xAccessToken;
 }
 
-async function lookupUserIdIfNeeded(apiBase: string, token: string, currentUserId: string | null) {
+async function lookupUserIdIfNeeded(apiBase: string, token: string, currentUserId: string | null, signal?: AbortSignal) {
   if (currentUserId) return currentUserId;
-  const meRes = await fetch(`${apiBase}/users/me`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-  if (meRes.ok) {
-    const meJson = (await meRes.json()) as { data?: { id?: string } };
-    if (meJson.data?.id) {
-      await updateSettings({ xUserId: meJson.data.id });
-      return meJson.data.id;
-    }
-  }
-  return null;
+  const parsed = z.object({ data: z.object({ id: z.string().min(1) }) }).safeParse(await oauthJson(`${apiBase}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }, signal));
+  if (!parsed.success) throw new Error("X account lookup failed. Reconnect X OAuth in Settings → Connections.");
+  signal?.throwIfAborted();
+  await prisma.$transaction(async (tx) => {
+    const saved = await tx.settings.updateMany({ where: { id: "default", xAccessToken: token, xUserId: null }, data: { xUserId: parsed.data.data.id } });
+    signal?.throwIfAborted();
+    if (saved.count !== 1) throw new Error("X connection changed during account lookup. Retry in Settings.");
+  });
+  return parsed.data.data.id;
 }
 
-export async function getAuthContext(): Promise<AuthContext> {
+export async function getAuthContext(signal?: AbortSignal): Promise<AuthContext> {
+  signal?.throwIfAborted();
   const { env, settings } = await getRawAuthData();
   const apiBase = settings.xApiBase ?? env.X_API_BASE ?? DEFAULT_API_BASE;
-  const accessToken = await refreshIfNeeded(apiBase, env, settings);
-  if (!accessToken && settings.xBearerToken) throw new Error(X_OAUTH_REQUIRED_MESSAGE);
-  const userId = await lookupUserIdIfNeeded(apiBase, accessToken!, settings.xUserId ?? env.X_USER_ID ?? null);
-  if (!accessToken || !userId) throw new Error("Missing X credentials.");
+  const accessToken = await refreshIfNeeded(apiBase, env, settings, signal);
+  signal?.throwIfAborted();
+  if (!accessToken) throw new Error(X_OAUTH_REQUIRED_MESSAGE);
+  const userId = await lookupUserIdIfNeeded(apiBase, accessToken, settings.xUserId ?? env.X_USER_ID ?? null, signal);
   return { token: accessToken, userId, apiBase };
 }
 
@@ -385,3 +347,40 @@ export async function fetchXUsage() {
 }
 
 export { X_OAUTH_REQUIRED_MESSAGE, X_CLIENT_ENROLLMENT_MESSAGE, formatXApiError };
+
+/** One bounded page for persisted import checkpoints; credentials remain private. */
+export async function fetchXImportPage(input: { provider: { userId?: string; endpoint?: string }; folderId?: string; folderName?: string; cursor?: string | null; signal: AbortSignal }) {
+  input.signal.throwIfAborted();
+  const auth = await getAuthContext(input.signal);
+  input.signal.throwIfAborted();
+  if (auth.userId !== input.provider.userId || auth.apiBase !== input.provider.endpoint) throw new Error("X configuration changed. Restore the original account before resuming.");
+  const url = buildBookmarkUrl(auth.apiBase, auth.userId, input.folderId);
+  if (!input.folderId) { applyBaseQueryParams(url); url.searchParams.set("max_results", "100"); }
+  if (input.cursor) url.searchParams.set("pagination_token", input.cursor);
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${auth.token}` }, signal: AbortSignal.any([input.signal, AbortSignal.timeout(15000)]), cache: "no-store" });
+  if (!response.ok) throw new Error(formatXApiError(response.status, await response.text()));
+  const json: unknown = await readProviderJson(response);
+  const page = z.object({ data: z.array(z.object({ id: z.string() }).passthrough()).optional(), includes: z.unknown().optional(), meta: z.object({ next_token: z.string().optional() }).optional() }).parse(json);
+  return { ids: (page.data ?? []).map((item) => item.id), items: input.folderId ? [] : mapBookmarkItemsFromResponse({ json: page as BookmarkResponse }), nextCursor: page.meta?.next_token ?? null };
+}
+export async function hydrateXImportIds(input: { provider: { userId?: string; endpoint?: string }; ids: string[]; folderId: string; folderName: string; signal: AbortSignal }) {
+  input.signal.throwIfAborted();
+  const auth = await getAuthContext(input.signal);
+  input.signal.throwIfAborted();
+  if (auth.userId !== input.provider.userId || auth.apiBase !== input.provider.endpoint) throw new Error("X configuration changed. Restore the original account before resuming.");
+  const url = new URL(`${auth.apiBase}/tweets`);
+  url.searchParams.set("ids", input.ids.slice(0, 100).join(",")); applyBaseQueryParams(url);
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${auth.token}` }, signal: AbortSignal.any([input.signal, AbortSignal.timeout(15000)]), cache: "no-store" });
+  if (!response.ok) throw new Error(formatXApiError(response.status, await response.text()));
+  return mapBookmarkItemsFromResponse({ json: await readProviderJson(response) as BookmarkResponse, folderId: input.folderId, folderName: input.folderName, preferredOrder: input.ids });
+}
+export async function fetchXImportFolders(input: { provider: { userId?: string; endpoint?: string }; cursor: string | null; signal: AbortSignal }) {
+  input.signal.throwIfAborted(); const auth = await getAuthContext(input.signal); input.signal.throwIfAborted();
+  if (auth.userId !== input.provider.userId || auth.apiBase !== input.provider.endpoint) throw new Error("X configuration changed. Restore the original account before resuming.");
+  const url = new URL(`${auth.apiBase}/users/${auth.userId}/bookmarks/folders`);
+  if (input.cursor) url.searchParams.set("pagination_token", input.cursor);
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${auth.token}` }, signal: AbortSignal.any([input.signal, AbortSignal.timeout(15000)]), cache: "no-store" });
+  if (!response.ok) throw new Error(formatXApiError(response.status, await response.text()));
+  const page = z.object({ data: z.array(z.object({ id: z.string(), name: z.string().optional() })).optional(), meta: z.object({ next_token: z.string().optional() }).optional() }).parse(await readProviderJson(response));
+  return { folders: (page.data ?? []).map((folder) => ({ id: folder.id, name: folder.name ?? folder.id })), nextCursor: page.meta?.next_token ?? null };
+}

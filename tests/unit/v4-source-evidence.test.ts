@@ -1,4 +1,5 @@
 // @vitest-environment node
+import "../fixtures/public-web";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { indexedFixture } from "../fixtures/embedding";
@@ -146,7 +147,7 @@ describe("long source evidence", () => {
     const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
     expect(saved.summary).toBe("Generated summary");
     expect(JSON.parse(saved.rawJson ?? "{}")).toMatchObject(metadata);
-    expect(readSourceEvidence(saved.rawJson)?.capture.sections.at(-1)?.text).toContain(tailFact);
+    expect(readSourceEvidence(saved.rawJson, saved.captureJson)?.capture.sections.at(-1)?.text).toContain(tailFact);
     expect(JSON.stringify(fixture.chat.mock.calls[0])).toContain(tailFact);
     expect(saved.embeddingContentHash).not.toBeNull();
   });
@@ -158,8 +159,8 @@ describe("long source evidence", () => {
     expect(await response.json()).toMatchObject({ updated: 1 });
     const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
     expect(JSON.parse(saved.rawJson ?? "{}")).toMatchObject(metadata);
-    expect(readSourceEvidence(saved.rawJson)?.capture.status).toBe("partial");
-    expect(readSourceEvidence(saved.rawJson)?.capture.sections.at(-1)?.text).toContain(tailFact);
+    expect(readSourceEvidence(saved.rawJson, saved.captureJson)?.capture.status).toBe("partial");
+    expect(readSourceEvidence(saved.rawJson, saved.captureJson)?.capture.sections.at(-1)?.text).toContain(tailFact);
     expect(JSON.stringify(fixture.chat.mock.calls[0])).toContain(tailFact);
   });
 
@@ -171,9 +172,57 @@ describe("long source evidence", () => {
     expect(response.status).toBe(502);
     const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
     expect(saved.summary).toBeNull();
-    expect(readSourceEvidence(saved.rawJson)?.capture).toMatchObject({ status: "missing", sections: [] });
+    expect(readSourceEvidence(saved.rawJson, saved.captureJson)?.capture).toMatchObject({ status: "missing", sections: [] });
     expect(JSON.parse(saved.rawJson ?? "{}")).toMatchObject(metadata);
   }, 10000);
+
+  it("discloses adequate description fallback and clears old failures on retry", async () => {
+    await seed();
+    const description = "This recorded lecture describes controlled reactor experiments, methods and measured temperatures. ".repeat(3);
+    await prisma.bookmark.update({ where: { id: "video" }, data: { rawJson: JSON.stringify({ ...metadata, item: { snippet: { title: "Lecture", description } } }), enrichmentError: "Old provider failure", enrichmentFailures: 3 } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("No captions")));
+    const response = await enrichOne(new Request("http://localhost/api/enrich/one?bookmarkId=video", { method: "POST" }));
+    expect(response.status).toBe(200);
+    const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
+    expect(saved.enrichmentError).toBeNull(); expect(saved.enrichmentFailures).toBe(0);
+    expect(JSON.parse(saved.captureJson ?? "{}")).toMatchObject({ method: "description", capture: { status: "partial", reason: expect.stringContaining("description") } });
+    expect(JSON.parse(saved.summarySource ?? "{}")).toMatchObject({ method: "description", replacedHumanEdit: false });
+  });
+
+  it("blocks fresh title-only and deleted digests without calling chat", async () => {
+    await seed();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("No captions")));
+    await prisma.bookmark.update({ where: { id: "video" }, data: { availability: "deleted" } });
+    const response = await enrichOne(new Request("http://localhost/api/enrich/one?bookmarkId=video", { method: "POST" }));
+    expect(response.status).toBe(502); expect(fixture.chat).not.toHaveBeenCalled();
+    const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
+    expect(saved.summary).toBeNull(); expect(saved.enrichmentError).toBeTruthy();
+    expect(readSourceEvidence(saved.rawJson, saved.captureJson)?.capture.status).toBe("missing");
+  });
+
+  it("preserves human corrections by default and records explicit replacement", async () => {
+    await seed();
+    const readAt = new Date("2025-01-02");
+    await prisma.bookmark.update({ where: { id: "video" }, data: { summary: "Human correction", editedAt: new Date(), readAt } });
+    const ordinary = await enrichOne(new Request("http://localhost/api/enrich/one?bookmarkId=video", { method: "POST" }));
+    expect(ordinary.status).toBe(409); expect(fixture.chat).not.toHaveBeenCalled();
+    expect((await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } })).summary).toBe("Human correction");
+    const replacement = await enrichOne(new Request("http://localhost/api/enrich/one?bookmarkId=video&replaceEdited=true", { method: "POST" }));
+    expect(replacement.status).toBe(200);
+    const saved = await prisma.bookmark.findUniqueOrThrow({ where: { id: "video" } });
+    expect(saved.readAt).toEqual(readAt);
+    expect(JSON.parse(saved.summarySource ?? "{}")).toMatchObject({ version: 1, method: "transcript", replacedHumanEdit: true });
+  });
+
+  it("retrieves captured tail evidence that has no semantic vector or summary keyword", async () => {
+    const capture = captureTranscriptJson(longTranscript());
+    await prisma.bookmark.create({ data: { id: "unindexed-video", source: "yt", tweetUrl: "https://youtube.com/watch?v=fixture",
+      summary: "Generic preview", captureJson: JSON.stringify({ version: 2, method: "transcript", language: "en", sourceUrls: [], capture }) } });
+    fixture.chat.mockResolvedValue({ choices: [{ message: { content: JSON.stringify({ answer: "73 kelvin", citations: [{ id: "unindexed-video", reason: "Captured measurement", quote: tailFact }] }) } }] });
+    const response = await ask(new Request("http://localhost/api/bookmarks/ask", { method: "POST", body: JSON.stringify({ question: "What cobalt reactor calibration is required?", source: "yt" }) }));
+    const body = await response.json();
+    expect(body.citations[0]).toMatchObject({ id: "unindexed-video", excerpt: tailFact, timestampSeconds: 2190 });
+  });
 
   it("sends question-relevant source excerpts through the actual Ask prompt and cited response", async () => {
     const capture = captureTranscriptJson(longTranscript());
@@ -181,7 +230,7 @@ describe("long source evidence", () => {
       id: "video", source: "yt", tweetUrl: "https://youtube.com/watch?v=fixture", summary: "Generic summary with no answer",
       rawJson: withSourceEvidence(JSON.stringify(metadata), capture), embedding: Buffer.from(new Float32Array([1, 0]).buffer),
     }), embeddingModel: "fixture-embedding" } });
-    fixture.chat.mockResolvedValue({ choices: [{ message: { content: JSON.stringify({ answer: "73 kelvin", citations: [{ id: "video", reason: "Tail evidence" }] }) } }] });
+    fixture.chat.mockResolvedValue({ choices: [{ message: { content: JSON.stringify({ answer: "73 kelvin", citations: [{ id: "video", reason: "Tail evidence", quote: tailFact }] }) } }] });
     const response = await ask(new Request("http://localhost/api/bookmarks/ask", {
       method: "POST", body: JSON.stringify({ question: "What cobalt reactor calibration temperature is required?", source: "yt" }),
     }));
@@ -190,7 +239,7 @@ describe("long source evidence", () => {
     expect(body.citations[0]).toMatchObject({ id: "video", timestampSeconds: 2190, captureStatus: "partial" });
     expect(body.citations[0].excerpt).toContain(tailFact);
     expect(JSON.stringify(fixture.chat.mock.calls[0])).toContain(tailFact);
-    expect(JSON.stringify(fixture.chat.mock.calls[0])).toContain("transcript_capture=partial");
+    expect(JSON.stringify(fixture.chat.mock.calls[0])).toContain("capture=partial");
     const used = body.matches.flatMap((match: { sourceEvidence: { text: string }[] }) => match.sourceEvidence).reduce((sum: number, section: { text: string }) => sum + section.text.length, 0);
     expect(used).toBeLessThanOrEqual(ASK_TOTAL_EVIDENCE_CHARACTERS);
   });

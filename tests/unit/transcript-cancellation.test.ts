@@ -1,4 +1,5 @@
 // @vitest-environment node
+import "../fixtures/public-web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchYouTubeTranscriptCaptureFromUrl, TRANSCRIPT_NETWORK_BYTE_LIMIT } from "@/lib/youtubeTranscript";
 

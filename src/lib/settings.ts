@@ -37,7 +37,7 @@ function buildUpdate(input: AppSettings): Prisma.SettingsUpdateInput {
   return up;
 }
 
-export async function updateSettings(input: AppSettings) {
+export async function updateSettings(input: AppSettings, database: Pick<Prisma.TransactionClient, "settings"> = prisma) {
   const up = buildUpdate(input);
   const data: Prisma.SettingsCreateInput = {
     id: "default",
@@ -45,7 +45,7 @@ export async function updateSettings(input: AppSettings) {
     targetLanguage: (up.targetLanguage as string) || "English",
   } as any;
 
-  return prisma.settings.upsert({
+  return database.settings.upsert({
     where: { id: "default" },
     update: up,
     create: data,

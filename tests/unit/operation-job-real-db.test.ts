@@ -146,7 +146,7 @@ describe("generic durable operations", () => {
   });
   it("continues after SIGKILL of an independent worker without duplicating committed writes", async () => {
     const runId = await submit();
-    for (const name of ["operation-job", "run-outcome"]) {
+    for (const name of ["operation-job", "run-outcome", "import-job-contract"]) {
       let output = ts.transpileModule(readFileSync(join(process.cwd(), "src/lib", `${name}.ts`), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
       output = output.replace('require("zod")', `require(${JSON.stringify(join(process.cwd(), "node_modules/zod"))})`);
       writeFileSync(join(fixture.directory, `${name}.js`), output);
@@ -156,7 +156,7 @@ describe("generic durable operations", () => {
       const {PrismaBetterSqlite3}=require(${JSON.stringify(join(process.cwd(), "node_modules/@prisma/adapter-better-sqlite3"))});
       const {runOperationJob}=require(${JSON.stringify(join(fixture.directory, "operation-job.js"))});
       const db=new PrismaClient({adapter:new PrismaBetterSqlite3({url:${JSON.stringify(fixture.databasePath)}})});
-      runOperationJob(db,{runId:${JSON.stringify(runId)},leaseMs:100,renewLease:false,adapter:{execute:async(id)=>{
+      runOperationJob(db,{runId:${JSON.stringify(runId)},leaseMs:1000,adapter:{execute:async(id)=>{
         if(id==='b'){process.stdout.write('waiting\\n');await new Promise(()=>{});}
         return async(tx)=>{await tx.bookmark.update({where:{id},data:{summary:'child'}});return 'updated';};
       }}}).catch((error)=>{process.stderr.write(error.message);process.exit(1)});
@@ -165,7 +165,7 @@ describe("generic durable operations", () => {
     const child = spawn(process.execPath, ["-e", script], { stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`Child did not enter provider: ${output}`)), 5000);
+      const timeout = setTimeout(() => { child.kill("SIGKILL"); reject(new Error(`Child did not enter provider: ${output}`)); }, 10000);
       child.stderr.on("data", (chunk) => { output += String(chunk); });
       child.stdout.on("data", () => { clearTimeout(timeout); resolve(); });
       child.on("exit", () => { clearTimeout(timeout); reject(new Error(output)); });
@@ -173,12 +173,12 @@ describe("generic durable operations", () => {
     const competing = vi.fn(adapter.execute);
     expect(await runOperationJob(prisma, { runId, adapter: { execute: competing } })).toMatchObject({ status: "running", updated: 1 });
     expect(competing).not.toHaveBeenCalled();
-    child.kill("SIGKILL"); await once(child, "exit"); await pause(110);
+    child.kill("SIGKILL"); await once(child, "exit"); await pause(1100);
     expect((await prisma.bookmark.findUniqueOrThrow({ where: { id: "a" } })).summary).toBe("child");
     const execute = vi.fn(adapter.execute);
     expect(await runOperationJob(prisma, { runId, adapter: { execute } })).toMatchObject({ status: "completed", updated: 3 });
     expect(execute.mock.calls.map(([id]) => id)).toEqual(["b", "c"]);
-  });
+  }, 15000);
   it("retries transient preflight failures within a persisted budget without counting items", async () => {
     const runId = await submit();
     const preflight = vi.fn().mockRejectedValueOnce(new Error("503 temporarily unavailable")).mockResolvedValue(undefined);

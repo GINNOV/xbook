@@ -96,7 +96,7 @@ describe("youtube lib", () => {
     const itemRequest = vi.mocked(fetch).mock.calls[1];
     expect(itemRequest[0]).toBeInstanceOf(URL);
     expect(String(itemRequest[0])).toContain("part=snippet%2CcontentDetails");
-    expect(itemRequest[1]).toEqual({ headers: { Authorization: "Bearer valid-yt-token" } });
+    expect(itemRequest[1]).toMatchObject({ headers: { Authorization: "Bearer valid-yt-token" }, signal: expect.any(AbortSignal) });
   });
 
   it.each([
@@ -126,5 +126,28 @@ describe("youtube lib", () => {
     expect(items).toHaveLength(1);
     expect(items[0].authorName).toBe("Video Uploader");
     expect(items[0].createdAt).toBeUndefined();
+  });
+});
+
+describe("durable YouTube provider identity", () => {
+  const saved = { id: "default", ytClientId: "client", ytAccessToken: "valid-token", ytRefreshToken: "original-refresh" };
+  beforeEach(() => { vi.mocked(fetch).mockReset(); vi.mocked(getSettings).mockResolvedValue(saved); });
+  const video = (channelId?: string) => ({ snippet: { ...(channelId ? { channelId } : {}), title: "Video", resourceId: { videoId: "video" }, videoOwnerChannelTitle: "Actual uploader" } });
+  it("accepts same-client refresh-token rotation and preserves distinct playlist-owner and uploader identities", async () => {
+    const { createHash } = await import("node:crypto"); const { fetchYouTubeImportFolders, fetchYouTubeImportPage } = await import("@/lib/youtube");
+    const accountFingerprint = `client:${createHash("sha256").update(JSON.stringify(["client"])).digest("hex")}`;
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [{ id: "PLone", snippet: { channelId: "owner-A", title: "Playlist" } }] }));
+    const discovery = await fetchYouTubeImportFolders(null, new AbortController().signal, { accountFingerprint }); expect(discovery.ownerId).toBe("owner-A");
+    vi.mocked(getSettings).mockResolvedValue({ ...saved, ytRefreshToken: "legitimate-rotation", ytAccessToken: "rotated-access" }); vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [video("owner-A")] }));
+    const page = await fetchYouTubeImportPage({ folderId: "yt:pl:PLone", folderName: "Playlist", cursor: null, signal: new AbortController().signal, provider: { accountFingerprint, ownerId: discovery.ownerId } });
+    expect(page.ownerId).toBe("owner-A"); expect(page.items[0].authorName).toBe("Actual uploader"); expect(page.items[0].authorName).not.toBe(page.ownerId);
+  });
+  it("rejects a different or malformed owner in both discovery and playlist pages", async () => {
+    const { fetchYouTubeImportFolders, fetchYouTubeImportPage } = await import("@/lib/youtube"); const signal = new AbortController().signal;
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [{ id: "PLother", snippet: { channelId: "owner-B", title: "Other" } }] }));
+    await expect(fetchYouTubeImportFolders("page2", signal, { ownerId: "owner-A" })).rejects.toThrow("owner does not match");
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [video("owner-B")] })); await expect(fetchYouTubeImportPage({ folderId: "yt:pl:PLone", folderName: "Playlist", cursor: "page2", signal, provider: { ownerId: "owner-A" } })).rejects.toThrow("owner does not match");
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [video()] })); await expect(fetchYouTubeImportPage({ folderId: "yt:pl:PLone", folderName: "Playlist", cursor: "page2", signal, provider: { ownerId: "owner-A" } })).rejects.toThrow("owner is missing");
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ items: [{ id: "PLother", snippet: { title: "Malformed owner" } }] })); await expect(fetchYouTubeImportFolders("page2", signal, { ownerId: "owner-A" })).rejects.toThrow("owner is missing");
   });
 });

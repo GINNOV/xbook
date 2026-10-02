@@ -1,25 +1,8 @@
 import { z } from "zod";
 
-export const TRANSCRIPT_SECTION_CHARACTERS = 1500;
-export const TRANSCRIPT_MAX_SECTIONS = 64;
-export const transcriptSectionSchema = z.object({
-  text: z.string().min(1).max(TRANSCRIPT_SECTION_CHARACTERS),
-  startSeconds: z.number().finite().nonnegative().nullable(),
-  endSeconds: z.number().finite().nonnegative().nullable(),
-});
-const captureFields = {
-  capturedAt: z.string().datetime(),
-  sections: z.array(transcriptSectionSchema).max(TRANSCRIPT_MAX_SECTIONS),
-  totalCharacters: z.number().int().nonnegative(),
-  storedCharacters: z.number().int().nonnegative(),
-};
-export const transcriptCaptureSchema = z.discriminatedUnion("status", [
-  z.object({ ...captureFields, status: z.literal("complete"), reason: z.null() }),
-  z.object({ ...captureFields, status: z.literal("partial"), reason: z.string().min(1) }),
-  z.object({ ...captureFields, sections: z.array(transcriptSectionSchema).max(0), status: z.literal("missing"), reason: z.string().min(1) }),
-]);
-export type TranscriptSection = z.infer<typeof transcriptSectionSchema>;
-export type TranscriptCapture = z.infer<typeof transcriptCaptureSchema>;
+import { TRANSCRIPT_SECTION_CHARACTERS, TRANSCRIPT_MAX_SECTIONS, type TranscriptCapture, type TranscriptSection } from "./transcript-contract";
+export { TRANSCRIPT_SECTION_CHARACTERS, TRANSCRIPT_MAX_SECTIONS, transcriptCaptureSchema, type TranscriptCapture, type TranscriptSection } from "./transcript-contract";
+import { fetchPublicWeb, publicWebTransport } from "./public-web";
 
 const captionEventSchema = z.object({
   tStartMs: z.number().finite().nonnegative().optional(),
@@ -100,36 +83,9 @@ function extractVideoId(url: string) {
 
 export const TRANSCRIPT_NETWORK_BYTE_LIMIT = 2 * 1024 * 1024;
 
-async function fetchWithTimeout(url: string, signal?: AbortSignal, ms = 10000) {
-  const deadline = AbortSignal.any([AbortSignal.timeout(ms), ...(signal ? [signal] : [])]);
-  deadline.throwIfAborted();
-  const response = await fetch(url, {
-    signal: deadline,
-    headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" },
-  });
-  if (!response.ok) { await response.body?.cancel(); return { ok: false, text: "" }; }
-  const reader = response.body?.getReader();
-  if (!reader) return { ok: true, text: "" };
-  const abort = () => { void reader.cancel(deadline.reason).catch(() => undefined); };
-  deadline.addEventListener("abort", abort, { once: true });
-  let length = 0;
-  let text = "";
-  const decoder = new TextDecoder();
-  try {
-    while (true) {
-      deadline.throwIfAborted();
-      const chunk = await reader.read();
-      deadline.throwIfAborted();
-      if (chunk.done) break;
-      length += chunk.value.byteLength;
-      if (length > TRANSCRIPT_NETWORK_BYTE_LIMIT) {
-        await reader.cancel();
-        throw new Error("YouTube capture exceeded its response byte limit.");
-      }
-      text += decoder.decode(chunk.value, { stream: true });
-    }
-    return { ok: true, text: text + decoder.decode() };
-  } finally { deadline.removeEventListener("abort", abort); reader.releaseLock(); }
+async function fetchWithTimeout(url: string, signal?: AbortSignal) {
+  const response = await fetchPublicWeb(url, { signal, byteLimit: TRANSCRIPT_NETWORK_BYTE_LIMIT, transport: publicWebTransport });
+  return { ok: true, text: response.text };
 }
 
 export async function fetchYouTubeTranscriptCaptureFromUrl(videoUrl: string, signal?: AbortSignal): Promise<TranscriptCapture> {
@@ -146,10 +102,11 @@ export async function fetchYouTubeTranscriptCaptureFromUrl(videoUrl: string, sig
     const track = tracks.find((entry) => entry.languageCode?.startsWith("en")) ?? tracks[0];
     if (!track) return missingCapture("No caption track was available.");
     const captionUrl = new URL(track.baseUrl);
+    if (captionUrl.protocol !== "https:" || !/(^|\.)(youtube\.com|googlevideo\.com|google\.com)$/.test(captionUrl.hostname) || captionUrl.username || captionUrl.password) return missingCapture("Caption destination is not a supported YouTube source.");
     captionUrl.searchParams.set("fmt", "json3");
     const captions = await fetchWithTimeout(captionUrl.toString(), signal);
     if (!captions.ok) return missingCapture("YouTube captions could not be downloaded.");
-    return captureTranscriptJson(JSON.parse(captions.text));
+    return { ...captureTranscriptJson(JSON.parse(captions.text)), language: track.languageCode ?? null };
   } catch (error) {
     if (signal?.aborted) throw signal.reason;
     return missingCapture(error instanceof Error ? error.message : "YouTube caption capture failed or timed out.");

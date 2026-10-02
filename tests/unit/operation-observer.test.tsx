@@ -19,7 +19,7 @@ describe("durable operation browser observer", () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
       requests.push({ url, options });
       if (url.includes("?take=")) return response({ runs: [] });
-      if (url.startsWith("/api/enrich")) return response({ runId: run.id }, 202);
+      if (url.startsWith("/api/enrich")) return response({ runId: run.id, error: null }, 202);
       return response({ run });
     }));
     const { result, unmount } = renderHook(() => useOperationObserver({ source: "x" }));

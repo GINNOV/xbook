@@ -37,7 +37,7 @@ beforeEach(async () => {
   vi.mocked(summarizeBookmark).mockReset().mockResolvedValue({ summary: "Done", category: "Tech", tags: [] });
   vi.mocked(validateLlmConnection).mockReset().mockResolvedValue(true);
   await prisma.processingEvent.deleteMany(); await prisma.operationRun.deleteMany(); await prisma.bookmark.deleteMany();
-  await prisma.settings.upsert({ where: { id: "default" }, create: { id: "default", llmModel: "frozen-model" }, update: { llmModel: "frozen-model" } });
+  await prisma.settings.upsert({ where: { id: "default" }, create: { id: "default", llmModel: "frozen-model", llmEmbeddingModel: "frozen-embedding" }, update: { llmModel: "frozen-model", llmEmbeddingModel: "frozen-embedding" } });
   await prisma.bookmark.createMany({ data: ["b1", "b2"].map((id) => ({ id, tweetUrl: `https://x.com/${id}`, text: id })) });
 });
 afterAll(async () => { await prisma.$disconnect(); rmSync(fixture.directory, { recursive: true, force: true }); });

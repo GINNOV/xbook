@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { cachedVideoMetadata, metadataFromStoredRaw, readYouTubeRaw, videoMetadataSchema, withVideoMetadata, type AuthoritativeVideoMetadata } from "@/lib/youtube-metadata";
 
@@ -56,9 +56,11 @@ export async function backfillYouTubeMetadata(input: {
   provider?: YouTubeMetadataProvider;
   options?: z.input<typeof optionsSchema>;
   signal?: AbortSignal;
+  commit?: (args: Prisma.BookmarkUpdateManyArgs) => Promise<{ count: number }>;
 }): Promise<YouTubeMetadataBackfillResult> {
   const options = optionsSchema.parse(input.options ?? {});
   const counters: Counters = { afterId: options.afterId, scanned: 0, updated: 0, requests: 0 };
+  const knownVideos = new Map<string, AuthoritativeVideoMetadata | null>();
   while (counters.scanned < options.maxItems) {
     if (input.signal?.aborted) return { ...counters, status: "paused", reason: "stopped" };
     const rows = await input.database.bookmark.findMany({
@@ -66,18 +68,30 @@ export async function backfillYouTubeMetadata(input: {
       orderBy: { id: "asc" }, take: Math.min(50, options.maxItems - counters.scanned),
     });
     if (!rows.length) return { ...counters, status: "completed" };
+    if (options.refresh === "missing") {
+      for (const row of rows) {
+        const id = videoId(row); const cached = cachedVideoMetadata(row.rawJson);
+        if (id && cached && !knownVideos.has(id)) {
+          if (cached.kind === "missing") knownVideos.set(id, null);
+          else if (cached.video.id === id) knownVideos.set(id, cached.video);
+        }
+      }
+    }
     const needed = rows.filter((row) => {
       const metadata = metadataFromStoredRaw(row.rawJson);
       return videoId(row) && (options.refresh === "all" || (!cachedVideoMetadata(row.rawJson) && (!metadata?.uploaderChannelId || !metadata.createdAt || !metadata.authorName)));
     });
-    const ids = [...new Set(needed.map(videoId).filter((id) => id !== null))];
-    let videos: AuthoritativeVideoMetadata[] | null = null;
+    const ids = [...new Set(needed.map(videoId).filter((id) => id !== null).filter((id) => !knownVideos.has(id)))];
     let deferred: "request_limit" | "quota" | "provider" | null = null;
     if (ids.length && input.provider) {
       if (counters.requests >= options.maxRequests) deferred = "request_limit";
       else {
         counters.requests++;
-        try { videos = z.array(videoMetadataSchema).parse(await input.provider(ids)); }
+        try {
+          const videos = z.array(videoMetadataSchema).parse(await input.provider(ids));
+          if (videos.some((video) => !ids.includes(video.id)) || new Set(videos.map((video) => video.id)).size !== videos.length) throw new Error("Unexpected video IDs in metadata response.");
+          for (const id of ids) knownVideos.set(id, videos.find((video) => video.id === id) ?? null);
+        }
         catch (error) { deferred = error instanceof YouTubeMetadataProviderError ? error.reason : "provider"; }
       }
     }
@@ -87,9 +101,9 @@ export async function backfillYouTubeMetadata(input: {
       const needsRefresh = needed.some((entry) => entry.id === row.id);
       // Do not advance past deferred metadata work. Raw-only repairs already
       // committed before this row remain safe to resume from the cursor.
-      if (needsRefresh && deferred) return { ...counters, status: "paused", reason: deferred };
-      const rawJson = videos && id && needsRefresh
-        ? withVideoMetadata(row.rawJson, videos.find((video) => video.id === id) ?? null) : row.rawJson;
+      if (needsRefresh && deferred && (!id || !knownVideos.has(id))) return { ...counters, status: "paused", reason: deferred };
+      const rawJson = id && needsRefresh && knownVideos.has(id)
+        ? withVideoMetadata(row.rawJson, knownVideos.get(id) ?? null) : row.rawJson;
       const metadata = metadataFromStoredRaw(rawJson);
       if (metadata) {
         const data = {
@@ -101,7 +115,8 @@ export async function backfillYouTubeMetadata(input: {
           || row.createdAt?.getTime() !== data.createdAt?.getTime() || row.playlistAddedAt?.getTime() !== data.playlistAddedAt?.getTime()
           || row.availability !== data.availability || row.rawJson !== rawJson;
         if (changed) {
-          const result = await input.database.bookmark.updateMany({ where: { id: row.id, source: "yt", rawJson: row.rawJson }, data });
+          const args = { where: { id: row.id, source: "yt", rawJson: row.rawJson }, data };
+          const result = input.commit ? await input.commit(args) : await input.database.bookmark.updateMany(args);
           if (!result.count) return { ...counters, status: "paused", reason: "changed" };
           counters.updated++;
         }
