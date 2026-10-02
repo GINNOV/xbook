@@ -87,10 +87,13 @@ describe("safe database restore", () => {
   });
 
   it("migrates an older known backup only in its staged copy", async () => {
-    fs.unlinkSync(backup); fixture(backup, "legacy", 27);
+    const count = fs.readdirSync(path.resolve("prisma/migrations")).filter((name) => /^\d/.test(name)).length;
+    fs.unlinkSync(backup); fixture(backup, "legacy", count - 1);
     const unchanged = fs.readFileSync(backup);
     await restore.restoreBackup(backup);
-    expect(await db.prisma.bookmark.findUnique({ where: { id: "legacy" } })).toMatchObject({ embeddingContentHash: null, embeddingIndexedAt: null });
+    expect(await db.prisma.bookmark.findUnique({ where: { id: "legacy" } })).toMatchObject({ id: "legacy", text: "Content legacy", folderId: "folder" });
+    const restored = new Database(active, { readonly: true });
+    try { expect(restored.prepare("SELECT COUNT(*) AS count FROM _prisma_migrations").get()).toEqual({ count }); } finally { restored.close(); }
     expect(fs.readFileSync(backup)).toEqual(unchanged);
   });
 

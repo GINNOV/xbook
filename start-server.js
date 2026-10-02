@@ -1,93 +1,83 @@
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
-// Database and configuration directory (stored outside the app bundle in a known location)
-const home = os.homedir();
-const appDir = path.join(home, ".xbook");
-
-// Ensure the directory exists
-if (!fs.existsSync(appDir)) {
-  fs.mkdirSync(appDir, { recursive: true });
+function runtimePaths(env = process.env) {
+  const supplied = env.DATABASE_URL;
+  const databasePath = supplied
+    ? path.resolve(supplied.startsWith("file:") ? supplied.slice(5) : supplied)
+    : path.join(os.homedir(), ".xbook", "dev.db");
+  return { databasePath, databaseUrl: `file:${databasePath}`, logFile: path.join(path.dirname(databasePath), "server.log") };
 }
 
-// Set up server logging to a file in the app support directory
-const logFile = path.join(appDir, "server.log");
-const logStream = fs.createWriteStream(logFile, { flags: "a" });
-
-// Write a session divider
-logStream.write(`\n--- Server Session Started: ${new Date().toISOString()} ---\n`);
-
-// Helper to log errors safely
-function logInternalError(message, error) {
-  const errMsg = `[xbook-server] ${message}: ${error ? error.stack || error.message || error : ""}\n`;
-  logStream.write(errMsg);
-  try {
-    process.stderr.write(errMsg);
-  } catch (e) {}
+/** The compiled application maintenance module recovers before migrations. */
+async function prepareDatabaseStartup({ databasePath, migrate, loadMaintenance = () => require("./database-maintenance.cjs"), wait = true }) {
+  const { DatabaseMaintenance } = loadMaintenance();
+  const maintenance = new DatabaseMaintenance(databasePath);
+  await maintenance.exclusive(async (ownership) => {
+    // exclusive has recovered any interrupted replacement before this callback.
+    // Prisma's SQLite engine requires an existing file on first launch.
+    if (!fs.existsSync(databasePath)) {
+      const Database = require("better-sqlite3");
+      const fresh = new Database(databasePath);
+      fresh.close();
+    }
+    maintenance.invalidate(ownership);
+    await migrate();
+  }, wait);
 }
 
-// Redirect stdout and stderr so that we capture all console outputs
-const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-const originalStderrWrite = process.stderr.write.bind(process.stderr);
-
-process.stdout.write = (chunk, encoding, callback) => {
-  try {
-    logStream.write(chunk, encoding);
-  } catch (e) {}
-  return originalStdoutWrite(chunk, encoding, callback);
-};
-
-process.stderr.write = (chunk, encoding, callback) => {
-  try {
-    logStream.write(chunk, encoding);
-  } catch (e) {}
-  return originalStderrWrite(chunk, encoding, callback);
-};
-
-const dbPath = path.join(appDir, "dev.db");
-process.env.DATABASE_URL = `file:${dbPath}`;
-console.log(`[xbook-server] Using database at: ${dbPath}`);
-
-// Run Prisma migrations dynamically
-try {
-  const prismaCliPath = path.join(__dirname, "node_modules", "prisma", "build", "index.js");
-  const schemaPath = path.join(__dirname, "prisma", "schema.prisma");
-  const prismaConfigPath = path.join(__dirname, "prisma.runtime.config.mjs");
-
-  console.log("[xbook-server] Checking database migrations...");
-  if (fs.existsSync(prismaCliPath) && fs.existsSync(schemaPath)) {
-    fs.writeFileSync(
-      prismaConfigPath,
-      [
-        'import { defineConfig } from "prisma/config";',
-        "export default defineConfig({",
-        '  schema: "prisma/schema.prisma",',
-        '  migrations: { path: "prisma/migrations" },',
-        '  datasource: { url: process.env.DATABASE_URL },',
-        "});",
-        "",
-      ].join("\n")
-    );
-    
-    // Redirect migration process output directly to log file
-    const logFd = fs.openSync(logFile, "a");
-    execSync(`"${process.execPath}" "${prismaCliPath}" migrate deploy --config="${prismaConfigPath}"`, {
-      stdio: [0, logFd, logFd],
-      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
-      cwd: __dirname,
-    });
-    fs.closeSync(logFd);
-    console.log("[xbook-server] Database migrations successfully applied.");
-  } else {
-    console.warn("[xbook-server] Prisma CLI or schema.prisma not found. Skipping auto-migration.");
+function migrateDatabase({ serverDirectory, databaseUrl, logFile }) {
+  const prismaCliPath = path.join(serverDirectory, "node_modules", "prisma", "build", "index.js");
+  const schemaPath = path.join(serverDirectory, "prisma", "schema.prisma");
+  const prismaConfigPath = path.join(serverDirectory, "prisma.runtime.config.mjs");
+  if (!fs.existsSync(prismaCliPath) || !fs.existsSync(schemaPath)) {
+    throw new Error("Packaged Prisma migration runtime or schema is missing.");
   }
-} catch (err) {
-  logInternalError("Database migration failed", err);
-  process.exit(1);
+  fs.writeFileSync(prismaConfigPath, [
+    'import { defineConfig } from "prisma/config";',
+    "export default defineConfig({",
+    '  schema: "prisma/schema.prisma",',
+    '  migrations: { path: "prisma/migrations" },',
+    '  datasource: { url: process.env.DATABASE_URL },',
+    "});", "",
+  ].join("\n"));
+  const logFd = fs.openSync(logFile, "a");
+  try {
+    execFileSync(process.execPath, [prismaCliPath, "migrate", "deploy", `--config=${prismaConfigPath}`], {
+      stdio: ["ignore", logFd, logFd],
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      cwd: serverDirectory,
+    });
+  } finally { fs.closeSync(logFd); }
 }
 
-// Start the Next.js server
-console.log("[xbook-server] Starting Next.js standalone server...");
-require("./server.js");
+async function bootstrap() {
+  const paths = runtimePaths();
+  fs.mkdirSync(path.dirname(paths.databasePath), { recursive: true });
+  const logStream = fs.createWriteStream(paths.logFile, { flags: "a", mode: 0o600 });
+  logStream.write(`\n--- Server Session Started: ${new Date().toISOString()} ---\n`);
+  for (const output of [process.stdout, process.stderr]) {
+    const original = output.write.bind(output);
+    output.write = (chunk, encoding, callback) => {
+      logStream.write(chunk, encoding);
+      return original(chunk, encoding, callback);
+    };
+  }
+  process.env.DATABASE_URL = paths.databaseUrl;
+  console.log(`[xbook-server] Using database at: ${paths.databasePath}`);
+  console.log("[xbook-server] Recovering database and checking migrations...");
+  await prepareDatabaseStartup({
+    databasePath: paths.databasePath,
+    migrate: () => migrateDatabase({ serverDirectory: __dirname, databaseUrl: paths.databaseUrl, logFile: paths.logFile }),
+  });
+  console.log("[xbook-server] Database recovery and migrations complete.");
+  console.log("[xbook-server] Starting Next.js standalone server...");
+  require("./server.js");
+}
+
+module.exports = { runtimePaths, prepareDatabaseStartup, migrateDatabase };
+if (require.main === module) {
+  bootstrap().catch((error) => { console.error("[xbook-server] Database startup failed:", error); process.exitCode = 1; });
+}
