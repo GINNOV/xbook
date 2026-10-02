@@ -234,8 +234,7 @@ export default function DocsPage() {
                     <Link href="/bookmarks" className="text-primary hover:underline font-semibold">
                       Library
                     </Link>
-                    , filter or search—and check <strong>Semantic Search</strong> when you want idea-based
-                    matches.{" "}
+                    , filter or search, and choose <strong>Semantic</strong> for matches by meaning.{" "}
                     <Link href="/docs/library" className="text-primary hover:underline font-semibold">
                       Details
                     </Link>

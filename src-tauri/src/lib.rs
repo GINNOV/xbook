@@ -12,7 +12,10 @@ struct StartupFailure(Mutex<Option<String>>);
 fn backend_port(value: Option<String>) -> Result<u16, String> {
   let port = value.unwrap_or_else(|| "3000".to_string()).parse::<u16>().map_err(|_| "Invalid backend port.".to_string())?;
   if port == 0 { return Err("Invalid backend port.".to_string()); }
-  TcpListener::bind(("127.0.0.1", port)).map_err(|_| format!("Port {} is already in use. Close the previous XBook instance or the application using that port, then restart XBook.", port))?;
+  let occupied = || format!("Port {} is already in use. Close the previous XBook instance or the application using that port, then restart XBook.", port);
+  // A wildcard listener may coexist with a specific-address bind on macOS.
+  if TcpStream::connect_timeout(&([127, 0, 0, 1], port).into(), Duration::from_millis(250)).is_ok() { return Err(occupied()); }
+  TcpListener::bind(("127.0.0.1", port)).map_err(|_| occupied())?;
   Ok(port)
 }
 
@@ -174,6 +177,8 @@ mod tests {
     assert!(backend_port(Some("bad".into())).is_err());
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     assert!(backend_port(Some(listener.local_addr().unwrap().port().to_string())).is_err());
+    let wildcard = TcpListener::bind(("0.0.0.0", 0)).unwrap();
+    assert!(backend_port(Some(wildcard.local_addr().unwrap().port().to_string())).is_err());
   }
 
   #[test]
