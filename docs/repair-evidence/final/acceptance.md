@@ -40,7 +40,7 @@ Verification now keeps its launcher alive, selects the app by its distinct bundl
 
 T1 remains unavailable. Both local model-list endpoints, `127.0.0.1:1234/v1/models` and `127.0.0.1:11434/v1/models`, refused connections. No alternative endpoint/model pair was explicitly approved for live acceptance. Controlled tail-fact, unsupported-question, partial/description-only evidence, citation/timestamp, and translation tests pass; they do not establish a live model's answer quality.
 
-Issues #14, #43, and #18 must remain open until an approved chat/embedding endpoint is available and the fixed live evaluation passes. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code, controlled verification, merge, and issue-resolution work continues before handoff.
+Issues #14, #43, and #18 must remain open until an approved chat/embedding endpoint is available and the fixed live evaluation passes. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code and controlled verification reached main in PR #62 at `5fe4320`. GitHub confirms 52 corresponding bug issues closed; #14/#43/#18 remain open with blocker notes. The full 55-issue coverage table and resolution-note links are in `docs/repair-coverage.md`.
 
 ## Concurrent worktree guidance
 

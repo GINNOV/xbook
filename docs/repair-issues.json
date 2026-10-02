@@ -3,17 +3,17 @@
     "step": "R0",
     "url": "https://github.com/GINNOV/xbook/issues/7",
     "number": 7,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 59,
         "url": "https://github.com/GINNOV/xbook/issues/59",
         "title": "AGENTS.md says no automated tests exist although Vitest and Playwright are configured",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:09Z",
         "primaryStep": "R0",
         "relatedSteps": [
           "R10",
@@ -28,10 +28,13 @@
         "bodySha256": "3212b6ea7ecfd4a3bcf0edf6321577a54162148a76640e4a5e38f8908f93693d",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "AGENTS now documents Vitest/Playwright and disposable migrated SQLite plus Node24; provider avoidance and baseline-failure reporting still need complete verification instructions.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/59#issuecomment-5958002358"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -50,8 +53,8 @@
         "note": "Closed externally; Windows packaging remains outside this repair scope and no desktop release is authorized."
       }
     ],
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -64,16 +67,19 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:49Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/7#issuecomment-5957973803"
   },
   {
     "step": "R1",
     "url": "https://github.com/GINNOV/xbook/issues/8",
     "number": 8,
     "status": "closed",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "implementationStatus": "merged_verified",
     "verification": {
       "restoreTests": 18,
       "isolatedHttpBrowser": "passed"
@@ -103,8 +109,8 @@
       }
     ],
     "observedGitHubState": "closed",
-    "observedClosure": "PR #60 merged externally; closure is not acceptance evidence",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 19,
@@ -124,10 +130,13 @@
         "bodySha256": "c1b98c55595c09fbcfa22561b4f31b35e2801707511e74b5eab9a002858d1117",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "restore-safety.ts validates only Bookmark/Settings and optional migration names; no writer fence, staged upgrade, complete schema validation or crash-safe prepared recovery.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/19#issuecomment-5957978428"
       },
       {
         "number": 30,
@@ -144,10 +153,13 @@
         "bodySha256": "ceae4cf36898e26020acfd6a0915efecc7f38136193bfecb7ad7589237a17006",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "db-backup.ts uses online SQLite snapshots; overlaps prior issue #1 / PR #4. Concurrent WAL/download compatibility must remain covered during integration.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/30#issuecomment-5957983105"
       },
       {
         "number": 31,
@@ -164,10 +176,13 @@
         "bodySha256": "5c04e3f686a2f002478043541c2f8537b5555f7ebc76eda124ab0f06a0e7419e",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "db-backup.ts uses exclusive name creation and returns 409 on collision; custom local-backup collision differs from prior issue #3 download naming / PR #5.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/31#issuecomment-5957983535"
       }
     ],
     "relatedScopedIssueNumbers": [],
@@ -177,7 +192,7 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -191,24 +206,27 @@
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
     "closedAt": "2026-10-02T15:29:57Z",
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/8#issuecomment-5957974266"
   },
   {
     "step": "R2",
     "url": "https://github.com/GINNOV/xbook/issues/9",
     "number": 9,
-    "status": "open",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "status": "closed",
+    "implementationStatus": "merged_verified",
     "verification": {
       "suiteTests": 341,
       "newQueryTests": 20,
       "rootFocusedTests": 64,
       "newEndToEndCases": "pending"
     },
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 20,
@@ -229,17 +247,20 @@
         "bodySha256": "e3fe80f49a1cd16445aa578eedab74f6511fb565dff11537c018cad7e895ca3f",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "bookmarks.ts filters before ranking and Ask scopes source; shared library/agent contract and complete workflow acceptance still require verification.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/20#issuecomment-5957978841"
       },
       {
         "number": 32,
         "url": "https://github.com/GINNOV/xbook/issues/32",
         "title": "Semantic library results are reordered by the default library sort instead of relevance",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:55Z",
         "primaryStep": "R2",
         "relatedSteps": [],
         "planUnits": [
@@ -249,17 +270,20 @@
         "bodySha256": "dc26a1b9a1f28dbb1b24860099443b22f79c55be0e078c8a684107b21e9c2f6f",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "bookmarks.ts defaults semantic results to relevance and exposes alternatives/cap help; preserve filtered pagination regression checks.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/32#issuecomment-5957983970"
       },
       {
         "number": 33,
         "url": "https://github.com/GINNOV/xbook/issues/33",
         "title": "Library pagination fetches an out-of-range page before clamping the displayed page",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:55Z",
         "primaryStep": "R2",
         "relatedSteps": [],
         "planUnits": [
@@ -269,10 +293,13 @@
         "bodySha256": "aea1d24ab05e3f5e22b412d01600c02b550b5b90258ece02155bfd7ed6f12261",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "Effective page is normalized before fetching; boundary/fractional/empty-result acceptance must be retained.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/33#issuecomment-5957984343"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -286,7 +313,7 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -299,18 +326,21 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:49Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/9#issuecomment-5957974626"
   },
   {
     "step": "R3",
     "url": "https://github.com/GINNOV/xbook/issues/10",
     "number": 10,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 21,
@@ -328,17 +358,20 @@
         "bodySha256": "4caf099548aca75ed1c72611c8f2a44cacc561fa49031d0cc4e3e5dc07d1f949",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "embedding-index.ts invalidates edited content and guards obsolete writes; full identity and migrated preservation acceptance remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/21#issuecomment-5957979245"
       },
       {
         "number": 34,
         "url": "https://github.com/GINNOV/xbook/issues/34",
         "title": "Semantic search decodes the entire backing buffer and compares invalid vectors",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:56Z",
         "primaryStep": "R3",
         "relatedSteps": [
           "R2"
@@ -350,17 +383,20 @@
         "bodySha256": "69f5b60ea317178035dbd77802a766906f4013cbebe680531a8d82671ae4d2b9",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "embedding-vectors.ts decodes byte views and validates finite nonzero vectors and dimensions; retain malformed-vector/keyword fallback regression checks.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/34#issuecomment-5957984670"
       },
       {
         "number": 35,
         "url": "https://github.com/GINNOV/xbook/issues/35",
         "title": "Semantic search compares embeddings without knowing their model identity or dimensions",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:56Z",
         "primaryStep": "R3",
         "relatedSteps": [],
         "planUnits": [
@@ -372,10 +408,13 @@
         "bodySha256": "d5949d266ed6da2fd959446bd4f82a2aa5d87f807595eac04358a816bfed7ef8",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "PR body explicitly permits null-model legacy vectors to rank. Unknown identity is not verified; model/dimension alone omit endpoint identity.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/35#issuecomment-5957985001"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -388,8 +427,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -402,23 +441,26 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:50Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/10#issuecomment-5957974970"
   },
   {
     "step": "R4",
     "url": "https://github.com/GINNOV/xbook/issues/11",
     "number": 11,
-    "status": "open",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "status": "closed",
+    "implementationStatus": "merged_verified",
     "verification": {
       "P1Tests": 35
     },
     "remainingUnits": "P2 and other R4 units pending",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 22,
@@ -437,17 +479,20 @@
         "bodySha256": "a58a6e0c0a0d16af20ffd606c8e1b03c9f4d2789d8c88e181274cb25e1c4156d",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "processing.ts and operation routes improve total-failure/paused outcomes; preflight repair actions, history and every UI surface still require acceptance.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/22#issuecomment-5957979736"
       },
       {
         "number": 36,
         "url": "https://github.com/GINNOV/xbook/issues/36",
         "title": "Processing and Import all continuation depend on browser loops and lose durable recovery",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:57Z",
         "primaryStep": "R4",
         "relatedSteps": [
           "R5"
@@ -461,17 +506,20 @@
         "bodySha256": "1c0eb6399feddf3a7725f03928760f2c48d3a15866da7511edead879101091b0",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "work-continuation.ts startup selects paused/queued, excluding running; imports remain browser-owned. Process-local scheduling does not provide durable worker fencing.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/36#issuecomment-5957985383"
       },
       {
         "number": 37,
         "url": "https://github.com/GINNOV/xbook/issues/37",
         "title": "Separate active-run checks do not atomically prevent duplicate processing submissions",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:58Z",
         "primaryStep": "R4",
         "relatedSteps": [
           "R5"
@@ -485,17 +533,20 @@
         "bodySha256": "7c95c91e5be869c83a5891483007eeed6b190b41ae7cc041eff0c25c0ee12000",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Enrichment checks for an active run then creates separately; concurrent submissions lack atomic durable claims/leases.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/37#issuecomment-5957985773"
       },
       {
         "number": 38,
         "url": "https://github.com/GINNOV/xbook/issues/38",
         "title": "Embedding and single-item processing can continue after their run is marked stopped",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:58Z",
         "primaryStep": "R4",
         "relatedSteps": [
           "R5"
@@ -509,10 +560,13 @@
         "bodySha256": "6c29f7d3ce0a286fb0a8db060515cb67d2e970398bf7bac479cce0a20a4db769",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Embedding continuation checks run status, but single-item commits and all import/capture/provider paths need durable cancellation fencing and event reconstruction.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/38#issuecomment-5957986187"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -524,7 +578,7 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -537,18 +591,21 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:51Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/11#issuecomment-5957975297"
   },
   {
     "step": "R5",
     "url": "https://github.com/GINNOV/xbook/issues/12",
     "number": 12,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 23,
@@ -568,17 +625,20 @@
         "bodySha256": "aa4bb2baea13c3a5ae7c705fe44e29fb3b4a35b67ce2cc59a46792c0ba207e0d",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Folder links are present; durable imports, entries versus unique counts and preservation acceptance remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/23#issuecomment-5957980163"
       },
       {
         "number": 39,
         "url": "https://github.com/GINNOV/xbook/issues/39",
         "title": "Folder-name sync reloads the window and discards current interface context",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:59Z",
         "primaryStep": "R5",
         "relatedSteps": [],
         "planUnits": [
@@ -588,10 +648,13 @@
         "bodySha256": "5bbc7d565c058d02406cb8c4c8b9134dfdbe3a7c4eac8e718bfe7b4741b6e792",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "useFoldersPanel.ts still calls window.location.reload after X sync; YouTube refresh alone does not preserve both-source context.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/39#issuecomment-5957986586"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -606,8 +669,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -620,18 +683,21 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:51Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/12#issuecomment-5957975604"
   },
   {
     "step": "R6",
     "url": "https://github.com/GINNOV/xbook/issues/13",
     "number": 13,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 24,
@@ -649,17 +715,20 @@
         "bodySha256": "07722cbc32247e9e6659eba3336bf939617155ccbf735643c395a78eb31c530d",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "youtube-metadata.ts uses videoOwnerChannelTitle/Id for new imports; repeatable historical backfill and quota/checkpoint acceptance remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/24#issuecomment-5957980541"
       },
       {
         "number": 40,
         "url": "https://github.com/GINNOV/xbook/issues/40",
         "title": "YouTube Posted dates use playlist-addition time instead of video publication time",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:59Z",
         "primaryStep": "R6",
         "relatedSteps": [],
         "planUnits": [
@@ -670,17 +739,20 @@
         "bodySha256": "1c638736ffb4ad4e28101528b202bd4dcd434663696c82b59e4c3cd6b4774e26",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "New YouTube imports persist publication versus playlist addition; repeatable historical backfill and user-data preservation remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/40#issuecomment-5957986992"
       },
       {
         "number": 41,
         "url": "https://github.com/GINNOV/xbook/issues/41",
         "title": "Unavailable or title-only YouTube entries remain eligible for confident fresh digests",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:00Z",
         "primaryStep": "R6",
         "relatedSteps": [
           "R7"
@@ -694,10 +766,13 @@
         "bodySha256": "736a571f54b271c7d526c668520fa6a76c3cf74a5cf5a7993ea7c33d787f2aef",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "youtube-metadata.ts blocks unavailable videos without transcripts, but available title-only rows can still qualify for confident digestion.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/41#issuecomment-5957987481"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -710,8 +785,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "verification": {
       "rootInitialFoundationTests": 16,
       "focusedMetadataAndControlTests": 27,
@@ -734,9 +809,12 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:52Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/13#issuecomment-5957976018"
   },
   {
     "step": "R7",
@@ -744,15 +822,15 @@
     "number": 14,
     "status": "open",
     "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Awaiting approved live model evaluation; controlled verification passes",
+    "observedClosure": "Confirmed open pending live evaluation",
+    "defaultBranchAcceptance": "Implemented on main; approved live model evaluation pending",
     "scopedIssues": [
       {
         "number": 25,
         "url": "https://github.com/GINNOV/xbook/issues/25",
         "title": "Enrichment silently truncates article and transcript evidence before summarization",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:54Z",
         "primaryStep": "R7",
         "relatedSteps": [],
         "planUnits": [
@@ -765,17 +843,20 @@
         "bodySha256": "e37dd055fd18464d443d96f05faf97790869f7d224ff6655d13bb8b7ba68fdab",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "article-extract.ts retains beginning/end within a bound; it does not process all long-source sections and can omit middle facts.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/25#issuecomment-5957980932"
       },
       {
         "number": 42,
         "url": "https://github.com/GINNOV/xbook/issues/42",
         "title": "Digests do not disclose whether they used a transcript, description, or partial capture",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:00Z",
         "primaryStep": "R7",
         "relatedSteps": [
           "R6"
@@ -789,10 +870,13 @@
         "bodySha256": "8a6fca2e77497e6b63bb5333478b1394fbfb9e0a73debbb7d1e12a5b8b63de86",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Article captureJson and YouTube evidence retain some capture details; complete provenance/timestamps/reasons and inspector partial-source disclosure remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/42#issuecomment-5957987882"
       },
       {
         "number": 43,
@@ -810,17 +894,20 @@
         "bodySha256": "4ba8e95b76def11f7d3aa148a9b21ff1fc7622bdad5c69089cccc307ac25dcb8",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Ask includes YouTube evidence, but article captureJson is omitted; keyword candidates appended after semantic candidates can be cut by slice(0,12).",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Live evaluation pending; do not close",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Controlled verification passes; required live evaluation pending; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Controlled verification passes; required live evaluation pending",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/43#issuecomment-5957988261"
       },
       {
         "number": 44,
         "url": "https://github.com/GINNOV/xbook/issues/44",
         "title": "Successful single-item reprocessing leaves the bookmark's old enrichment failure state",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:01Z",
         "primaryStep": "R7",
         "relatedSteps": [],
         "planUnits": [
@@ -830,17 +917,20 @@
         "bodySha256": "c40891911be4e11c0cda4e858970a35ad013b55bbcd21c1e59c802bdf277ebf3",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "saveEnrichmentIfUnchanged clears obsolete error/failure state after success; single/bulk failure and retry workflow acceptance remains.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/44#issuecomment-5957997350"
       },
       {
         "number": 45,
         "url": "https://github.com/GINNOV/xbook/issues/45",
         "title": "Ordinary reprocessing overwrites human summary corrections and clears editedAt",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:01Z",
         "primaryStep": "R7",
         "relatedSteps": [
           "R5"
@@ -853,17 +943,20 @@
         "bodySha256": "bab9f37a368750e069f5973d7018ea72f56173f3c8b8b5bac5a0a6b90d50a973",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Human corrections are protected by backend guards, replace=true and summarySource; explicit UI replacement choice and repeated-import acceptance remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/45#issuecomment-5957997709"
       },
       {
         "number": 46,
         "url": "https://github.com/GINNOV/xbook/issues/46",
         "title": "Article extraction fetches saved destinations without public-web protocol or redirect validation",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:02Z",
         "primaryStep": "R7",
         "relatedSteps": [],
         "planUnits": [
@@ -873,17 +966,20 @@
         "bodySha256": "3e6060b7ba9e8f26de81a34f247be99798bdc1efcd83b04b30464ae7f0bb87d0",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "article-extract.ts rejects literal private/local hosts but does not resolve/pin DNS destinations, including redirects; domains resolving privately bypass the guard.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/46#issuecomment-5957998078"
       },
       {
         "number": 47,
         "url": "https://github.com/GINNOV/xbook/issues/47",
         "title": "Article extraction reads the entire response before applying its size limit",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:03Z",
         "primaryStep": "R7",
         "relatedSteps": [],
         "planUnits": [
@@ -895,10 +991,13 @@
         "bodySha256": "3ae9e061ae1463ad9febcf06be61f32c98508d785078eadb7e683d03e1472a9b",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Reader loop can accept a chunk past 200000 bytes; no-body arrayBuffer is unbounded. Network truncation can be reported complete, and section processing is absent.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/47#issuecomment-5957998450"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -911,8 +1010,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_controlled_verified_live_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_controlled_verified_live_pending",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -926,24 +1025,27 @@
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
     "closedAt": null,
-    "finalAcceptance": "Live evaluation pending; do not close",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "finalAcceptance": "Controlled verification passes; required live evaluation pending",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/14#issuecomment-5957976464"
   },
   {
     "step": "R8",
     "url": "https://github.com/GINNOV/xbook/issues/15",
     "number": 15,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 26,
         "url": "https://github.com/GINNOV/xbook/issues/26",
         "title": "Settings marks stored account tokens as connected without tested or expired states",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:41:54Z",
         "primaryStep": "R8",
         "relatedSteps": [],
         "planUnits": [
@@ -955,17 +1057,20 @@
         "bodySha256": "4d1fc22abce13dc52edb734ab527c953b2999418ba562edc8690e497bb7e3f63",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Settings model chips distinguish configured from tested and embedding test exists; credential presence still implies connector connected, and draft test fallbacks remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/26#issuecomment-5957981317"
       },
       {
         "number": 48,
         "url": "https://github.com/GINNOV/xbook/issues/48",
         "title": "Connection tests silently replace empty displayed draft values with saved settings",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:03Z",
         "primaryStep": "R8",
         "relatedSteps": [],
         "planUnits": [
@@ -976,17 +1081,20 @@
         "bodySha256": "22981a3f4b53a92ff6b5dbd07f27d7b24924a280cdf1757277782bbcb77f9096",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "settings/test uses draft || saved fallbacks for chat model/base URL and saved YouTube auth; intentionally blank displayed values can test different saved values.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/48#issuecomment-5957998759"
       },
       {
         "number": 49,
         "url": "https://github.com/GINNOV/xbook/issues/49",
         "title": "Settings batch-size help incorrectly describes bookmarks per LLM request",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:04Z",
         "primaryStep": "R8",
         "relatedSteps": [
           "R10"
@@ -999,17 +1107,20 @@
         "bodySha256": "8bd74e52b73c5f2be3c22c847b965e4f8baecab48d40be24fe138a33643f1e3a",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "UsageSettings describes bookmarks per operation batch separately from tokens/concurrency; cross-pane Docs consistency still needs acceptance.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/49#issuecomment-5957999098"
       },
       {
         "number": 50,
         "url": "https://github.com/GINNOV/xbook/issues/50",
         "title": "Enrichment accepts nonfinite and fractional limit values without validating the operation query",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:04Z",
         "primaryStep": "R8",
         "relatedSteps": [
           "R2",
@@ -1024,10 +1135,13 @@
         "bodySha256": "8cb12a5232eb2306581a9385428e9181fedabf0c2c2bf291e55cbb0cd9f23ea6",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Operation limits still use Math.max(1, Number(limitParam)); NaN, Infinity and fractional values are not rejected through one validated contract before run/provider work.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/50#issuecomment-5957999407"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -1039,8 +1153,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -1053,18 +1167,21 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:52Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/15#issuecomment-5957976787"
   },
   {
     "step": "R9",
     "url": "https://github.com/GINNOV/xbook/issues/16",
     "number": 16,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 27,
@@ -1086,17 +1203,20 @@
         "bodySha256": "289085084e59b681f7191bcfbc84fc8f9051d5262d77362fc1da395a40e7aaf7",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "State filters were added; count agreement, independent badges, stale-response fencing and keyboard/narrow workflows remain.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/27#issuecomment-5957981682"
       },
       {
         "number": 51,
         "url": "https://github.com/GINNOV/xbook/issues/51",
         "title": "The Edited badge hides a bookmark's enrichment failure status",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:05Z",
         "primaryStep": "R9",
         "relatedSteps": [],
         "planUnits": [
@@ -1106,17 +1226,20 @@
         "bodySha256": "167cdca50bf35c5064ed4d2a2a78adbb87f2c91807bb5e67cfc4b92d6cc96fd6",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Badge expression still prefers edited over failure, so an edited bookmark can hide failed processing.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/51#issuecomment-5957999704"
       },
       {
         "number": 52,
         "url": "https://github.com/GINNOV/xbook/issues/52",
         "title": "Late bookmark-action responses can change another selected item's reader",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:05Z",
         "primaryStep": "R9",
         "relatedSteps": [],
         "planUnits": [
@@ -1126,17 +1249,20 @@
         "bodySha256": "e8c633c3a53513975b1f2e5c2d9548c64cc35d6f674b76075c33446cc67aa8fa",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Translation updates after await without selection fencing; reprocess calls setSelectedId(id), allowing late completion to reopen/change the reader.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/52#issuecomment-5958000048"
       },
       {
         "number": 53,
         "url": "https://github.com/GINNOV/xbook/issues/53",
         "title": "Saving enrichment edits sends id while the API requires bookmarkId",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:06Z",
         "primaryStep": "R9",
         "relatedSteps": [
           "R3"
@@ -1149,17 +1275,20 @@
         "bodySha256": "1da947b2b3c650021ad305007bf718dc81f70bab1fb4c34d45dbe827dd9b5a11",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "useBookmarksList.ts now sends bookmarkId: editing.id and route invalidates indexing; selected-only refresh/error/retry acceptance remains.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/53#issuecomment-5958000315"
       },
       {
         "number": 54,
         "url": "https://github.com/GINNOV/xbook/issues/54",
         "title": "Bookmark reader close and edit dialog lack accessible naming and keyboard dismissal behavior",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:06Z",
         "primaryStep": "R9",
         "relatedSteps": [],
         "planUnits": [
@@ -1169,10 +1298,13 @@
         "bodySha256": "0bad63074c8ca5ab0c1e13c167a4d848b5a67e4aca4a9e5ddef4296d959f8609",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "InspectorHeader/edit dialog still lack accessible close/dialog naming, focus restoration and Escape handling; 900/390px workflows unverified.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/54#issuecomment-5958000708"
       }
     ],
     "relatedScopedIssueNumbers": [],
@@ -1182,8 +1314,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -1196,18 +1328,21 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:53Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/16#issuecomment-5957977148"
   },
   {
     "step": "R10",
     "url": "https://github.com/GINNOV/xbook/issues/17",
     "number": 17,
-    "status": "open",
-    "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Verified locally; awaiting repair PR merge",
+    "status": "closed",
+    "observedGitHubState": "closed",
+    "observedClosure": "Confirmed closed after accepted default-branch fixes",
+    "defaultBranchAcceptance": "Acceptance satisfied on main",
     "scopedIssues": [
       {
         "number": 28,
@@ -1227,10 +1362,13 @@
         "bodySha256": "8446a2332e14a489a31d6318ced07c12542cd2135b429ae1563c109d66777676",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "Coverage denominator is all saved items, but dashboard-fetcher.ts counts raw non-null vectors without current identity/validity.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/28#issuecomment-5957982147"
       },
       {
         "number": 29,
@@ -1247,17 +1385,20 @@
         "bodySha256": "e34828166f8ee440c277e810d62c66172c056b29b9f9d67ae4a3b9fd87d89462",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Docs source-selector wording corrected; all seven panes, outcomes, backup and agent examples still need behavioral acceptance.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/29#issuecomment-5957982664"
       },
       {
         "number": 55,
         "url": "https://github.com/GINNOV/xbook/issues/55",
         "title": "Dashboard last-sync time is taken from the latest import across both sources",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:07Z",
         "primaryStep": "R10",
         "relatedSteps": [
           "R6"
@@ -1269,17 +1410,20 @@
         "bodySha256": "a1d2de33d2cc5173b2ea641a75fda29f3fded5c0a664e5649a5e218bb928f1c5",
         "commentsReadCount": 0,
         "pr60Assessment": "defect remains",
-        "evidenceAndRemainingAcceptance": "dashboard-fetcher.ts still takes global latest ImportRun without source identity; source-specific last-sync cannot be derived honestly.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/55#issuecomment-5958001002"
       },
       {
         "number": 56,
         "url": "https://github.com/GINNOV/xbook/issues/56",
         "title": "Desktop update-check failures are only logged and provide no in-app retry status",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:07Z",
         "primaryStep": "R10",
         "relatedSteps": [
           "R0",
@@ -1294,17 +1438,20 @@
         "bodySha256": "da5478654c9ebb14b9e789ffa5d8543e048d9a365d787b769b59c3974523c66d",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Updater failure/retry and /api/version are added; installed backend reuse/identity and packaged isolated startup acceptance remain. Desktop packaging hardcodes the Node path, and bootstrap overrides the database URL.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/56#issuecomment-5958001356"
       },
       {
         "number": 57,
         "url": "https://github.com/GINNOV/xbook/issues/57",
         "title": "Normal active processing makes the Processing navigation blink red",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:08Z",
         "primaryStep": "R10",
         "relatedSteps": [],
         "planUnits": [
@@ -1314,17 +1461,20 @@
         "bodySha256": "345093fedb25dd217a4683101c5ff0f822cb981800c46f1068a1a3b269adedd9",
         "commentsReadCount": 0,
         "pr60Assessment": "partial",
-        "evidenceAndRemainingAcceptance": "Both navigation paths use neutral animate-processing; active boolean alone does not implement distinct failure indication.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/57#issuecomment-5958001724"
       },
       {
         "number": 58,
         "url": "https://github.com/GINNOV/xbook/issues/58",
         "title": "README promises that nothing is shared despite supporting remote AI endpoints",
-        "observedGitHubState": "open",
-        "closedAt": null,
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T17:42:08Z",
         "primaryStep": "R10",
         "relatedSteps": [
           "R8"
@@ -1337,10 +1487,13 @@
         "bodySha256": "c85ad82230a565c7b25c48c93f0036caa4e1b8fa761dfa31d276d544bf8056a8",
         "commentsReadCount": 0,
         "pr60Assessment": "core present; acceptance pending",
-        "evidenceAndRemainingAcceptance": "README now describes remote model content transmission and sensitive backups/logs; actual diagnostic masking and all destination help still need acceptance.",
-        "stateObservedAt": "2026-10-02, before final repair PR",
-        "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+        "evidenceAndRemainingAcceptance": "Acceptance satisfied on main; issue confirmed closed; docs/repair-evidence/final/acceptance.md",
+        "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/58#issuecomment-5958002043"
       }
     ],
     "relatedScopedIssueNumbers": [
@@ -1353,8 +1506,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_verified_merge_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_verified",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -1367,9 +1520,12 @@
       "packagedHttp": "passed",
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
-    "closedAt": null,
-    "finalAcceptance": "Controlled acceptance satisfied; close only after repair reaches main",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "closedAt": "2026-10-02T17:41:53Z",
+    "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/17#issuecomment-5957977565"
   },
   {
     "step": "R11",
@@ -1377,8 +1533,8 @@
     "number": 18,
     "status": "open",
     "observedGitHubState": "open",
-    "observedClosure": "PR #60 closed this issue externally; root subsequently reopened it pending verified default-branch acceptance",
-    "defaultBranchAcceptance": "Awaiting approved live model evaluation; controlled verification passes",
+    "observedClosure": "Confirmed open pending live evaluation",
+    "defaultBranchAcceptance": "Implemented on main; approved live model evaluation pending",
     "scopedIssues": [],
     "relatedScopedIssueNumbers": [
       56,
@@ -1390,8 +1546,8 @@
       "evidence": "docs/repair-evidence/concurrent-main-audit.md",
       "issueStatesMutated": false
     },
-    "stateObservedAt": "2026-10-02, before final repair PR",
-    "implementationStatus": "implemented_controlled_verified_live_pending",
+    "stateObservedAt": "2026-10-02, after PR #62 merge and resolution notes",
+    "implementationStatus": "merged_controlled_verified_live_pending",
     "finalVerification": {
       "sourceCommit": "4aead0f9174641a1a903f6da5c4b5b030c96319f",
       "unitTests": 574,
@@ -1405,7 +1561,10 @@
       "evidence": "docs/repair-evidence/final/acceptance.md"
     },
     "closedAt": null,
-    "finalAcceptance": "Live evaluation pending; do not close",
-    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md"
+    "finalAcceptance": "Controlled verification passes; required live evaluation pending",
+    "resolutionEvidence": "docs/repair-evidence/final/acceptance.md",
+    "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+    "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227",
+    "resolutionNote": "https://github.com/GINNOV/xbook/issues/18#issuecomment-5957977973"
   }
 ]
