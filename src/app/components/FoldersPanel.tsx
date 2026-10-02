@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
 import { formatFolderActivity } from "@/app/lib/formatters";
 import { XLogo } from "./Icons";
@@ -23,8 +24,8 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
           <p className="text-xs text-slate-500">Counts show locally imported folder items.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all"}</button>
-          <button onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
+          <button title="Import bookmarks for every folder. This does not summarize or index." onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all"}</button>
+          <button title="Update folder names only. This does not import, summarize, or index." onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync names"}</button>
         </div>
       </div>
       {folders.length ? (
@@ -34,14 +35,14 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
             <tbody className="divide-y divide-black/5 bg-white">
               {folders.map(f => (
                 <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-semibold">{f.name ?? "Untitled folder"}</td>
-                  <td className="px-4 py-3 text-slate-500">{f.total ?? 0}</td>
+                  <td className="px-4 py-3 font-semibold"><Link className="hover:text-primary" href={`/bookmarks?source=x&folderId=${encodeURIComponent(f.id)}`}>{f.name ?? "Untitled folder"}</Link></td>
+                  <td className="px-4 py-3 text-slate-500"><Link className="hover:text-primary" href={`/bookmarks?source=x&folderId=${encodeURIComponent(f.id)}`}>{f.total ?? 0} items</Link></td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastFetchedAt)}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastProcessedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
-                      <button onClick={() => processFolder(f.id)} disabled={loading.all || loading.processing === f.id || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Process"}</button>
+                      <button title="Import this folder's bookmarks. Existing summaries are kept." onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
+                      <button title="Summarize and index items already imported in this folder." onClick={() => processFolder(f.id)} disabled={loading.all || loading.processing === f.id || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
                     </div>
                   </td>
                 </tr>

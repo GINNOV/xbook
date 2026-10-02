@@ -7,7 +7,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     importRun: { create: vi.fn().mockResolvedValue({ id: "run-1" }), update: vi.fn() },
     operationRun: { update: vi.fn() },
-    bookmarkFolder: { upsert: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
+    bookmarkFolder: { upsert: vi.fn(), findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     bookmark: {
       findMany: vi.fn().mockResolvedValue([]),
       upsert: vi.fn(),

@@ -21,6 +21,9 @@ export function LLMSettings() {
     setShowHistory,
     historyRef,
     testLlm,
+    testEmbedding,
+    testingEmbedding,
+    embeddingTest,
     applyLlmPreset,
     clearProcessingHistory,
     resetPrompt,
@@ -34,7 +37,7 @@ export function LLMSettings() {
   return (
     <SettingsSection
       title="AI / LLM"
-      description="Essentials get you enriching; open Advanced for prompts, limits, and maintenance."
+      description="A saved model name is configured, not tested. Local, LAN, and remote endpoints receive the bookmark text sent for enrichment, search, or Ask. Secrets stay masked in diagnostics. Technical logs can store prompts when payload logging is on."
       defaultOpen
     >
       <div>
@@ -166,7 +169,10 @@ export function LLMSettings() {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" onClick={testLlm} disabled={testingLlm} className={secondaryButtonClass}>
-            {testingLlm ? "Testing LLM…" : "Test LLM connection"}
+            {testingLlm ? "Testing LLM…" : "Test chat with displayed values"}
+          </button>
+          <button type="button" onClick={testEmbedding} disabled={testingEmbedding} className={secondaryButtonClass}>
+            {testingEmbedding ? "Testing embeddings…" : "Test embeddings with displayed values"}
           </button>
           {isDirty && (
             <span className="flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-amber-700">
@@ -175,6 +181,7 @@ export function LLMSettings() {
             </span>
           )}
           {llmTest ? <p className="text-sm text-slate-600">{llmTest}</p> : null}
+          {embeddingTest ? <p className="text-sm text-slate-600">{embeddingTest}</p> : null}
         </div>
 
         <div className="mt-6 border-t border-black/5 pt-4">

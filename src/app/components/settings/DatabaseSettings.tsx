@@ -72,7 +72,7 @@ export function DatabaseSettings() {
           <div className="space-y-4 rounded-lg border border-black/5 bg-slate-50/50 p-4">
             <h4 className="text-sm font-semibold text-slate-700">Backup active database</h4>
             <p className="text-xs text-slate-500">
-              Generate a copy of the database. You can download it to your local machine or save it on the server.
+              Backups stay on this machine. A server copy keeps credentials so this installation can be restored. A download omits stored credentials unless you include them. Either file can contain technical logs.
             </p>
             
             <div className="flex flex-col gap-3">

@@ -107,6 +107,10 @@ export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, so
         const rem = Number(json.remaining);
         proc += p; upd += u; errs += e; batches += 1;
         if (e > 0 && soundOnError) playErrorSound();
+        if (json.continuedByServer) {
+          log(`Folder enrichment continues on the server. ${upd}/${proc} updated. Remaining: ${Number.isFinite(rem) ? rem : "unknown"}.`);
+          break;
+        }
         if (json.finished || p === 0 || (Number.isFinite(rem) && rem === 0)) break;
         if (e > 0 && e === p) { halted = true; break; }
       }

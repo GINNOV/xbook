@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { contentSnapshot, saveEnrichmentIfUnchanged } from "@/lib/embedding-index";
 import { summarizeBookmark } from "@/lib/llm";
-import { fetchYouTubeTranscriptFromUrl } from "@/lib/youtubeTranscript";
+import { captureBookmarkSourceEvidence } from "@/lib/source-evidence";
 import {
   createOperationRun,
   logProcessingEvent,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/processing";
 import { getSettings } from "@/lib/settings";
 import { buildEnrichmentRunConfig } from "@/lib/run-config";
+import { buildExternalSourceText } from "@/lib/article-extract";
+import { allowsConfidentDigest, metadataFromStoredRaw } from "@/lib/youtube-metadata";
 
 function parseExternalUrls(input: string | null) {
   if (!input) return undefined;
@@ -18,54 +21,6 @@ function parseExternalUrls(input: string | null) {
   } catch {
     return undefined;
   }
-}
-
-async function fetchUrlText(url: string) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": "XBookmarkAtlas/1.0" },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const cleaned = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return cleaned.slice(0, 3000);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function isExternalContentUrl(url: string) {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return !(
-      host.endsWith("x.com") ||
-      host.endsWith("twitter.com") ||
-      host.endsWith("t.co")
-    );
-  } catch {
-    return false;
-  }
-}
-
-async function buildSourceText(urls?: string[]) {
-  if (!urls || urls.length === 0) return undefined;
-  const texts: string[] = [];
-  const filtered = urls.filter(isExternalContentUrl);
-  for (const url of filtered.slice(0, 2)) {
-    const text = await fetchUrlText(url);
-    if (text) texts.push(text);
-  }
-  return texts.length ? texts.join("\n---\n") : undefined;
 }
 
 function buildYoutubeFallbackSummary(input: { transcript?: string | null; text?: string | null }) {
@@ -90,6 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Bookmark not found" }, { status: 404 });
   }
 
+  const replaceHuman = url.searchParams.get("replace") === "true";
   const settings = await getSettings();
   const run = await createOperationRun({
     type: "single_reprocess",
@@ -114,10 +70,29 @@ export async function POST(request: Request) {
     });
     const externalUrls = parseExternalUrls(bookmark.externalUrls);
     const isYouTube = bookmark.source === "yt";
-    const transcript = isYouTube
-      ? await fetchYouTubeTranscriptFromUrl(bookmark.tweetUrl)
-      : null;
-    const sourceText = transcript ?? (await buildSourceText(externalUrls));
+    const captured = isYouTube ? await captureBookmarkSourceEvidence(bookmark) : null;
+    if (captured) {
+      await prisma.bookmark.updateMany({
+        where: { id: bookmark.id, rawJson: bookmark.rawJson },
+        data: { rawJson: captured.rawJson },
+      });
+    }
+    const transcript = captured?.sourceText ?? null;
+    const availability = metadataFromStoredRaw(bookmark.rawJson)?.availability ?? bookmark.availability;
+    const eligible = allowsConfidentDigest({ availability, transcript });
+    if (!eligible.ok) {
+      await logProcessingEvent({ runId: run.id, bookmarkId: bookmark.id, type: "bookmark", status: "skipped", message: eligible.reason });
+      await updateOperationRun(run.id, { status: "completed", processed: 1, skipped: 1, notes: eligible.reason, finish: true });
+      return NextResponse.json({ ok: true, skipped: true, error: eligible.reason, runId: run.id });
+    }
+    const article = transcript ? undefined : await buildExternalSourceText(externalUrls);
+    if (article?.captures) {
+      await prisma.bookmark.updateMany({
+        where: { id: bookmark.id },
+        data: { captureJson: JSON.stringify(article.captures) },
+      });
+    }
+    const sourceText = transcript ?? article?.text;
     const enrichmentText = isYouTube
       ? sourceText
         ? undefined
@@ -142,17 +117,19 @@ export async function POST(request: Request) {
           })
         : null);
 
-    const updated = await prisma.bookmark.update({
-      where: { id: bookmark.id },
-      data: {
-        summary,
-        category: enrichment.category,
-        tags: enrichment.tags?.length ? enrichment.tags.join(", ") : null,
-        embedding: enrichment.embedding ? Buffer.from(new Float32Array(enrichment.embedding).buffer) : null,
-        summarizedAt: new Date(),
-        editedAt: null,
-      },
-    });
+    const saved = await prisma.$transaction((tx) => saveEnrichmentIfUnchanged(tx, {
+      id: bookmark.id,
+      snapshot: contentSnapshot(bookmark),
+      content: { summary, category: enrichment.category ?? null, tags: enrichment.tags?.length ? enrichment.tags.join(", ") : null },
+      embedding: enrichment.embedding,
+      replaceHuman,
+    }));
+    if (!saved) {
+      await logProcessingEvent({ runId: run.id, bookmarkId: bookmark.id, type: "bookmark", status: "skipped", message: "Bookmark changed during enrichment; current edits preserved." });
+      await updateOperationRun(run.id, { status: "completed", processed: 1, skipped: 1, finish: true });
+      return NextResponse.json({ ok: false, skipped: true, error: "Bookmark changed during enrichment; current edits preserved.", runId: run.id }, { status: 409 });
+    }
+    const updated = await prisma.bookmark.findUniqueOrThrow({ where: { id: bookmark.id } });
 
     await logProcessingEvent({
       runId: run.id,

@@ -124,7 +124,7 @@ export function useBookmarksList(initial: Bookmark[]) {
       const res = await fetch("/api/enrich/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing),
+        body: JSON.stringify({ bookmarkId: editing.id, summary: editing.summary, category: editing.category, tags: editing.tags }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Update failed");

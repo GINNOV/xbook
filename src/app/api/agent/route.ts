@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getBookmarks, getFilterOptions } from "@/lib/bookmarks";
 import { prisma } from "@/lib/db";
+import { embeddingInvalidation } from "@/lib/embedding-index";
 
 export const dynamic = "force-dynamic";
 
@@ -205,8 +206,6 @@ async function handleGet(request: Request) {
   }
 
   if (resource === "bookmarks") {
-    const page = Math.max(1, Number(url.searchParams.get("page") ?? 1));
-    const pageSize = Math.min(200, Math.max(1, Number(url.searchParams.get("pageSize") ?? 50)));
     const data = await getBookmarks({
       query: url.searchParams.get("q") ?? "",
       category: url.searchParams.get("category") ?? "",
@@ -215,10 +214,12 @@ async function handleGet(request: Request) {
       status: url.searchParams.get("status") ?? "",
       video: url.searchParams.get("video") === "true",
       semantic: url.searchParams.get("semantic") === "true",
-      page,
-      pageSize,
+      sort: url.searchParams.get("sort"),
+      dir: url.searchParams.get("dir"),
+      page: url.searchParams.get("page"),
+      pageSize: url.searchParams.get("pageSize"),
     });
-    return NextResponse.json({ ok: true, page, pageSize, ...data });
+    return NextResponse.json({ ok: true, ...data });
   }
 
   if (resource === "bookmark") {
@@ -261,17 +262,17 @@ async function handlePost(request: Request) {
   }
 
   if (parsed.data.action === "upsertBookmark") {
-    await ensureFolder(parsed.data.bookmark.folderId, parsed.data.bookmark.folderName);
-    const data = toBookmarkWriteData(parsed.data.bookmark);
-    const bookmark = await prisma.bookmark.upsert({
-      where: { id: parsed.data.bookmark.id },
-      update: data,
-      create: {
-        id: parsed.data.bookmark.id,
-        source: parsed.data.bookmark.source ?? "agent",
-        tweetUrl: parsed.data.bookmark.tweetUrl,
-        ...data,
-      },
+    const input = parsed.data.bookmark;
+    await ensureFolder(input.folderId, input.folderName);
+    const data = toBookmarkWriteData(input);
+    const id = input.id;
+    const bookmark = await prisma.$transaction(async (tx) => {
+      const existing = await tx.bookmark.findUnique({ where: { id } });
+      return tx.bookmark.upsert({
+        where: { id },
+        update: { ...data, ...(existing ? embeddingInvalidation(existing, data) : {}), ...(existing ? { editedAt: new Date() } : {}) },
+        create: { ...data, id, source: input.source ?? "agent", tweetUrl: input.tweetUrl },
+      });
     });
     return NextResponse.json({ ok: true, bookmark });
   }
@@ -279,25 +280,31 @@ async function handlePost(request: Request) {
   if (parsed.data.action === "updateBookmark") {
     await ensureFolder(parsed.data.data.folderId);
     const data = toBookmarkWriteData(parsed.data.data);
-    const bookmark = await prisma.bookmark.update({
-      where: { id: parsed.data.bookmarkId },
-      data: { ...data, editedAt: new Date() },
+    const id = parsed.data.bookmarkId;
+    const bookmark = await prisma.$transaction(async (tx) => {
+      const existing = await tx.bookmark.findUniqueOrThrow({ where: { id } });
+      return tx.bookmark.update({
+        where: { id },
+        data: { ...data, ...embeddingInvalidation(existing, data), editedAt: new Date() },
+      });
     });
     return NextResponse.json({ ok: true, bookmark });
   }
 
   if (parsed.data.action === "appendBookmarkData") {
-    const existing = await prisma.bookmark.findUnique({ where: { id: parsed.data.bookmarkId } });
-    if (!existing) return errorResponse("Bookmark not found", 404);
-    const bookmark = await prisma.bookmark.update({
-      where: { id: parsed.data.bookmarkId },
-      data: {
-        summary: appendText(existing.summary, parsed.data.data.summary),
-        tags: appendTags(existing.tags, parsed.data.data.tags),
-        mediaDescription: appendText(existing.mediaDescription, parsed.data.data.mediaDescription),
+    const { bookmarkId: id, data: incoming } = parsed.data;
+    const bookmark = await prisma.$transaction(async (tx) => {
+      const existing = await tx.bookmark.findUnique({ where: { id } });
+      if (!existing) return null;
+      const data = {
+        summary: appendText(existing.summary, incoming.summary),
+        tags: appendTags(existing.tags, incoming.tags),
+        mediaDescription: appendText(existing.mediaDescription, incoming.mediaDescription),
         editedAt: new Date(),
-      },
+      };
+      return tx.bookmark.update({ where: { id }, data: { ...data, ...embeddingInvalidation(existing, data) } });
     });
+    if (!bookmark) return errorResponse("Bookmark not found", 404);
     return NextResponse.json({ ok: true, bookmark });
   }
 
