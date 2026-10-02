@@ -152,7 +152,7 @@ R1 is merged in PR #61. Final source `4aead0f` passes 574 unit/integration tests
 
 ## Concurrent default-branch changes
 
-[PR #60](https://github.com/GINNOV/xbook/pull/60) merged externally at `e631dd49e5340d4bc4e0ebfe6ec5bdf2b2c7dbac` while this work was isolated. The initial audit observed #7–29 closed and #30–59 open. Following root review, GitHub now shows #7, #9–18, #25 and #26 open; #8, #19–24 and #27–29 are closed, and #30–59 remain open. These states are recorded separately from implementation acceptance. PR #60 reports failing lint and no Playwright run; its reported unit/build results do not satisfy R11. No issue states were changed by this audit.
+[PR #60](https://github.com/GINNOV/xbook/pull/60) merged externally at `e631dd49e5340d4bc4e0ebfe6ec5bdf2b2c7dbac` while this work was isolated. The initial audit observed #7–29 closed and #30–59 open. At that historical review, GitHub showed #7, #9–18, #25 and #26 open; #8, #19–24 and #27–29 are closed, and #30–59 remain open. These states are recorded separately from implementation acceptance. PR #60 reports failing lint and no Playwright run; its reported unit/build results do not satisfy R11. No issue states were changed by this audit.
 
 All 41 full issue bodies and their comment collections (#19–59; all collections empty) were read. The active acceptance criteria, body hashes, owners and related steps are retained in `repair-issues.json`; historical combined-report material is not counted twice. [The concurrent-main audit](repair-evidence/concurrent-main-audit.md) records source evidence and residual requirements. The scoped issues refine existing R0–R11 work; they do not add N1/N2 or Windows/release scope.
 
@@ -210,7 +210,7 @@ All 41 full issue bodies and their comment collections (#19–59; all collection
 - Settings: draft chat/embedding tests, readiness, numeric validation, presets/tabs/save, OAuth expiry/refresh/cancel/disconnect, backup/restore.
 - Docs: navigation and accurate instructions/API/privacy for all seven panes.
 
-## Findings
+## Historical findings from the initial audit
 
 F01 confirmed unsafe raw restore; snapshot backup fixed in calibration. F02 scoped retrieval fixed in calibration, contracts remain. F03 freshness fixed in calibration, identity missing. F04 total failure fixed in embedding calibration, historical/other lifecycle remains. F05 client-owned continuation confirmed. F06 unlinked folder rows confirmed. F07 new-import mapping fixed in calibration, legacy repair remains. F08 unavailable/title-only eligibility unverified. F09 transcript evidence fixed partially in calibration; article and long summaries remain. F10 distinct draft embedding tests missing. F11 state filters missing; action races require workflow checks. F12 denominator excludes unsummarized source items. F13 AGENTS testing corrected by calibration; Docs/privacy remain. F14 installed bundle 0.4.0 and source 0.4.3; desktop identity and startup need isolated acceptance.
 
