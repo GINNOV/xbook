@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getSettings, updateSettings } from "@/lib/settings";
+import { metadataFromPlaylistItem } from "@/lib/youtube-metadata";
 
 const envSchema = z.object({ YT_CLIENT_ID: z.string().min(1).optional(), YT_CLIENT_SECRET: z.string().min(1).optional() });
 const cleanEnv = (v?: string) => (v?.trim().length ? v.trim() : undefined);
@@ -13,6 +14,7 @@ export type YouTubeBookmark = {
   likeCount?: number; replyCount?: number; retweetCount?: number; quoteCount?: number;
   lang?: string; folderId?: string; folderName?: string;
   externalUrls?: string[]; mediaDescription?: string; mediaJson?: string; rawJson: string;
+  uploaderChannelId?: string; playlistAddedAt?: Date; availability?: string;
 };
 
 async function handleRefreshError(text: string) {
@@ -89,12 +91,14 @@ function mapItem(entry: any, playlist: YouTubePlaylist) {
   if (!vid) return null;
   const url = `https://www.youtube.com/watch?v=${vid}`;
   const txt = snip?.title && snip?.description ? `${snip.title}\n\n${snip.description}` : (snip?.title || snip?.description);
-  const publishedAt = entry.contentDetails?.videoPublishedAt;
-  const createdAt = typeof publishedAt === "string" ? new Date(publishedAt) : undefined;
+  const metadata = metadataFromPlaylistItem(entry);
   return {
     id: `yt:${playlist.id}:${vid}`, tweetUrl: url, title: snip?.title, text: txt,
-    authorName: snip?.videoOwnerChannelTitle, authorUsername: snip?.videoOwnerChannelTitle,
-    createdAt: createdAt && Number.isFinite(createdAt.getTime()) ? createdAt : undefined,
+    authorName: metadata.authorName, authorUsername: metadata.authorUsername,
+    createdAt: metadata.createdAt,
+    uploaderChannelId: metadata.uploaderChannelId,
+    playlistAddedAt: metadata.playlistAddedAt,
+    availability: metadata.availability,
     folderId: `yt:pl:${playlist.id}`, folderName: playlist.title, externalUrls: [url],
     rawJson: JSON.stringify({ playlistId: playlist.id, playlistTitle: playlist.title, item: entry }),
   } satisfies YouTubeBookmark;

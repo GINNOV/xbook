@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
 import { formatFolderActivity } from "@/app/lib/formatters";
 import { XLogo } from "./Icons";
 import OperationStatus from "./OperationStatus";
-import Link from "next/link";
 import { folderLibraryHref } from "../lib/folder-links";
 
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
@@ -27,8 +27,8 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
           <p className="text-xs text-slate-500">Local counts open imported bookmarks. Import fetches source items; Summarize creates digests; Index builds search vectors.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
-          <button onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
+          <button title="Import source bookmarks for all folders; existing summaries are preserved." onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
+          <button title="Refresh source folder names." onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
         </div>
       </div>
       {folders.length ? (

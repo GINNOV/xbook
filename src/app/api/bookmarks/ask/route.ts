@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { searchBookmarksSemantically } from "@/lib/bookmarks";
+import type { Bookmark } from "@prisma/client";
+import { getBookmarks, searchBookmarksSemantically } from "@/lib/bookmarks";
 import { answerLibraryQuestion } from "@/lib/llm";
 import { ASK_EVIDENCE_CHARACTERS, ASK_TOTAL_EVIDENCE_CHARACTERS, readSourceEvidence, selectQuestionEvidence } from "@/lib/source-evidence";
 
@@ -23,8 +24,16 @@ export async function POST(request: Request) {
     const question = parsed.data.question.trim();
     const source = parsed.data.source || undefined;
 
-    const candidates = await searchBookmarksSemantically(question, { source });
-    // Prefer denser context for the LLM; semantic already ranks.
+    let semanticError: string | null = null;
+    let candidates: Array<Pick<Bookmark, "id" | "source" | "tweetUrl" | "summary" | "text" | "category" | "authorUsername" | "rawJson"> & { similarity?: number }> = [];
+    try { candidates = await searchBookmarksSemantically(question, { source }); }
+    catch (error) { semanticError = error instanceof Error ? error.message : "Semantic search unavailable. Check embedding settings."; }
+    const keyword = await getBookmarks({ query: question, source, textMode: "phrase", pageSize: 8 });
+    const seen = new Set(candidates.map((item) => item.id));
+    for (const item of keyword.bookmarks) {
+      if (!seen.has(item.id)) { candidates.push({ ...item, similarity: 0 }); seen.add(item.id); }
+    }
+    if (!candidates.length) return NextResponse.json({ ok: true, answer: "Insufficient evidence. No saved item in this scope contains support for that question.", citations: [], matches: [], semanticError });
     const retrieved = candidates.slice(0, 12);
     const evidenceBudget = Math.min(ASK_EVIDENCE_CHARACTERS, Math.floor(ASK_TOTAL_EVIDENCE_CHARACTERS / Math.max(1, retrieved.length)));
     const top = retrieved.map((b) => {
@@ -76,6 +85,7 @@ export async function POST(request: Request) {
       citations: cited,
       // Also return ranked retrieval if the model cited nothing useful.
       matches: top,
+      semanticError,
     });
   } catch (error) {
     return NextResponse.json(

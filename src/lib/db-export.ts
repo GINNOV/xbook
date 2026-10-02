@@ -1,11 +1,18 @@
 import Database from "better-sqlite3";
-import fs from "node:fs/promises";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-/** Take a consistent snapshot, including committed writes still in SQLite's WAL. */
+function tableExists(database: Database.Database, name: string) {
+  const row = database
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(name);
+  return Boolean(row);
+}
+
+/** Consistent snapshot, including committed WAL pages. Credentials are omitted unless requested. */
 export async function createDatabaseExport(dbPath: string, includeSecrets = false) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "xbook-export-"));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "xbook-export-"));
   const snapshotPath = path.join(directory, "export.db");
   try {
     const source = new Database(dbPath, { readonly: true, fileMustExist: true });
@@ -19,7 +26,7 @@ export async function createDatabaseExport(dbPath: string, includeSecrets = fals
     try {
       snapshot.pragma("journal_mode = DELETE");
       snapshot.pragma("secure_delete = ON");
-      if (!includeSecrets) {
+      if (!includeSecrets && tableExists(snapshot, "Settings")) {
         snapshot.exec(`
           UPDATE Settings SET
             xBearerToken = NULL, xClientSecret = NULL,
@@ -30,15 +37,15 @@ export async function createDatabaseExport(dbPath: string, includeSecrets = fals
             llmApiKey = NULL;
         `);
       }
-      // Pending OAuth verifiers should never move to another installation.
-      snapshot.exec("DELETE FROM OAuthSession");
-      // Rebuild pages so deleted credentials cannot survive in free space.
+      if (tableExists(snapshot, "OAuthSession")) {
+        snapshot.exec("DELETE FROM OAuthSession");
+      }
       snapshot.exec("VACUUM");
     } finally {
       snapshot.close();
     }
-    return await fs.readFile(snapshotPath);
+    return fs.readFileSync(snapshotPath);
   } finally {
-    await fs.rm(directory, { recursive: true, force: true });
+    fs.rmSync(directory, { recursive: true, force: true });
   }
 }

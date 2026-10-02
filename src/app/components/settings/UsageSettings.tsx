@@ -56,7 +56,7 @@ export function UsageSettings({ usedThisMonth }: Props) {
         </div>
         <div className="space-y-2">
           <label className="text-sm font-semibold">
-            Enrichment batch size * <HelpTooltip text="Number of bookmarks to process per LLM request. Larger batches are faster but more prone to timeouts." />
+            Enrichment batch size * <HelpTooltip text="Number of bookmarks in one operation batch. This is not the token limit and not the number of parallel model calls. Concurrency and the response token limit are separate settings." />
           </label>
           <input
             type="number"

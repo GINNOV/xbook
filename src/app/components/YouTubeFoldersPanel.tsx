@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
 import { formatFolderActivity } from "@/app/lib/formatters";
@@ -8,7 +9,6 @@ import { YouTubeLogo } from "./Icons";
 import { useOperationObserver } from "../hooks/useOperationObserver";
 import { operationMessage } from "../lib/operation-observer";
 import OperationStatus from "./OperationStatus";
-import Link from "next/link";
 import { folderLibraryHref } from "../lib/folder-links";
 
 type Folder = {
@@ -91,6 +91,7 @@ export default function YouTubeFoldersPanel({ folders, localEntries, uniqueVideo
         </h2>
         <button
           type="button"
+          title="Update playlist names only. This does not import, summarize, or index."
           onClick={syncPlaylists}
           disabled={syncing}
           className="rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-slate-800 transition disabled:opacity-60"

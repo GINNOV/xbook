@@ -270,7 +270,13 @@ export function FilterControls({
             <option value="">All status</option>
             <option value="pending">Pending</option>
             <option value="summarized">Summarized</option>
+            <option value="unread">Unread</option>
+            <option value="failed">Failed</option>
+            <option value="blocked">Blocked</option>
+            <option value="unindexed">Unindexed</option>
+            <option value="stale">Stale index</option>
           </select>
+
 
           <select aria-label="Content type" name="video" defaultValue={video ? "true" : ""} className={sel}>
             <option value="">All content</option>

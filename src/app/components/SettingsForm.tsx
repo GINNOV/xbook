@@ -101,11 +101,11 @@ function SettingsFormBody({
         <StatusChip ok={setup.ytConnected} label={setup.ytConnected ? "YouTube connected" : "YouTube not connected"} />
         <StatusChip
           ok={setup.chatModelSet}
-          label={setup.chatModelSet ? "Chat model set" : "Chat model missing"}
+          label={setup.chatModelSet ? "Chat model configured" : "Chat model missing"}
         />
         <StatusChip
           ok={setup.embeddingModelSet}
-          label={setup.embeddingModelSet ? "Embedding model set" : "Embedding model missing"}
+          label={setup.embeddingModelSet ? "Embeddings configured, not tested" : "Embedding model missing"}
         />
       </div>
 

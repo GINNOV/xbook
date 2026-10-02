@@ -20,7 +20,7 @@ My need is the same as many others that scan the web for knowledge but want a lo
 * **Unified Inbox:** Pulls X posts and YouTube playlists dynamically into a single inbox.
 * **Local AI Enrichment:** Processes bookmarks using local LLMs (via Ollama, LM Studio, etc.) or remote APIs to extract concise summaries, categorize content, and apply relevant tags.
 * **Semantic Vector Search:** Finds exactly what you are looking for based on concepts and ideas, rather than needing exact keyword matches.
-* **Privacy & Local Ownership:** All data, credentials, and SQLite databases remain strictly local to your machine. Nothing is shared or tracked.
+* **Privacy & Local Ownership:** Bookmarks, credentials, and the SQLite database stay on this machine. XBook does not run its own tracking service. If Settings points chat or embeddings at a remote or LAN endpoint, the text sent for enrichment, semantic search, or Ask is transmitted to that endpoint. Downloads omit stored credentials unless you explicitly include them. Local backups and technical logs can still contain secrets.
 
 ---
 

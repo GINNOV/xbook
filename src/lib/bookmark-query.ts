@@ -40,7 +40,7 @@ export type BookmarkSearchScope = Partial<Pick<BookmarkQuery, "source" | "catego
 export type BookmarkSearchParams = Record<string, string | string[] | undefined>;
 
 export function bookmarkQueryInputFromParams(params: BookmarkSearchParams = {}, pageSize?: number): BookmarkQueryInput {
-  return { ...params, query: params.q ?? "", ...(pageSize === undefined ? {} : { pageSize }) };
+  return { ...params, query: params.q ?? "", textMode: params.textMode ?? params.match, ...(pageSize === undefined ? {} : { pageSize }) };
 }
 
 const tokens = (value: string) => value.normalize("NFKC").toLocaleLowerCase("en-US").match(/[\p{L}\p{N}_]+/gu) ?? [];
