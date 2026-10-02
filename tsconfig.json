@@ -39,6 +39,9 @@
   "exclude": [
     "node_modules",
     "promo",
-    "src-tauri/resources"
+    "src-tauri/resources",
+    "src-tauri/target",
+    "dist-release",
+    "tauri-dist"
   ]
 }

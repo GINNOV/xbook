@@ -19,7 +19,7 @@ const STANDALONE_SKIP_FILES = new Set([
 ]);
 
 function shouldSkipStandaloneEntry(name) {
-  return STANDALONE_SKIP_DIRS.has(name) || STANDALONE_SKIP_FILES.has(name);
+  return STANDALONE_SKIP_DIRS.has(name) || STANDALONE_SKIP_FILES.has(name) || name === ".env" || name.startsWith(".env.");
 }
 
 function copyRecursiveSync(src, dest, { filter } = {}) {
@@ -151,6 +151,7 @@ compileMaintenance(
   path.join(repositoryDirectory, "src", "lib", "database-maintenance.ts"),
   path.join(tauriServerDir, "database-maintenance.cjs")
 );
+fs.copyFileSync(path.join(repositoryDirectory, "src-tauri", "tauri.conf.json"), path.join(tauriServerDir, "desktop-version.json"));
 // Bootstrap executes this module before Next loads its traced dependencies.
 copyPackageAndDependencies("better-sqlite3");
 copyPackageAndDependencies("zod");
