@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
-import type { BookmarkSortKey, SortDir } from "@/lib/bookmark-sort";
+import { isBookmarkSortKey, type BookmarkSortKey, type SortDir } from "@/lib/bookmark-sort";
+import { SUBSTRING_MATCH_HELP, type TextMatch } from "@/lib/bookmark-text";
 
 type SearchMode = "keyword" | "semantic" | "ask";
 
@@ -21,6 +22,8 @@ type Props = {
   folderId: string;
   sort: BookmarkSortKey;
   dir: SortDir;
+  match?: TextMatch;
+  semanticError?: string | null;
 };
 
 type AskCitation = {
@@ -32,6 +35,9 @@ type AskCitation = {
   category: string | null;
   authorUsername: string | null;
   source: string;
+  excerpt?: string | null;
+  timestampSeconds?: number | null;
+  captureStatus?: "complete" | "partial" | "missing" | null;
 };
 
 function Chevron({ open }: { open: boolean }) {
@@ -110,11 +116,17 @@ export function FilterControls({
   video,
   semantic,
   folderId,
-  sort,
   dir,
+  match = "substring",
+  semanticError,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedSort = searchParams.get("sort");
+  const explicitSort = isBookmarkSortKey(requestedSort) ? requestedSort : "";
   const [mode, setMode] = useState<SearchMode>(semantic ? "semantic" : "keyword");
+  const carriedSort = explicitSort === "relevance" && mode !== "semantic" ? "" : explicitSort;
+  const carriedDir = carriedSort ? dir : "";
   const [query, setQuery] = useState(q);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const [askBusy, setAskBusy] = useState(false);
@@ -125,15 +137,15 @@ export function FilterControls({
   const clearHref = (() => {
     const params = new URLSearchParams();
     if (source) params.set("source", source);
-    if (sort) params.set("sort", sort);
-    if (dir) params.set("dir", dir);
+    if (carriedSort) params.set("sort", carriedSort);
+    if (carriedDir) params.set("dir", carriedDir);
     const qs = params.toString();
     return qs ? `/bookmarks?${qs}` : "/bookmarks";
   })();
   const hasFilter = q || category || folderId || status || video || semantic;
   const base = useMemo(
-    () => ({ source, q, status, video, semantic: mode === "semantic", sort, dir }),
-    [source, q, status, video, mode, sort, dir]
+    () => ({ source, q, status, video, semantic: mode === "semantic", sort: carriedSort, dir: carriedDir }),
+    [source, q, status, video, mode, carriedSort, carriedDir]
   );
 
   const sel =
@@ -202,11 +214,17 @@ export function FilterControls({
 
   return (
     <section className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm">
+      {semanticError ? (
+        <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">{semanticError}</p>
+      ) : null}
+      {match === "substring" ? (
+        <p className="mb-3 text-xs text-on-surface-variant">{SUBSTRING_MATCH_HELP}</p>
+      ) : null}
       <form method="GET" action="/bookmarks" onSubmit={onSubmit} className="space-y-3">
         {source ? <input type="hidden" name="source" value={source} /> : null}
         {mode === "semantic" ? <input type="hidden" name="semantic" value="true" /> : null}
-        {sort ? <input type="hidden" name="sort" value={sort} /> : null}
-        {dir ? <input type="hidden" name="dir" value={dir} /> : null}
+        {carriedSort ? <input type="hidden" name="sort" value={carriedSort} /> : null}
+        {carriedDir ? <input type="hidden" name="dir" value={carriedDir} /> : null}
 
         {/* Search row: box + mode switch */}
         <div className="flex flex-wrap items-stretch gap-2">
@@ -250,6 +268,17 @@ export function FilterControls({
             <option value="">All status</option>
             <option value="pending">Pending</option>
             <option value="summarized">Summarized</option>
+            <option value="unread">Unread</option>
+            <option value="failed">Failed</option>
+            <option value="blocked">Blocked</option>
+            <option value="unindexed">Unindexed</option>
+            <option value="stale">Stale index</option>
+          </select>
+
+          <select name="match" defaultValue={match} className={sel} aria-label="Text match" title={SUBSTRING_MATCH_HELP}>
+            <option value="substring">Substring</option>
+            <option value="word">Whole word</option>
+            <option value="phrase">Exact phrase</option>
           </select>
 
           <select name="video" defaultValue={video ? "true" : ""} className={sel}>
@@ -333,8 +362,18 @@ export function FilterControls({
                       </div>
                       <p className="mt-1 text-xs text-on-surface-variant">{c.reason}</p>
                       <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
-                        {c.summary || c.text || "No preview"}
+                        {c.excerpt || c.summary || c.text || "No preview"}
                       </p>
+                      {c.timestampSeconds != null ? (
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          Transcript at {Math.floor(c.timestampSeconds / 60)}:{String(Math.floor(c.timestampSeconds % 60)).padStart(2, "0")}
+                        </p>
+                      ) : null}
+                      {c.captureStatus === "partial" || c.captureStatus === "missing" ? (
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          {c.captureStatus === "partial" ? "Partial transcript capture" : "Transcript unavailable"}
+                        </p>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
 import { formatFolderActivity } from "@/app/lib/formatters";
@@ -35,8 +36,8 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
       const res = await fetch("/api/youtube/folders/sync", { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "YouTube playlist sync failed");
-      setMessage(`Synced ${json.total} playlists. Reloading…`);
-      window.location.reload();
+      setMessage(`Synced ${json.total} playlist names. This does not import or summarize videos.`);
+      router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "YouTube playlist sync failed");
       setIsError(true);
@@ -84,6 +85,10 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
           playErrorSound();
         }
 
+        if (json.continuedByServer) {
+          setMessage("Playlist enrichment continues on the server.");
+          break;
+        }
         if (processed === 0) break;
         if (errorCount > 0 && errorCount === processed) {
           haltedOnErrors = true;
@@ -121,11 +126,12 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
         </h2>
         <button
           type="button"
+          title="Update playlist names only. This does not import, summarize, or index."
           onClick={syncPlaylists}
           disabled={syncing}
           className="rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-slate-800 transition disabled:opacity-60"
         >
-          {syncing ? "Syncing…" : "Sync playlists"}
+          {syncing ? "Syncing…" : "Sync names"}
         </button>
       </div>
       {folders.length ? (
@@ -134,7 +140,7 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
             <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant">
               <tr>
                 <th className="px-4 py-2">Playlist Name</th>
-                <th className="px-4 py-2">Videos</th>
+                <th className="px-4 py-2" title="Playlist entries. The same video can appear in more than one playlist.">Entries</th>
                 <th className="px-4 py-2">Fetched</th>
                 <th className="px-4 py-2">Processed</th>
                 <th className="px-4 py-2 text-right">Actions</th>
@@ -144,10 +150,10 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
               {folders.map((folder) => (
                 <tr key={folder.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 font-semibold">
-                    {folder.name ?? "Unknown playlist"}
+                    <Link className="hover:text-primary" href={`/bookmarks?source=yt&folderId=${encodeURIComponent(folder.id)}`}>{folder.name ?? "Unknown playlist"}</Link>
                   </td>
                   <td className="px-4 py-3 text-slate-500">
-                    {folder.total ?? 0}
+                    <Link className="hover:text-primary" href={`/bookmarks?source=yt&folderId=${encodeURIComponent(folder.id)}`}>{folder.total ?? 0} entries</Link>
                   </td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                     {formatFolderActivity(folder.lastFetchedAt)}
@@ -162,7 +168,7 @@ export default function YouTubeFoldersPanel({ folders, soundOnComplete, soundOnE
                       disabled={processing === folder.id}
                       className="rounded-full border border-black/10 px-3 py-1 text-xs font-bold uppercase text-slate-700 transition hover:bg-black hover:text-white disabled:opacity-60"
                     >
-                      {processing === folder.id ? "..." : "Process"}
+                      {processing === folder.id ? "..." : "Summarize"}
                     </button>
                   </td>
                 </tr>

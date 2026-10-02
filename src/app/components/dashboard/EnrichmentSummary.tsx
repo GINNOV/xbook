@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useActions } from "../../hooks/useActions";
 
 type Props = {
@@ -42,8 +43,8 @@ export function EnrichmentSummary({
   const liveIndexed = syncing ? progress.indexed : indexed;
   const liveUnindexed = syncing ? progress.unindexed : unindexed;
 
-  const indexable = liveIndexed + liveUnindexed;
-  const coverage = indexable > 0 ? Math.min(100, (liveIndexed / indexable) * 100) : 0;
+  const libraryTotal = Math.max(0, sum + pend);
+  const coverage = libraryTotal > 0 ? Math.min(100, (liveIndexed / libraryTotal) * 100) : 0;
   const needsIndex = liveUnindexed > 0;
   const sourceLabel = source === "yt" ? "YouTube" : "X";
 
@@ -61,7 +62,12 @@ export function EnrichmentSummary({
     <div className="rounded-lg bg-surface-container-lowest p-5 shadow-sm border border-outline-variant/30">
       <h2 className="text-base font-semibold">Enrichment &amp; index</h2>
       <p className="mt-0.5 text-[11px] text-on-surface-variant">
-        Counts for this tab ({sourceLabel}) only
+        Counts for this tab ({sourceLabel}) only. The percentage divides vectors by every saved item, including pending enrichment.{" "}
+        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=pending`}>{fmt(pend)} pending</Link>
+        {" · "}
+        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=unindexed`}>{fmt(liveUnindexed)} missing vectors</Link>
+        {" · "}
+        <Link className="font-semibold text-primary" href={`/bookmarks?source=${source}&status=failed`}>{fmt(failed)} failed</Link>
       </p>
 
       <div className="mt-5">
@@ -70,7 +76,7 @@ export function EnrichmentSummary({
             Index health
           </p>
           <p className="text-xs font-medium text-on-surface-variant">
-            {indexable > 0 ? `${Math.round(coverage)}% searchable` : "No content yet"}
+            {libraryTotal > 0 ? `${Math.round(coverage)}% of saved items have vectors` : "No content yet"}
           </p>
         </div>
 

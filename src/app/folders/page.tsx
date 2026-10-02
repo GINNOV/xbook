@@ -10,7 +10,7 @@ import { getSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function FoldersPage({ searchParams }: PageProps) {

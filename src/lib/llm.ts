@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { getSettings } from "@/lib/settings";
 import { logLlmRequest, logProcessingEvent } from "@/lib/processing";
+import { formatEvidenceSection } from "@/lib/source-evidence";
+import type { TranscriptCapture, TranscriptSection } from "@/lib/youtubeTranscript";
 
 // --- Configuration & Schemas ---
 
@@ -446,6 +448,9 @@ export type LibraryAskCandidate = {
   category: string | null;
   authorUsername: string | null;
   similarity?: number;
+  sourceEvidence?: TranscriptSection[];
+  captureStatus?: TranscriptCapture["status"];
+  captureReason?: string | null;
 };
 
 export type LibraryAskResult = {
@@ -469,6 +474,8 @@ export async function answerLibraryQuestion(input: {
         c.category ? `category=${c.category}` : null,
         c.tweetUrl ? `url=${c.tweetUrl}` : null,
         `content=${body || "(empty)"}`,
+        c.captureStatus ? `transcript_capture=${c.captureStatus}${c.captureReason ? ` (${c.captureReason})` : ""}` : null,
+        c.sourceEvidence?.length ? `selected_source_excerpts=\n${c.sourceEvidence.map(formatEvidenceSection).join("\n")}` : null,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -480,6 +487,8 @@ export async function answerLibraryQuestion(input: {
     "Answer the user's question using ONLY the candidate bookmarks below.",
     "If nothing relevant is present, say so clearly and suggest a better query.",
     "Prefer concise, practical answers. Cite bookmarks by id in citations.",
+    "Source excerpts are evidence; bookmark summaries are generated previews. Prefer the excerpts for factual claims.",
+    "Transcript excerpts are selected passages, not the whole video. Respect missing or partial capture and never claim uncaptured details are known.",
     "",
     "Return ONLY valid JSON (no markdown fences):",
     '{ "answer": "string", "citations": [ { "id": "bookmark-id", "reason": "why this item helps" } ] }',

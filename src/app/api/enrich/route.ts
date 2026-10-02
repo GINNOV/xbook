@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import type { OperationRun } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { contentSnapshot, saveEnrichmentIfUnchanged } from "@/lib/embedding-index";
 import { pendingEnrichmentWhere } from "@/lib/bookmarks";
 import { summarizeBookmark, validateModelAvailability } from "@/lib/llm";
-import { fetchYouTubeTranscriptFromUrl } from "@/lib/youtubeTranscript";
+import { captureBookmarkSourceEvidence } from "@/lib/source-evidence";
 import { enrichmentSignals } from "@/lib/signals";
 import {
   createOperationRun,
@@ -15,6 +16,10 @@ import {
 import { MAX_LLM_CONCURRENCY } from "@/lib/llm-limits";
 import { buildEnrichmentRunConfig } from "@/lib/run-config";
 import { markFolderProcessed } from "@/lib/folders";
+import { buildExternalSourceText } from "@/lib/article-extract";
+import { allowsConfidentDigest, metadataFromStoredRaw } from "@/lib/youtube-metadata";
+import { classifyRunStatus } from "@/lib/run-status";
+import { scheduleEnrichContinuation, workersEnabled } from "@/lib/work-continuation";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -30,54 +35,6 @@ function parseExternalUrls(input: string | null) {
   }
 }
 
-async function fetchUrlText(url: string) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": "XBookmarkAtlas/1.0" },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const cleaned = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return cleaned.slice(0, 3000);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function isExternalContentUrl(url: string) {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return !(
-      host.endsWith("x.com") ||
-      host.endsWith("twitter.com") ||
-      host.endsWith("t.co")
-    );
-  } catch {
-    return false;
-  }
-}
-
-async function buildSourceText(urls?: string[]) {
-  if (!urls || urls.length === 0) return undefined;
-  const texts: string[] = [];
-  const filtered = urls.filter(isExternalContentUrl);
-  for (const url of filtered.slice(0, 2)) {
-    const text = await fetchUrlText(url);
-    if (text) texts.push(text);
-  }
-  return texts.length ? texts.join("\n---\n") : undefined;
-}
-
 function buildYoutubeFallbackSummary(input: { transcript?: string | null; text?: string | null }) {
   const base = (input.transcript ?? input.text ?? "").replace(/\s+/g, " ").trim();
   if (!base) return null;
@@ -91,6 +48,7 @@ export async function POST(request: Request) {
   const sourceParam = url.searchParams.get("source"), folderIdParam = url.searchParams.get("folderId");
   const runIdParam = url.searchParams.get("runId"), fullParam = url.searchParams.get("full") === "true";
   const reprocessParam = url.searchParams.get("reprocess") === "true";
+  const replaceHuman = url.searchParams.get("replace") === "true";
   
   const source = sourceParam === "x" || sourceParam === "yt" ? sourceParam : null;
   const folderId = folderIdParam?.trim() ? folderIdParam.trim() : null;
@@ -211,6 +169,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: message }, { status: 503 });
   }
 
+  let totalSkipped = 0;
   let totalProcessed = 0, totalUpdated = 0, totalErrors: Array<{ id: string; error: string }> = [];
   let controller = enrichmentSignals.get(activeRun.id);
   if (!controller) { controller = new AbortController(); enrichmentSignals.set(activeRun.id, controller); }
@@ -262,28 +221,50 @@ export async function POST(request: Request) {
           if (signal.aborted) return;
           await logProcessingEvent({ runId: activeRun.id, bookmarkId: bookmark.id, type: "bookmark", status: "fetching", message: "Preparing bookmark." });
           const isYouTube = bookmark.source === "yt";
-          const transcript = isYouTube ? await fetchYouTubeTranscriptFromUrl(bookmark.tweetUrl) : null;
+          const captured = isYouTube ? await captureBookmarkSourceEvidence(bookmark) : null;
+          if (captured) {
+            await prisma.bookmark.updateMany({
+              where: { id: bookmark.id, rawJson: bookmark.rawJson },
+              data: { rawJson: captured.rawJson },
+            });
+          }
+          const transcript = captured?.sourceText ?? null;
+          const availability = metadataFromStoredRaw(bookmark.rawJson)?.availability;
+          const eligible = allowsConfidentDigest({ availability, transcript });
+          if (!eligible.ok) {
+            totalSkipped += 1;
+            await logProcessingEvent({ runId: activeRun.id, bookmarkId: bookmark.id, type: "bookmark", status: "skipped", message: eligible.reason });
+            await incrementOperationRun(activeRun.id, { status: "running", processed: 1, skipped: 1 });
+            return;
+          }
           const externalUrls = parseExternalUrls(bookmark.externalUrls);
-          const sourceText = transcript ?? (await buildSourceText(externalUrls));
+          const article = transcript ? null : await buildExternalSourceText(externalUrls);
+          if (article?.captures) {
+            await prisma.bookmark.updateMany({
+              where: { id: bookmark.id },
+              data: { captureJson: JSON.stringify(article.captures) },
+            });
+          }
+          const sourceText = transcript ?? article?.text;
           const enrichmentText = isYouTube ? (sourceText ? undefined : bookmark.text ?? undefined) : bookmark.text ?? undefined;
 
           if (signal.aborted) return;
           const enrichment = await summarizeBookmark({ text: enrichmentText, folderName: bookmark.folder?.name ?? undefined, authorUsername: bookmark.authorUsername ?? undefined, externalUrls, sourceText, mediaDescription: bookmark.mediaDescription ?? undefined, signal, processing: { runId: activeRun.id, bookmarkId: bookmark.id } });
           const summary = enrichment.summary?.trim() || (isYouTube ? buildYoutubeFallbackSummary({ transcript, text: bookmark.text }) : null);
 
-          await prisma.bookmark.update({ 
-            where: { id: bookmark.id }, 
-            data: { 
-              summary, 
-              category: enrichment.category, 
-              tags: enrichment.tags?.length ? enrichment.tags.join(", ") : null, 
-              embedding: enrichment.embedding ? Buffer.from(new Float32Array(enrichment.embedding).buffer) : null, 
-              summarizedAt: new Date(), 
-              editedAt: null,
-              enrichmentError: null,
-              enrichmentFailures: 0
-            } 
-          });
+          const saved = await prisma.$transaction((tx) => saveEnrichmentIfUnchanged(tx, {
+            id: bookmark.id,
+            snapshot: contentSnapshot(bookmark),
+            content: { summary, category: enrichment.category ?? null, tags: enrichment.tags?.length ? enrichment.tags.join(", ") : null },
+            embedding: enrichment.embedding,
+            replaceHuman,
+          }));
+          if (!saved) {
+            totalSkipped += 1;
+            await logProcessingEvent({ runId: activeRun.id, bookmarkId: bookmark.id, type: "bookmark", status: "skipped", message: "Bookmark changed during enrichment; current edits preserved." });
+            await incrementOperationRun(activeRun.id, { status: "running", processed: 1, skipped: 1 });
+            return;
+          }
           batchUpdated += 1;
           await logProcessingEvent({ runId: activeRun.id, bookmarkId: bookmark.id, type: "bookmark", status: "completed", message: "Saved.", metadata: { category: enrichment.category, usedTranscript: !!transcript } });
           await incrementOperationRun(activeRun.id, { status: "running", processed: 1, updated: 1 });
@@ -318,7 +299,7 @@ export async function POST(request: Request) {
       const actuallyAttempted = Math.min(batchNextIndex, pendingBatch.length);
       totalProcessed += actuallyAttempted; totalUpdated += batchUpdated; totalErrors = [...totalErrors, ...batchErrors];
       
-      if (!fullParam) break;
+      if (!fullParam && !folderId) break;
     }
   } finally {
     // Force reprocess matches every row in scope forever — remaining is "not yet
@@ -326,8 +307,12 @@ export async function POST(request: Request) {
     const rem = reprocessParam
       ? Math.max(0, totalInScope - attemptedIds.size)
       : await prisma.bookmark.count({ where: pendingWhere });
-    const isTotalFailure = totalErrors.length === totalProcessed && totalProcessed > 0;
-    const finalStatus = signal.aborted ? "stopped" : (rem === 0 ? "completed" : (isTotalFailure ? "failed" : "completed"));
+    const finalStatus = classifyRunStatus({
+      cancelled: signal.aborted,
+      updated: totalUpdated,
+      failed: totalErrors.length,
+      remaining: rem,
+    });
     const progressNote =
       batchIndex > 0
         ? `${sourceLabel} ${modeLabel} · batch ${batchIndex} of ${totalBatches}`
@@ -343,6 +328,7 @@ export async function POST(request: Request) {
         totalBatches,
         batchSize: batchLimit,
         concurrency,
+        continuationSearch: url.search,
       },
       finish: true,
     });
@@ -358,19 +344,32 @@ export async function POST(request: Request) {
   }
   // Client multi-batch loops must keep going while remaining > 0 and this
   // request did real work. "finished" means do not start another request.
+  const wholeQueue = fullParam || Boolean(folderId);
   const noMoreWork =
     wasStopped ||
     remFinal === 0 ||
     totalProcessed === 0 ||
-    !fullParam;
+    !wholeQueue;
+  let continuedByServer = false;
+  if (!noMoreWork && workersEnabled()) {
+    const claimed = await prisma.operationRun.updateMany({
+      where: { id: activeRun.id, status: "paused" },
+      data: { status: "queued" },
+    });
+    if (claimed.count === 1) {
+      continuedByServer = scheduleEnrichContinuation(url.origin, activeRun.id, url.search);
+    }
+  }
   return NextResponse.json({
     ok: true,
     runId: activeRun.id,
     processed: totalProcessed,
     updated: totalUpdated,
+    skipped: totalSkipped,
     remaining: remFinal,
     errors: totalErrors,
-    finished: noMoreWork,
+    finished: noMoreWork || continuedByServer,
+    continuedByServer,
     stopped: wasStopped,
     batch: batchIndex,
     batches: totalBatches,

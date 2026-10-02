@@ -8,6 +8,8 @@ export function useLLMSettings() {
   
   const [llmTest, setLlmTest] = useState<string | null>(null);
   const [testingLlm, setTestingLlm] = useState(false);
+  const [testingEmbedding, setTestingEmbedding] = useState(false);
+  const [embeddingTest, setEmbeddingTest] = useState<string | null>(null);
   const [clearingLogs, setClearingLogs] = useState(false);
   const [modelHistory, setModelHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -15,6 +17,7 @@ export function useLLMSettings() {
   const historyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (typeof localStorage === "undefined") return;
     const raw = localStorage.getItem("xbook:llm-model-history");
     if (raw) {
       try {
@@ -58,6 +61,25 @@ export function useLLMSettings() {
       setLlmTest(error instanceof Error ? error.message : "LLM test failed");
     } finally {
       setTestingLlm(false);
+    }
+  };
+
+  const testEmbedding = async () => {
+    setTestingEmbedding(true);
+    setEmbeddingTest(null);
+    try {
+      const res = await fetch("/api/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "embedding", ...form }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Embedding test failed");
+      setEmbeddingTest(json.message ?? "Embedding connection ok.");
+    } catch (error) {
+      setEmbeddingTest(error instanceof Error ? error.message : "Embedding test failed");
+    } finally {
+      setTestingEmbedding(false);
     }
   };
 
@@ -173,6 +195,9 @@ export function useLLMSettings() {
     setShowHistory,
     historyRef,
     testLlm,
+    testEmbedding,
+    testingEmbedding,
+    embeddingTest,
     applyLlmPreset,
     clearProcessingHistory,
     resetPrompt,

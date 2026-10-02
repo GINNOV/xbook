@@ -59,6 +59,8 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
           folderId={d.fid}
           sort={d.sort}
           dir={d.dir}
+          match={d.match}
+          semanticError={d.data.semanticError}
         />
         <BookmarksList initial={d.data.bookmarks} sort={d.sort} dir={d.dir} source={d.src} />
         <PaginationControls from={from} to={to} total={d.data.total} currentPage={d.currentPage} totalPages={d.totalPages} pageHref={href} />

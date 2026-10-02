@@ -49,7 +49,9 @@ describe("useBookmarksList hook", () => {
     act(() => { result.current.openEdit(mockBookmarks[0]); });
     act(() => { result.current.setEditing({ ...result.current.editing!, summary: "edit" }); });
     await act(async () => { await result.current.saveEdit(); });
-    expect(fetch).toHaveBeenCalledWith("/api/enrich/edit", expect.anything());
+    expect(fetch).toHaveBeenCalledWith("/api/enrich/edit", expect.objectContaining({
+      body: JSON.stringify({ bookmarkId: "1", summary: "edit", category: "AI", tags: "a,b" }),
+    }));
     expect(result.current.items[0].summary).toBe("edit");
   });
 

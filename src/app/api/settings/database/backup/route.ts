@@ -16,12 +16,13 @@ export async function GET(request: Request) {
 
     const includeSecrets = searchParams.get("includeSecrets") === "true";
     const fileBuffer = await createDatabaseExport(dbPath, includeSecrets);
-    
-    return new Response(fileBuffer, {
+    const filename = getBackupDownloadFilename(searchParams.get("customName"));
+
+    return new Response(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": "application/octet-stream",
         "Cache-Control": "no-store",
-        "Content-Disposition": `attachment; filename="${getBackupDownloadFilename(searchParams.get("customName"))}"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {

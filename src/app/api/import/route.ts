@@ -280,6 +280,9 @@ export async function POST(request: Request) {
           mediaDescription: bookmark.mediaDescription ?? null,
           mediaJson: bookmark.mediaJson ?? null,
           rawJson: bookmark.rawJson,
+          ...(bookmark.uploaderChannelId ? { uploaderChannelId: bookmark.uploaderChannelId } : {}),
+          ...(bookmark.playlistAddedAt ? { playlistAddedAt: bookmark.playlistAddedAt } : {}),
+          ...(bookmark.availability ? { availability: bookmark.availability } : {}),
           ...(bookmark.folderId ? { folder: { connect: { id: bookmark.folderId } } } : {}),
         },
         create: {
@@ -301,6 +304,9 @@ export async function POST(request: Request) {
           mediaDescription: bookmark.mediaDescription ?? null,
           mediaJson: bookmark.mediaJson ?? null,
           rawJson: bookmark.rawJson,
+          ...(bookmark.uploaderChannelId ? { uploaderChannelId: bookmark.uploaderChannelId } : {}),
+          ...(bookmark.playlistAddedAt ? { playlistAddedAt: bookmark.playlistAddedAt } : {}),
+          ...(bookmark.availability ? { availability: bookmark.availability } : {}),
           ...(bookmark.folderId ? { folder: { connect: { id: bookmark.folderId } } } : {}),
         },
       });
