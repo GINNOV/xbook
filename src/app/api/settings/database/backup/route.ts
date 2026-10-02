@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const searchParams = request?.url ? new URL(request.url).searchParams : new URLSearchParams();
+    const searchParams = new URL(request.url).searchParams;
     const dbPath = getDbPath();
     if (!fs.existsSync(dbPath)) {
       return NextResponse.json({ ok: false, error: "Database file not found" }, { status: 404 });

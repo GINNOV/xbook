@@ -45,6 +45,7 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 
 ## Testing Guidelines
 - Vitest runs unit and disposable-SQLite integration tests in `tests/unit`: `npm test`, or `npx vitest run tests/unit/<file>.test.ts` for focused checks.
+- Database export and download-name coverage: `npm test -- tests/unit/db-export.test.ts tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
 - Playwright runs Chromium workflow checks in `tests/e2e`: `npm run test:e2e`. Run these only against a disposable checkout database after `npx prisma migrate deploy`.
 - Calibration checks use Node 24 for the native SQLite adapter. See `docs/calibration/measure.py` for timed commands.
 
