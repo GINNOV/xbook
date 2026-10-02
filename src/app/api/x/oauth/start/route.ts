@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requestPublicOrigin } from "@/lib/oauth-redirect";
 import { getSettings } from "@/lib/settings";
 import {
   generateCodeChallenge,
@@ -16,7 +17,7 @@ const DEFAULT_SCOPE = [
 
 export async function GET(request: Request) {
   const settings = await getSettings();
-  const origin = new URL(request.url).origin;
+  const origin = requestPublicOrigin(request);
   const clientId = settings.xClientId ?? process.env.X_CLIENT_ID;
   const redirectUri =
     settings.xRedirectUri ??

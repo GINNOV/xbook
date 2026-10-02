@@ -6,13 +6,13 @@ import {
   generateCodeVerifier,
   generateState,
 } from "@/lib/pkce";
-import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
+import { requestPublicOrigin, resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const DEFAULT_SCOPE = ["https://www.googleapis.com/auth/youtube.readonly"];
 
 export async function GET(request: Request) {
   const settings = await getSettings();
-  const origin = new URL(request.url).origin;
+  const origin = requestPublicOrigin(request);
   const clientId = settings.ytClientId ?? process.env.YT_CLIENT_ID;
   const redirectUri = resolveLoopbackRedirectUri(
     settings.ytRedirectUri,

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requestPublicOrigin } from "@/lib/oauth-redirect";
 import { getSettings, updateSettings } from "@/lib/settings";
 
 const DEFAULT_API_BASE = "https://api.x.com/2";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origin = url.origin;
+  const origin = requestPublicOrigin(request);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");

@@ -6,7 +6,7 @@ import {
   generateCodeVerifier,
   generateState,
 } from "@/lib/pkce";
-import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
+import { requestPublicOrigin, resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const DEFAULT_SCOPE = ["https://www.googleapis.com/auth/youtube.readonly"];
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const settings = await getSettings();
-    const origin = new URL(request.url).origin;
+    const origin = requestPublicOrigin(request);
     
     // We use settings from the database OR the ones provided in the form body
     const clientId = body.ytClientId || settings.ytClientId || process.env.YT_CLIENT_ID;

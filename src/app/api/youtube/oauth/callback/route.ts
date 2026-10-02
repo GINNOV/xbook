@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSettings, updateSettings } from "@/lib/settings";
-import { resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
+import { requestPublicOrigin, resolveLoopbackRedirectUri } from "@/lib/oauth-redirect";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origin = url.origin;
+  const origin = requestPublicOrigin(request);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
