@@ -1,0 +1,20 @@
+
+> xbook@0.4.3 lint
+> eslint
+
+
+Oops! Something went wrong! :(
+
+ESLint: 9.39.2
+
+TypeError: expand is not a function
+    at Minimatch.braceExpand (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/minimatch/minimatch.js:271:10)
+    at Minimatch.make (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/minimatch/minimatch.js:180:33)
+    at new Minimatch (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/minimatch/minimatch.js:156:8)
+    at doMatch (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@eslint/config-array/dist/cjs/index.cjs:422:13)
+    at match (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@eslint/config-array/dist/cjs/index.cjs:756:11)
+    at /Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@eslint/config-array/dist/cjs/index.cjs:772:10
+    at Array.some (<anonymous>)
+    at pathMatches (/Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@eslint/config-array/dist/cjs/index.cjs:767:44)
+    at /Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@eslint/config-array/dist/cjs/index.cjs:1368:8
+    at FlatConfigArray.forEach (<anonymous>)

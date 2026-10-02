@@ -1,0 +1,100 @@
+
+> xbook@0.4.3 build
+> next build
+
+▲ Next.js 16.2.12 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./next.config.ts
+Encountered unexpected file in NFT list
+A file was traced that indicates that the whole project was traced unintentionally. Somewhere in the import trace below, there are:
+- filesystem operations (like path.join, path.resolve or fs.readFile), or
+- very dynamic requires (like require('./' + foo)).
+To resolve this, you can
+- remove them if possible, or
+- only use them in development, or
+- make sure they are statically scoped to some subfolder: path.join(process.cwd(), 'data', bar), or
+- add ignore comments: path.join(/*turbopackIgnore: true*/ process.cwd(), bar)
+
+Import trace:
+  App Route:
+    ./next.config.ts
+    ./src/lib/db-backup.ts
+    ./src/app/api/settings/database/restore/route.ts
+
+
+✓ Compiled successfully in 4.2s
+  Running TypeScript ...
+  Finished TypeScript in 6.0s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/34) ...
+  Generating static pages using 9 workers (8/34)
+  Generating static pages using 9 workers (16/34)
+  Generating static pages using 9 workers (25/34)
+✓ Generating static pages using 9 workers (34/34) in 132ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/agent
+├ ƒ /api/bookmarks/ask
+├ ƒ /api/bookmarks/embeddings/sync
+├ ƒ /api/bookmarks/read
+├ ƒ /api/bookmarks/search
+├ ƒ /api/bookmarks/translate
+├ ƒ /api/enrich
+├ ƒ /api/enrich/edit
+├ ƒ /api/enrich/one
+├ ƒ /api/folders/import
+├ ƒ /api/folders/sync
+├ ƒ /api/import
+├ ƒ /api/oauth/youtube/callback
+├ ƒ /api/oauth/youtube/start
+├ ƒ /api/processing/active
+├ ƒ /api/processing/clear
+├ ƒ /api/processing/events
+├ ƒ /api/processing/runs
+├ ƒ /api/processing/runs/[id]
+├ ƒ /api/processing/runs/cleanup
+├ ƒ /api/processing/runs/stop-all
+├ ƒ /api/settings
+├ ƒ /api/settings/database/backup
+├ ƒ /api/settings/database/backups
+├ ƒ /api/settings/database/clear
+├ ƒ /api/settings/database/restore
+├ ƒ /api/settings/mark-latest
+├ ƒ /api/settings/models
+├ ƒ /api/settings/reset-baseline
+├ ƒ /api/settings/test
+├ ƒ /api/x/diagnostics
+├ ƒ /api/x/oauth/callback
+├ ƒ /api/x/oauth/start
+├ ƒ /api/x/user-lookup
+├ ƒ /api/youtube/diagnostics
+├ ƒ /api/youtube/folders/sync
+├ ƒ /api/youtube/oauth/callback
+├ ƒ /api/youtube/oauth/start
+├ ƒ /api/youtube/oauth/url
+├ ƒ /bookmarks
+├ ○ /docs
+├ ○ /docs/agent-api
+├ ○ /docs/connections
+├ ○ /docs/library
+├ ○ /docs/llm
+├ ○ /docs/process-inbox
+├ ○ /docs/scenarios
+├ ○ /docs/settings
+├ ○ /docs/setup
+├ ƒ /folders
+├ ƒ /oauth/done
+├ ƒ /processing
+├ ƒ /settings
+├ ○ /xbooks
+└ ○ /ybooks
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

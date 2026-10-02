@@ -1,0 +1,38 @@
+
+> xbook@0.4.3 postinstall
+> prisma generate
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.7.0) to ./node_modules/@prisma/client in 60ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+
+added 5 packages, removed 2 packages, and audited 600 packages in 2s
+
+193 packages are looking for funding
+  run `npm fund` for details
+
+21 vulnerabilities (8 moderate, 12 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn install-scripts 7 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   @prisma/engines@7.7.0 (postinstall: node scripts/postinstall.js)
+npm warn install-scripts   @swc/core@1.15.30 (postinstall: node postinstall.js)
+npm warn install-scripts   better-sqlite3@12.6.2 (install: node-gyp rebuild)
+npm warn install-scripts   fsevents@2.3.2 (install: (install scripts present))
+npm warn install-scripts   prisma@7.7.0 (preinstall: node scripts/preinstall-entry.js)
+npm warn install-scripts   unrs-resolver@1.11.1 (postinstall: napi-postinstall unrs-resolver 1.11.1 check)
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.

@@ -72,7 +72,7 @@ export function DatabaseSettings() {
           <div className="space-y-4 rounded-lg border border-black/5 bg-slate-50/50 p-4">
             <h4 className="text-sm font-semibold text-slate-700">Backup active database</h4>
             <p className="text-xs text-slate-500">
-              Backups stay on this machine. A server copy keeps credentials so this installation can be restored. A download omits stored credentials unless you include them. Either file can contain technical logs.
+              Download a portable SQLite snapshot or save a recovery backup beside the backend database. Desktop recovery backups stay on this computer and can contain stored credentials and technical logs.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -96,7 +96,7 @@ export function DatabaseSettings() {
                 {includeSecrets
                   ? "Anyone with this file can use your connected accounts. Store it securely and do not share it."
                   : "Downloads exclude API keys and account tokens. Reconnect your accounts after restoring on another device."}
-                {" "}Server backups retain credentials for local recovery.
+                {" "}Local recovery backups retain credentials and technical logs.
               </p>
 
               <div className="flex flex-col gap-2">
@@ -117,7 +117,7 @@ export function DatabaseSettings() {
                     disabled={creating}
                     className={secondaryButtonClass}
                   >
-                    {creating ? "Creating..." : "Save to server"}
+                    {creating ? "Creating..." : "Save local backup"}
                   </button>
                 </div>
               </div>
@@ -155,11 +155,11 @@ export function DatabaseSettings() {
 
         {/* Server backups list */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-slate-700">Saved local backups on server</h4>
+          <h4 className="text-sm font-semibold text-slate-700">Saved local recovery backups</h4>
           {loading ? (
             <p className="text-xs text-slate-500">Loading backups...</p>
           ) : backups.length === 0 ? (
-            <p className="text-xs text-slate-400 italic">No local backups stored on server yet.</p>
+            <p className="text-xs text-slate-400 italic">No local recovery backups saved yet.</p>
           ) : (
             <div className="overflow-hidden rounded-lg border border-black/5">
               <table className="min-w-full divide-y divide-black/5 text-sm text-left">

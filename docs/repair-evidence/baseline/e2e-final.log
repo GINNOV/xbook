@@ -1,0 +1,62 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test
+
+[2m[WebServer] [22m(node:7847) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:7848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:7849) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m⨯ Error [PrismaClientKnownRequestError]:
+[2m[WebServer] [22mInvalid `{imported module ./src/lib/db.ts}["prisma"].usageMonth.upsert()` invocation in
+[2m[WebServer] [22m/Users/joseph/.codex/worktrees/complete-repairs/xbook/.next/dev/server/chunks/ssr/[root-of-the-server]__1vq94bf._.js:2275:146
+[2m[WebServer] [22m
+[2m[WebServer] [22m  2272 async function getUsageMonth(date = new Date(), source = "x") {
+[2m[WebServer] [22m  2273     const id = currentMonthKey(date, source);
+[2m[WebServer] [22m  2274     const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+[2m[WebServer] [22m→ 2275     return {imported module ./src/lib/db.ts}["prisma"].usageMonth.upsert(
+[2m[WebServer] [22mThe table `main.UsageMonth` does not exist in the current database.
+[2m[WebServer] [22m    at <unknown> (src/lib/settings.ts:63:28)
+[2m[WebServer] [22m    at async DatabaseMaintenance.exclusive (src/lib/database-maintenance.ts:125:22)
+[2m[WebServer] [22m    at async getDashboardStats (src/app/lib/dashboard-fetcher.ts:29:7)
+[2m[WebServer] [22m    at async Home (src/app/page.tsx:14:17)
+[2m[WebServer] [22m  [90m61 |[0m   [36mconst[0m id = currentMonthKey(date, source);
+[2m[WebServer] [22m  [90m62 |[0m   [36mconst[0m month = [32m`[0m${date.getFullYear()[32m}-[0m${[33mString[0m(date.getMonth() + [35m1[0m).padStart([35m2[0m, [32m"0"[0m)[32m}`[0m;
+[2m[WebServer] [22m[31m[1m>[0m [90m63 |[0m   [36mreturn[0m prisma.usageMonth.upsert({ where: { id }, update: {}, create: { id, month, source...
+[2m[WebServer] [22m  [90m   |[0m                            [31m[1m^[0m
+[2m[WebServer] [22m  [90m64 |[0m }
+[2m[WebServer] [22m  [90m65 |[0m
+[2m[WebServer] [22m  [90m66 |[0m [36mexport[0m [36masync[0m [36mfunction[0m incrementUsage(count: number, source: [32m"x"[0m | [32m"yt"[0m = [32m"x"[0m) { {
+[2m[WebServer] [22m  code: [32m'P2021'[39m,
+[2m[WebServer] [22m  meta: {
+[2m[WebServer] [22m    modelName: [32m'UsageMonth'[39m,
+[2m[WebServer] [22m    driverAdapterError: Error [DriverAdapterError]: TableDoesNotExist
+[2m[WebServer] [22m        at async DatabaseMaintenance.exclusive (src/lib/database-maintenance.ts:125:22)
+[2m[WebServer] [22m        at async getDashboardStats (src/app/lib/dashboard-fetcher.ts:29:7)
+[2m[WebServer] [22m        at async Home (src/app/page.tsx:14:17)
+[2m[WebServer] [22m      [90m123 |[0m       [90m// A crashed owner releases the SQLite lock; its journal is recovered by the next l...[0m
+[2m[WebServer] [22m      [90m124 |[0m       [36mif[0m (recoverInterruptedRestore([36mthis[0m.databasePath)) [36mthis[0m.invalidate(ownership);
+[2m[WebServer] [22m    [31m[1m>[0m [90m125 |[0m       [36mconst[0m result = [36mawait[0m [36mthis[0m.context.run([36mtrue[0m, () => operation(ownership));
+[2m[WebServer] [22m      [90m    |[0m                      [31m[1m^[0m
+[2m[WebServer] [22m      [90m126 |[0m       ownership.exec([32m"COMMIT"[0m);
+[2m[WebServer] [22m      [90m127 |[0m       [36mreturn[0m result;
+[2m[WebServer] [22m      [90m128 |[0m     } [36mcatch[0m (error) { {
+[2m[WebServer] [22m      [cause]: [36m[Object][39m
+[2m[WebServer] [22m    }
+[2m[WebServer] [22m  },
+[2m[WebServer] [22m  clientVersion: [32m'7.7.0'[39m,
+[2m[WebServer] [22m  digest: [32m'1651701409'[39m
+[2m[WebServer] [22m}
+ReferenceError: exports is not defined in ES module scope
+
+   at setup.ts:3
+
+  1 | import { execFileSync } from "node:child_process";
+  2 | import { rmSync } from "node:fs";
+> 3 | import { dirname, basename } from "node:path";
+    |                       ^
+  4 | import { createRequire } from "node:module";
+  5 |
+  6 | export default async function setup() {
+    at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/e2e/setup.ts:3:23

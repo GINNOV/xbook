@@ -2,14 +2,10 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import Database from "better-sqlite3";
-import { prisma } from "@/lib/db";
-import {
-  acquireMaintenanceLock,
-  releaseMaintenanceLock,
-  replaceActiveDatabase,
-  RestoreRejectedError,
-  type RestoreFailurePoint,
-} from "@/lib/restore-safety";
+import { randomUUID } from "node:crypto";
+import { prisma, databaseMaintenance, disconnectDatabase, reconnectDatabase } from "@/lib/db";
+import { DatabaseMaintenanceError, recoverInterruptedRestore, removeDatabaseSidecars, syncDirectory, syncFile, writeRestoreJournal } from "@/lib/database-maintenance";
+import { InvalidRestoreError, validateRestoreCandidate } from "@/lib/restore-validation";
 
 /**
  * Returns the absolute filesystem path to the active SQLite database file.
@@ -152,38 +148,55 @@ export function deleteBackup(filename: string): boolean {
   return false;
 }
 
-/**
- * Validates a staged copy, snapshots the active database, swaps, then reconnects.
- * A failure before commit restores the snapshot. The active file is not deleted first.
- */
-export async function restoreBackup(
-  backupPath: string,
-  options: { failAt?: RestoreFailurePoint } = {},
-): Promise<boolean> {
+/** Stage and validate before taking ownership or closing the active client. */
+export async function restoreBackup(backupPath: string): Promise<boolean> {
   const dbPath = getDbPath();
-  if (!fs.existsSync(backupPath)) {
-    throw new RestoreRejectedError("Backup file to restore not found.");
-  }
-  const lock = acquireMaintenanceLock(dbPath);
+  const directory = path.dirname(dbPath);
+  const stageDirectory = fs.mkdtempSync(path.join(directory, ".restore-"));
+  const staged = path.join(stageDirectory, "candidate.db");
   try {
-    await prisma.$disconnect();
-    await replaceActiveDatabase({
-      databasePath: dbPath,
-      candidatePath: backupPath,
-      migrationsDir: path.join(process.cwd(), "prisma", "migrations"),
-      failAt: options.failAt,
-      reconnect: async () => {
-        await prisma.$connect();
-      },
-    });
-    return true;
-  } catch (error) {
-    const { recoverRestoreJournal } = await import("@/lib/restore-safety");
-    recoverRestoreJournal(dbPath);
-    await Promise.resolve(prisma.$connect?.()).catch(() => undefined);
-    throw error;
+    let source: Database.Database | undefined;
+    try {
+      source = new Database(backupPath, { readonly: true, fileMustExist: true });
+      await source.backup(staged);
+    } catch (error) {
+      throw new InvalidRestoreError(error instanceof Error ? `Cannot read this backup: ${error.message}` : "Invalid database backup.");
+    } finally { source?.close(); }
+    validateRestoreCandidate(staged);
+    fs.chmodSync(staged, 0o600);
+    return await databaseMaintenance.exclusive(async (ownership) => {
+      // A persisted active operation may be awaiting an external API between writes.
+      if (await prisma.operationRun.count({ where: { status: { in: ["queued", "running"] } } }) ||
+          await prisma.importRun.count({ where: { finishedAt: null } })) {
+        throw new DatabaseMaintenanceError("Stop active processing before restoring the database.");
+      }
+      const recovery = `${dbPath}.recovery-${randomUUID()}`;
+      await writeDatabaseSnapshot(recovery);
+      syncFile(recovery);
+      writeRestoreJournal(dbPath, recovery, "prepared");
+      try {
+        await disconnectDatabase();
+        databaseMaintenance.invalidate(ownership);
+        syncFile(staged);
+        removeDatabaseSidecars(dbPath);
+        fs.renameSync(staged, dbPath);
+        syncDirectory(directory);
+        writeRestoreJournal(dbPath, recovery, "replaced");
+        await reconnectDatabase();
+        writeRestoreJournal(dbPath, recovery, "committed");
+        recoverInterruptedRestore(dbPath);
+        return true;
+      } catch (error) {
+        await disconnectDatabase();
+        recoverInterruptedRestore(dbPath);
+        databaseMaintenance.invalidate(ownership);
+        await reconnectDatabase();
+        throw error;
+      }
+    }, false);
   } finally {
-    releaseMaintenanceLock(lock);
+    fs.rmSync(stageDirectory, { recursive: true, force: true });
+    syncDirectory(directory);
   }
 }
 

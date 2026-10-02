@@ -1,6 +1,9 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { compileMaintenance, validateNodeBinary } = require("./desktop-runtime");
+const repositoryDirectory = path.join(__dirname, "..");
+const systemNode = validateNodeBinary(process.env.XBOOK_NODE_BINARY || process.execPath, repositoryDirectory);
 
 const STANDALONE_SKIP_DIRS = new Set([
   "src-tauri",
@@ -50,14 +53,6 @@ const tauriDistDir = path.join(__dirname, "..", "tauri-dist");
 const tauriResourcesDir = path.join(__dirname, "..", "src-tauri", "resources");
 const tauriServerDir = path.join(tauriResourcesDir, "server");
 const tauriBinDir = path.join(tauriResourcesDir, "bin");
-
-function copyPackageToServer(packageName) {
-  const packageSrc = path.join(__dirname, "..", "node_modules", packageName);
-  const packageDest = path.join(tauriServerDir, "node_modules", packageName);
-  if (fs.existsSync(packageSrc)) {
-    copyRecursiveSync(packageSrc, packageDest);
-  }
-}
 
 // Clean existing resources folder
 if (fs.existsSync(tauriResourcesDir)) {
@@ -152,8 +147,16 @@ if (fs.existsSync(startServerSrc)) {
   fs.copyFileSync(startServerSrc, startServerDest);
 }
 
+compileMaintenance(
+  path.join(repositoryDirectory, "src", "lib", "database-maintenance.ts"),
+  path.join(tauriServerDir, "database-maintenance.cjs")
+);
+// Bootstrap executes this module before Next loads its traced dependencies.
+copyPackageAndDependencies("better-sqlite3");
+copyPackageAndDependencies("zod");
+
 console.log("8. Copying node binary to Tauri resources...");
-const systemNode = "/Users/megov/.local/bin/node";
+
 const destNode = path.join(tauriBinDir, "node");
 if (fs.existsSync(systemNode)) {
   fs.copyFileSync(systemNode, destNode);

@@ -17,6 +17,7 @@ beforeEach(() => {
   source = new Database(path);
   source.pragma("journal_mode = WAL");
   source.pragma("wal_autocheckpoint = 0");
+  source.exec("CREATE TABLE Settings (id TEXT PRIMARY KEY, xBearerToken TEXT, xClientSecret TEXT, xAccessToken TEXT, xRefreshToken TEXT, xTokenExpiresAt TEXT, xScope TEXT, xTokenType TEXT, ytClientSecret TEXT, ytAccessToken TEXT, ytRefreshToken TEXT, ytTokenExpiresAt TEXT, ytScope TEXT, ytTokenType TEXT, llmApiKey TEXT); CREATE TABLE OAuthSession (id TEXT PRIMARY KEY);");
   source.exec("CREATE TABLE fixture (id INTEGER PRIMARY KEY, body TEXT NOT NULL)");
   const insert = source.prepare("INSERT INTO fixture (id, body) VALUES (?, ?)");
   source.transaction(() => { for (let id = 1; id <= 1000; id++) insert.run(id, "committed".repeat(100)); })();

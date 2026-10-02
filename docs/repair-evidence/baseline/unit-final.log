@@ -1,0 +1,84 @@
+
+> xbook@0.4.3 test
+> vitest run
+
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+stderr | tests/unit/v4-backup-snapshot.test.ts > WAL-safe database backups > downloads a valid WAL snapshot and removes the temporary copy after reading
+Backup download error: TypeError: Cannot read properties of undefined (reading 'url')
+    at Module.download (/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/app/api/settings/database/backup/route.ts:11:42)
+    at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/unit/v4-backup-snapshot.test.ts:119:28
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+
+ ❯ tests/unit/v4-backup-snapshot.test.ts (6 tests | 1 failed) 268ms
+     × downloads a valid WAL snapshot and removes the temporary copy after reading 12ms
+stderr | tests/unit/v4-backup-acceptance.test.ts > V3 independent acceptance > downloads committed WAL rows in a standalone database file
+Backup download error: TypeError: Cannot read properties of undefined (reading 'url')
+    at Module.download (/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/app/api/settings/database/backup/route.ts:11:42)
+    at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/unit/v4-backup-acceptance.test.ts:48:28
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+
+ ❯ tests/unit/v4-backup-acceptance.test.ts (3 tests | 1 failed) 2314ms
+     × downloads committed WAL rows in a standalone database file 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/v4-backup-acceptance.test.ts > V3 independent acceptance > downloads committed WAL rows in a standalone database file
+AssertionError: expected 500 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ tests/unit/v4-backup-acceptance.test.ts:49:29
+     47|   it("downloads committed WAL rows in a standalone database file", asy…
+     48|     const response = await download();
+     49|     expect(response.status).toBe(200);
+       |                             ^
+     50|     expect(response.headers.get("content-type")).toBe("application/oct…
+     51|     const path = join(directory, "downloaded.db");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/v4-backup-snapshot.test.ts > WAL-safe database backups > downloads a valid WAL snapshot and removes the temporary copy after reading
+AssertionError: expected 500 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ tests/unit/v4-backup-snapshot.test.ts:120:29
+    118|     const temporaryDirectories = vi.spyOn(fs, "mkdtempSync");
+    119|     const response = await download();
+    120|     expect(response.status).toBe(200);
+       |                             ^
+    121|     expect(response.headers.get("content-disposition")).toContain("xbo…
+    122|     const output = path.join(directory, "download.db");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 42 passed (44)
+      Tests  2 failed | 293 passed (295)
+   Start at  16:22:42
+   Duration  7.57s (transform 2.10s, setup 2.31s, import 6.63s, tests 15.27s, environment 14.85s)

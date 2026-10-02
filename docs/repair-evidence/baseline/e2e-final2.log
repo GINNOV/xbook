@@ -1,0 +1,34 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test
+
+[2m[WebServer] [22mLoaded Prisma config from prisma.config.ts.
+[2m[WebServer] [22m
+[2m[WebServer] [22mPrisma schema loaded from prisma/schema.prisma.
+[2m[WebServer] [22mError: Schema engine error:
+[2m[WebServer] [22m
+[2m[WebServer] [22mnode:child_process:981
+[2m[WebServer] [22m    throw err;
+[2m[WebServer] [22m    ^
+[2m[WebServer] [22m
+[2m[WebServer] [22mError: Command failed: /Users/joseph/.npm/_npx/387698761821791d/node_modules/node/bin/node /Users/joseph/.codex/worktrees/complete-repairs/xbook/node_modules/prisma/build/index.js migrate deploy
+[2m[WebServer] [22m[90m    at genericNodeError (node:internal/errors:986:15)[39m
+[2m[WebServer] [22m[90m    at wrappedFn (node:internal/errors:540:14)[39m
+[2m[WebServer] [22m[90m    at checkExecSyncError (node:child_process:942:11)[39m
+[2m[WebServer] [22m[90m    at execFileSync (node:child_process:978:15)[39m
+[2m[WebServer] [22m    at Object.<anonymous> [90m(/Users/joseph/.codex/worktrees/complete-repairs/xbook/[39mtests/e2e/start-server.cjs:3:1[90m)[39m
+[2m[WebServer] [22m[90m    at Module._compile (node:internal/modules/cjs/loader:1929:14)[39m
+[2m[WebServer] [22m[90m    at Object..js (node:internal/modules/cjs/loader:2060:10)[39m
+[2m[WebServer] [22m[90m    at Module.load (node:internal/modules/cjs/loader:1651:32)[39m
+[2m[WebServer] [22m[90m    at Module._load (node:internal/modules/cjs/loader:1443:12)[39m
+[2m[WebServer] [22m[90m    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)[39m {
+[2m[WebServer] [22m  status: [33m1[39m,
+[2m[WebServer] [22m  signal: [1mnull[22m,
+[2m[WebServer] [22m  output: [ [1mnull[22m, [1mnull[22m, [1mnull[22m ],
+[2m[WebServer] [22m  pid: [33m7998[39m,
+[2m[WebServer] [22m  stdout: [1mnull[22m,
+[2m[WebServer] [22m  stderr: [1mnull[22m
+[2m[WebServer] [22m}
+[2m[WebServer] [22m
+[2m[WebServer] [22mNode.js v24.21.0
+Error: Process from config.webServer was not able to start. Exit code: 1

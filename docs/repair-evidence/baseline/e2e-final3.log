@@ -1,0 +1,38 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test
+
+[2m[WebServer] [22mLoaded Prisma config from prisma.config.ts.
+[2m[WebServer] [22m
+[2m[WebServer] [22mPrisma schema loaded from prisma/schema.prisma.
+[2m[WebServer] [22m┌─────────────────────────────────────────────────────────┐
+[2m[WebServer] [22m│  Update available 7.7.0 -> 8.0.0-rc.19                  │
+[2m[WebServer] [22m│                                                         │
+[2m[WebServer] [22m│  This is a major update - please follow the guide at    │
+[2m[WebServer] [22m│  https://pris.ly/d/major-version-upgrade                │
+[2m[WebServer] [22m│                                                         │
+[2m[WebServer] [22m│  Run the following to update                            │
+[2m[WebServer] [22m│    npm i --save-dev prisma@latest                       │
+[2m[WebServer] [22m│    npm i @prisma/client@latest                          │
+[2m[WebServer] [22m└─────────────────────────────────────────────────────────┘
+[2m[WebServer] [22m(node:8098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:8099) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:8100) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:8101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/operations.spec.ts:54:7 › Operations & Logs › Source filtering works correctly (1.0s)
+  ✓  2 [chromium] › tests/e2e/operations.spec.ts:76:7 › Operations & Logs › Stop all operations button appears and works (731ms)
+  ✓  3 [chromium] › tests/e2e/operations.spec.ts:92:7 › Operations & Logs › Clear all logs button works (720ms)
+  ✓  4 [chromium] › tests/e2e/operations.spec.ts:112:7 › Operations & Logs › Multi-batch enrichment reuses one run ID (618ms)
+  ✓  5 [chromium] › tests/e2e/operations.spec.ts:143:7 › Operations & Logs › Stopping active runs persists the stopped status (676ms)
+  ✓  6 [chromium] › tests/e2e/ui.spec.ts:103:5 › dashboard, libraries, folders, processing, and settings routes render (2.2s)
+
+  6 passed (8.6s)

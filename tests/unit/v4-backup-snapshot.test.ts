@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
@@ -22,6 +23,7 @@ beforeEach(() => {
   writer = new Database(databasePath);
   writer.pragma("journal_mode = WAL");
   writer.pragma("wal_autocheckpoint = 0");
+  writer.exec("CREATE TABLE Settings (id TEXT PRIMARY KEY, xBearerToken TEXT, xClientSecret TEXT, xAccessToken TEXT, xRefreshToken TEXT, xTokenExpiresAt TEXT, xScope TEXT, xTokenType TEXT, ytClientSecret TEXT, ytAccessToken TEXT, ytRefreshToken TEXT, ytTokenExpiresAt TEXT, ytScope TEXT, ytTokenType TEXT, llmApiKey TEXT); CREATE TABLE OAuthSession (id TEXT PRIMARY KEY);");
   writer.exec("CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT NOT NULL); CREATE TABLE details (id INTEGER PRIMARY KEY);");
   writer.pragma("wal_checkpoint(TRUNCATE)");
   writer.prepare("INSERT INTO records VALUES (?, ?)").run(1, "Committed only in WAL");
@@ -115,16 +117,18 @@ describe("WAL-safe database backups", () => {
   });
 
   it("downloads a valid WAL snapshot and removes the temporary copy after reading", async () => {
-    const temporaryDirectories = vi.spyOn(fs, "mkdtempSync");
+    const temporaryDirectories = vi.spyOn(fsPromises, "mkdtemp");
+    const synchronousDirectories = vi.spyOn(fs, "mkdtempSync");
     const response = await download(new Request("http://localhost/api/settings/database/backup"));
     expect(response.status).toBe(200);
     expect(response.headers.get("content-disposition")).toContain("xbook-backup-");
     const output = path.join(directory, "download.db");
     fs.writeFileSync(output, Buffer.from(await response.arrayBuffer()));
     assertSnapshot(output);
-    expect(temporaryDirectories.mock.results).toHaveLength(1);
-    for (const result of temporaryDirectories.mock.results) {
-      expect(fs.existsSync(result.value)).toBe(false);
+    const temporaryResults = [...temporaryDirectories.mock.results, ...synchronousDirectories.mock.results];
+    expect(temporaryResults).toHaveLength(1);
+    for (const result of temporaryResults) {
+      expect(fs.existsSync(await result.value)).toBe(false);
     }
     expect(fs.existsSync(path.join(directory, "backups"))).toBe(false);
     expect(writer.open).toBe(true);
