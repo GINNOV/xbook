@@ -32,6 +32,15 @@ model Bookmark {
   mediaDescription String?
   mediaJson        String?
   embedding        Bytes?
+  embeddingContentHash String?
+  embeddingIndexedAt DateTime?
+  embeddingModel   String?
+  embeddingDimensions Int?
+  playlistAddedAt  DateTime?
+  uploaderChannelId String?
+  availability     String?
+  captureJson      String?
+  summarySource    String?
   enrichmentError  String?
   enrichmentFailures Int           @default(0)
   folder           BookmarkFolder?   @relation(fields: [folderId], references: [id])

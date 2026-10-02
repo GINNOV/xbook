@@ -45,9 +45,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const source = searchParams.get("source");
   const [open, setOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [versionLabel, setVersionLabel] = useState("Version loading");
 
   // Initialize auto-updater inside Tauri environment
-  useUpdater();
+  const updater = useUpdater();
   useTauriExternalLinks();
 
   useEffect(() => {
@@ -88,6 +89,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     checkStatus();
     connectSSE();
+    fetch("/api/version", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!mounted || !json) return;
+        const app = json.app ?? "unknown";
+        const desktop = json.desktop && json.desktop !== json.app ? ` · desktop ${json.desktop}` : "";
+        setVersionLabel(`App ${app}${desktop} · ${json.runtime ?? "node"} · ${json.database ?? "sqlite"}`);
+      })
+      .catch(() => {
+        if (mounted) setVersionLabel("Version unavailable");
+      });
 
     // Still keep a slow fallback poll just in case (every 30s)
     const timer = setInterval(checkStatus, 30000);
@@ -133,7 +145,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     active
                       ? "bg-surface-container-high text-primary"
                       : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-                  } ${isProcessingLink && isProcessing ? "animate-blink-red" : ""}`}
+                  } ${isProcessingLink && isProcessing ? "animate-processing" : ""}`}
                 >
                   {item.label}
                 </Link>
@@ -166,7 +178,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   active
                     ? "translate-x-1 bg-surface-container-high text-primary shadow-[inset_-4px_0_0_var(--primary)]"
                     : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-                } ${isProcessingLink && isProcessing ? "animate-blink-red" : ""}`}
+                } ${isProcessingLink && isProcessing ? "animate-processing" : ""}`}
               >
                 {item.label}
               </Link>
@@ -176,10 +188,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-outline-ghost pt-4 text-xs text-on-surface-variant">
           <p>Sync and enrichment audit trail</p>
+          <p className="mt-2" data-testid="app-version">{versionLabel}</p>
         </div>
       </aside>
 
-      <div className="md:pl-60">{children}</div>
+      <div className="md:pl-60">
+        {updater.updateError ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-950" role="status">
+            <span>{updater.updateError}</span>
+            <button type="button" className="font-semibold underline" onClick={updater.retryUpdateCheck}>Retry update check</button>
+          </div>
+        ) : null}
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { embeddingInvalidation } from "@/lib/embedding-index";
 
 const schema = z.object({
   bookmarkId: z.string().min(1),
@@ -20,15 +21,17 @@ export async function POST(request: Request) {
   }
 
   const { bookmarkId, summary, category, tags } = parsed.data;
-  const updated = await prisma.bookmark.update({
-    where: { id: bookmarkId },
-    data: {
+  const updated = await prisma.$transaction(async (tx) => {
+    const existing = await tx.bookmark.findUniqueOrThrow({ where: { id: bookmarkId } });
+    const content = {
       summary: summary?.trim() ? summary : null,
       category: category?.trim() ? category : null,
       tags: tags?.trim() ? tags : null,
-      summarizedAt: new Date(),
-      editedAt: new Date(),
-    },
+    };
+    return tx.bookmark.update({
+      where: { id: bookmarkId },
+      data: { ...content, ...embeddingInvalidation(existing, content), summarizedAt: new Date(), editedAt: new Date() },
+    });
   });
 
   return NextResponse.json({ ok: true, bookmark: updated });

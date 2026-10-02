@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import { getDbPath } from "@/lib/db-backup";
+import { createDatabaseExport } from "@/lib/db-export";
+import { getBackupDownloadFilename } from "@/lib/backup-download-name";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const searchParams = request?.url ? new URL(request.url).searchParams : new URLSearchParams();
     const dbPath = getDbPath();
     if (!fs.existsSync(dbPath)) {
       return NextResponse.json({ ok: false, error: "Database file not found" }, { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(dbPath);
-    
-    return new Response(fileBuffer, {
+    const includeSecrets = searchParams.get("includeSecrets") === "true";
+    const fileBuffer = await createDatabaseExport(dbPath, includeSecrets);
+    const filename = getBackupDownloadFilename(searchParams.get("customName"));
+
+    return new Response(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="xbook-backup-${new Date().toISOString().slice(0, 10)}.db"`,
+        "Cache-Control": "no-store",
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {

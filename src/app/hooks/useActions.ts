@@ -241,6 +241,12 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
             : remaining;
         errorsCount += Array.isArray(json.errors) ? json.errors.length : 0;
 
+        if (json.continuedByServer) {
+          setMessage(`Enrichment continues on the server. Updated ${totalUpdated}. Remaining: ${remaining}.`);
+          showToast("Enrichment continues after you leave this page.");
+          break;
+        }
+
         if (json.errors?.length > 0 && soundOnError) playErrorSound();
 
         const batchLabel =
@@ -371,6 +377,10 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
             ? 0
             : remaining;
         errorsCount += Array.isArray(json.errors) ? json.errors.length : 0;
+        if (json.continuedByServer) {
+          setMessage(`Inbox enrichment continues on the server. Remaining: ${remaining}.`);
+          break;
+        }
 
         const moreWork = !json.stopped && !json.finished && remaining > 0 && batchProcessed > 0;
         if (!moreWork) {
@@ -404,7 +414,7 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
           embUpdated += embJson.updated ?? 0;
           embFailed += embJson.failed ?? 0;
           embRemaining = embJson.remaining ?? 0;
-          if ((embJson.updated ?? 0) + (embJson.failed ?? 0) === 0 || embRemaining === 0) break;
+          if (embJson.continuedByServer || (embJson.updated ?? 0) + (embJson.failed ?? 0) === 0 || embRemaining === 0) break;
           setMessage(
             `Inbox indexing… ${embUpdated.toLocaleString()} done` +
               (embRemaining > 0 ? `, ${embRemaining.toLocaleString()} remaining` : "") +

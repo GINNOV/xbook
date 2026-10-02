@@ -38,6 +38,7 @@ export function DatabaseSettings() {
   } = useDatabaseSettings();
 
   const [customName, setCustomName] = useState("");
+  const [includeSecrets, setIncludeSecrets] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
@@ -71,12 +72,23 @@ export function DatabaseSettings() {
           <div className="space-y-4 rounded-lg border border-black/5 bg-slate-50/50 p-4">
             <h4 className="text-sm font-semibold text-slate-700">Backup active database</h4>
             <p className="text-xs text-slate-500">
-              Generate a copy of the database. You can download it to your local machine or save it on the server.
+              Backups stay on this machine. A server copy keeps credentials so this installation can be restored. A download omits stored credentials unless you include them. Either file can contain technical logs.
             </p>
             
             <div className="flex flex-col gap-3">
+              <label className="flex items-start gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={includeSecrets}
+                  onChange={(event) => setIncludeSecrets(event.target.checked)}
+                />
+                <span>Include stored credentials in the download. The file can grant access to connected accounts.</span>
+              </label>
               <a
-                href="/api/settings/database/backup"
+                href={`/api/settings/database/backup?${new URLSearchParams({
+                  ...(customName.trim() ? { customName: customName.trim() } : {}),
+                  ...(includeSecrets ? { includeSecrets: "true" } : {}),
+                }).toString()}`}
                 download
                 className={`${secondaryButtonClass} text-center inline-block w-full`}
               >

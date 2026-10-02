@@ -3,13 +3,17 @@ import { POST } from "@/app/api/enrich/route";
 import { prisma } from "@/lib/db";
 import * as llm from "@/lib/llm";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    bookmark: {
-      count: vi.fn(),
-      findMany: vi.fn(),
-      update: vi.fn(),
-    },
+vi.mock("@/lib/db", () => {
+  const bookmark = {
+    count: vi.fn(),
+    findMany: vi.fn(),
+    findFirst: vi.fn().mockResolvedValue(null),
+    update: vi.fn(),
+    updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+  };
+  return { prisma: {
+    bookmark,
+    $transaction: vi.fn((callback: (tx: { bookmark: typeof bookmark }) => Promise<unknown>) => callback({ bookmark })),
     settings: {
       findUnique: vi.fn(),
     },
@@ -18,8 +22,8 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
-  },
-}));
+  } };
+});
 
 vi.mock("@/lib/processing", () => ({
   createOperationRun: vi.fn().mockResolvedValue({ id: "run-1", status: "running" }),
@@ -70,9 +74,9 @@ describe("Enrich API Route Resiliency", () => {
     }));
 
     // Verify b2 success reset
-    expect(prisma.bookmark.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "b2" },
-      data: expect.objectContaining({ enrichmentFailures: 0 })
+    expect(prisma.bookmark.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: "b2" }),
+      data: expect.objectContaining({ enrichmentFailures: 0, enrichmentError: null })
     }));
   });
 

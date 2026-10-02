@@ -6,7 +6,9 @@ type RunStatus =
   | "queued"
   | "running"
   | "completed"
+  | "partial"
   | "failed"
+  | "paused"
   | "stopped";
 
 type EventStatus =
@@ -266,7 +268,7 @@ export async function clearProcessingLogsForRunIds(runIds: string[]) {
 export async function getActiveRun(source?: string | null) {
   return prisma.operationRun.findFirst({
     where: {
-      status: { in: ["queued", "running"] },
+      status: { in: ["queued", "running", "paused"] },
       ...(source ? { source } : {}),
     },
   });

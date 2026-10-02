@@ -82,6 +82,14 @@ export function formatRunOutcome(run: RunOutcomeInput): string {
   const skipped = Number(run.skipped ?? 0) || 0;
   const status = (run.status ?? "").toLowerCase();
   const inFlight = status === "running" || status === "queued";
+  if (!inFlight && updated === 0 && failed > 0 && !/paused|more remaining/i.test(run.notes ?? "")) {
+    const skippedText = skipped > 0 ? ` · ${skipped} skipped` : "";
+    return `Failed · ${failed} failed${skippedText}`;
+  }
+  if (!inFlight && /paused|more remaining/i.test(run.notes ?? "")) {
+    const detail = [updated > 0 ? `${updated} updated` : "", failed > 0 ? `${failed} failed` : ""].filter(Boolean).join(" · ");
+    return detail ? `Paused · ${detail}` : "Paused · work remaining";
+  }
 
   const segments: string[] = [];
 

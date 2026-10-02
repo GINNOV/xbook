@@ -6,6 +6,8 @@ export function useUpdater() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [checkNonce, setCheckNonce] = useState(0);
 
   useEffect(() => {
     // Check if running in Tauri environment
@@ -43,8 +45,9 @@ export function useUpdater() {
           console.log("[Updater] No updates found.");
         }
       } catch (err) {
-        // If the update server is not deployed or offline, warn rather than throwing a red console error
-        console.warn("[Updater] Update check failed or server is offline (this is expected when running a local build without a deployed release server):", err);
+        const message = err instanceof Error ? err.message : "Update check failed";
+        setUpdateError(`Update check failed: ${message}. Startup continues. Retry when the update server is reachable.`);
+        console.warn("[Updater] Update check failed:", err);
       } finally {
         setIsUpdating(false);
       }
@@ -56,7 +59,16 @@ export function useUpdater() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [checkNonce]);
 
-  return { updateAvailable, isUpdating, updateVersion };
+  return {
+    updateAvailable,
+    isUpdating,
+    updateVersion,
+    updateError,
+    retryUpdateCheck: () => {
+      setUpdateError(null);
+      setCheckNonce((value) => value + 1);
+    },
+  };
 }

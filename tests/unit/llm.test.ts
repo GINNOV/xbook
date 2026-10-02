@@ -74,6 +74,7 @@ describe("LLM Service", () => {
   });
 
   const defaultSettings = {
+    id: "default",
     llmBaseUrl: "http://localhost:1234/v1",
     llmApiKey: "test-key",
     llmModel: "test-model",

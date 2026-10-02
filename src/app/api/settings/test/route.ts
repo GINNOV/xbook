@@ -6,7 +6,9 @@ import { X_OAUTH_REQUIRED_MESSAGE, formatXApiError } from "@/lib/x";
 import { getAuthContext } from "@/lib/youtube";
 
 const schema = z.object({
-  type: z.enum(["x", "yt", "llm"]),
+  type: z.enum(["x", "yt", "llm", "embedding"]),
+  llmEmbeddingModel: z.string().optional().nullable(),
+  llmEmbeddingBaseUrl: z.string().optional().nullable(),
   xBearerToken: z.string().optional().nullable(),
   xUserId: z.string().optional().nullable(),
   xApiBase: z.string().optional().nullable(),
@@ -107,6 +109,26 @@ export async function POST(request: Request) {
         ok: true,
         message: `Connected as ${json.items?.[0]?.snippet?.title ?? "YouTube account"}.`,
       });
+    }
+
+    if (data.type === "embedding") {
+      const model = data.llmEmbeddingModel || settings.llmEmbeddingModel;
+      if (!model) {
+        return NextResponse.json({ ok: false, error: "Missing embedding model." }, { status: 400 });
+      }
+      const baseUrl = (data.llmEmbeddingBaseUrl?.trim() || settings.llmEmbeddingBaseUrl || data.llmBaseUrl?.trim() || settings.llmBaseUrl || "http://localhost:1234/v1").replace(/\/+$/, "");
+      const apiKey = data.llmApiKey?.trim() || settings.llmApiKey || "lm-studio";
+      const client = new OpenAI({ apiKey, baseURL: baseUrl, timeout: 10000 });
+      try {
+        const embedding = await client.embeddings.create({ model, input: "xbook embedding test" });
+        const dimensions = embedding.data[0]?.embedding.length ?? 0;
+        if (!dimensions) {
+          return NextResponse.json({ ok: false, error: "Embedding endpoint returned an empty vector." }, { status: 400 });
+        }
+        return NextResponse.json({ ok: true, message: `Embedding model responded (${dimensions} dimensions).` });
+      } catch (apiError: any) {
+        return NextResponse.json({ ok: false, error: apiError?.message ?? "Embedding test failed" }, { status: 400 });
+      }
     }
 
     const model = data.llmModel || settings.llmModel;

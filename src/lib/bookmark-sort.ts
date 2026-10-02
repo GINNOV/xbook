@@ -1,4 +1,4 @@
-export const BOOKMARK_SORT_KEYS = ["summary", "author", "folder", "posted", "import"] as const;
+export const BOOKMARK_SORT_KEYS = ["summary", "author", "folder", "posted", "import", "relevance"] as const;
 
 export type BookmarkSortKey = (typeof BOOKMARK_SORT_KEYS)[number];
 export type SortDir = "asc" | "desc";
@@ -11,15 +11,15 @@ export function isBookmarkSortKey(value: unknown): value is BookmarkSortKey {
 }
 
 export function defaultDirForSort(sort: BookmarkSortKey): SortDir {
-  return sort === "posted" || sort === "import" ? "desc" : "asc";
+  return sort === "posted" || sort === "import" || sort === "relevance" ? "desc" : "asc";
 }
 
-export function parseBookmarkSort(sort?: string | null, dir?: string | null): {
+export function parseBookmarkSort(sort?: string | null, dir?: string | null, semantic = false): {
   sort: BookmarkSortKey;
   dir: SortDir;
 } {
-  if (!isBookmarkSortKey(sort)) {
-    return { sort: DEFAULT_BOOKMARK_SORT, dir: DEFAULT_BOOKMARK_DIR };
+  if (!isBookmarkSortKey(sort) || (sort === "relevance" && !semantic)) {
+    return { sort: semantic ? "relevance" : DEFAULT_BOOKMARK_SORT, dir: DEFAULT_BOOKMARK_DIR };
   }
   const parsedDir = dir === "asc" || dir === "desc" ? dir : defaultDirForSort(sort);
   return { sort, dir: parsedDir };
@@ -36,6 +36,7 @@ export function prismaBookmarkOrderBy(sort: BookmarkSortKey, dir: SortDir) {
     case "posted":
       return { createdAt: dir };
     case "import":
+    case "relevance":
       return { importedAt: dir };
   }
 }
@@ -52,6 +53,8 @@ function compareNullable(a: string | null | undefined, b: string | null | undefi
 
 export function sortBookmarkItems<
   T extends {
+    similarity?: number;
+    id?: string;
     summary?: string | null;
     authorUsername?: string | null;
     folderName?: string | null;
@@ -59,6 +62,12 @@ export function sortBookmarkItems<
     importedAt?: string | null;
   },
 >(items: T[], sort: BookmarkSortKey, dir: SortDir): T[] {
+  if (sort === "relevance") {
+    return [...items].sort((a, b) => {
+      const comparison = (a.similarity ?? 0) - (b.similarity ?? 0);
+      return (dir === "asc" ? comparison : -comparison) || (a.id ?? "").localeCompare(b.id ?? "");
+    });
+  }
   const value = (item: T) => {
     switch (sort) {
       case "summary":

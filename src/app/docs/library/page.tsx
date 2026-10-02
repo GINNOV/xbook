@@ -10,7 +10,7 @@ const fields: Term[] = [
   {
     name: "Source",
     meaning: "Where the bookmark came from: X (Twitter) or YouTube.",
-    use: "Use the X / YouTube toggle on the filter bar to browse one library at a time. Counts and category lists are scoped to the selected source.",
+    use: "Choose X Library or YouTube Library in the sidebar. Counts and category lists follow that source. The filter bar does not contain a second source toggle.",
   },
   {
     name: "Summary",
@@ -33,7 +33,7 @@ const fields: Term[] = [
     name: "Status",
     meaning:
       "Enrichment state derived from summary only: Pending (no real summary yet) or Summarized (non-empty summary). Category alone does not mark an item done.",
-    use: "Filter Pending to find work still needing Process inbox / Enrich. Summarized for ready-to-search items. Failed appears when pending and the last enrich left an error.",
+    use: "Filter Pending, Unread, Failed, Blocked, Unindexed, or Stale index. Those filters use the same predicates as the dashboard counts. Summarized means the item has a non-empty summary.",
   },
   {
     name: "Folder",
