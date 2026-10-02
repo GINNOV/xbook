@@ -89,10 +89,12 @@ function mapItem(entry: any, playlist: YouTubePlaylist) {
   if (!vid) return null;
   const url = `https://www.youtube.com/watch?v=${vid}`;
   const txt = snip?.title && snip?.description ? `${snip.title}\n\n${snip.description}` : (snip?.title || snip?.description);
+  const publishedAt = entry.contentDetails?.videoPublishedAt;
+  const createdAt = typeof publishedAt === "string" ? new Date(publishedAt) : undefined;
   return {
     id: `yt:${playlist.id}:${vid}`, tweetUrl: url, title: snip?.title, text: txt,
-    authorName: snip?.channelTitle, authorUsername: snip?.channelTitle,
-    createdAt: snip?.publishedAt ? new Date(snip.publishedAt) : undefined,
+    authorName: snip?.videoOwnerChannelTitle, authorUsername: snip?.videoOwnerChannelTitle,
+    createdAt: createdAt && Number.isFinite(createdAt.getTime()) ? createdAt : undefined,
     folderId: `yt:pl:${playlist.id}`, folderName: playlist.title, externalUrls: [url],
     rawJson: JSON.stringify({ playlistId: playlist.id, playlistTitle: playlist.title, item: entry }),
   } satisfies YouTubeBookmark;
@@ -100,7 +102,7 @@ function mapItem(entry: any, playlist: YouTubePlaylist) {
 
 async function fetchPlaylistPage(playlistId: string, token: string, size: number, pageToken?: string) {
   const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-  url.searchParams.set("part", "snippet");
+  url.searchParams.set("part", "snippet,contentDetails");
   url.searchParams.set("playlistId", playlistId);
   url.searchParams.set("maxResults", String(size));
   if (pageToken) url.searchParams.set("pageToken", pageToken);

@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { OperationConflictError, readOperationJob, resumeOperationJob, stopOperationJob } from "@/lib/operation-job";
+import { wakeOperationWorker } from "@/lib/operation-worker";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { enrichmentSignals } from "@/lib/signals";
@@ -59,7 +62,7 @@ export async function GET(
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -69,21 +72,22 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Run not found" }, { status: 404 });
   }
 
-  if (run.status !== "running" && run.status !== "queued") {
-    return NextResponse.json({ ok: false, error: "Run is not active" }, { status: 400 });
+  const text = await request.text();
+  let body: unknown = {};
+  try { if (text) body = JSON.parse(text); } catch { return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 }); }
+  const parsed = z.object({ action: z.enum(["stop", "resume"]).default("stop") }).safeParse(body);
+  if (!parsed.success) return NextResponse.json({ ok: false, error: "Unknown operation action" }, { status: 400 });
+  if (parsed.data.action === "resume") {
+    if (!readOperationJob(run)) return NextResponse.json({ ok: false, error: "This older operation cannot resume. Start a new operation." }, { status: 409 });
+    try {
+      const updated = await resumeOperationJob(prisma, id);
+      wakeOperationWorker();
+      return NextResponse.json({ ok: true, run: updated });
+    } catch (error) {
+      if (error instanceof OperationConflictError) return NextResponse.json({ ok: false, runId: id, conflictingRunId: error.runId, error: error.message }, { status: 409 });
+      throw error;
+    }
   }
-
-  const updated = await prisma.operationRun.update({
-    where: { id },
-    data: { status: "stopped", finishedAt: new Date() },
-  });
-
-  // Trigger abort if there is an active signal
-  const controller = enrichmentSignals.get(id);
-  if (controller) {
-    controller.abort();
-    enrichmentSignals.delete(id);
-  }
-
+  const updated = await stopOperationJob(prisma, id, enrichmentSignals);
   return NextResponse.json({ ok: true, run: updated });
 }

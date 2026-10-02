@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
+import { useOperationObserver } from "./useOperationObserver";
+import { operationMessage, operationProgress } from "../lib/operation-observer";
 
 const TOAST_KEY = "xbook:actions-toast";
 
@@ -64,6 +66,7 @@ async function fetchJson(url: string, options: FetchJsonOptions = {}): Promise<{
 
 export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnComplete?: boolean, soundOnError?: boolean) {
   const router = useRouter();
+  const operation = useOperationObserver({ source });
   const [loading, setLoading] = useState({
     x: false,
     yt: false,
@@ -77,7 +80,9 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
   const [toast, setToast] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Client-side multi-batch loop cancel (stops further POSTs). */
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  /** Cancels the legacy import request. Durable processing is stopped by run ID. */
   const abortRef = useRef<AbortController | null>(null);
   /** Server operation run to stop when the user cancels. */
   const activeRunIdRef = useRef<string | null>(null);
@@ -124,29 +129,18 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
     if (runId) activeRunIdRef.current = runId;
   };
 
-  /**
-   * Stop the in-flight inbox/enrich/sync work so another operation can start.
-   * Stops the server run first (so multi-batch will not revive it), then aborts
-   * the client loop that would otherwise keep POSTing the next batch.
-   */
   const cancelOperation = async () => {
     setCancelling(true);
-    setMessage("Stopping…");
-    const runId = activeRunIdRef.current;
     try {
-      if (runId) {
-        await fetch(`/api/processing/runs/${runId}`, { method: "POST" });
-      } else {
-        // Sync / early inbox phase may not have a run id yet — clear any active ops.
-        await fetch("/api/processing/runs/stop-all", { method: "POST" });
-      }
-    } catch {
-      // Best-effort; client abort still unblocks the UI.
-    } finally {
+      if (operation.active) await operation.stop();
+      else if (activeRunIdRef.current) await fetch(`/api/processing/runs/${activeRunIdRef.current}`, { method: "POST" });
       abortRef.current?.abort();
-      setCancelling(false);
-    }
+    } finally { setCancelling(false); }
   };
+
+  useEffect(() => {
+    if (operation.run) setMessage(operationMessage(operation.run));
+  }, [operation.run]);
 
   const runImport = async () => {
     const controller = beginClientOp();
@@ -187,112 +181,18 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
 
   const runEnrich = async (full = false, reprocess = false) => {
     const key = source === "x" ? "enrichX" : "enrichYt";
-    const controller = beginClientOp();
     setLoad(key, true);
-    setMessage("Starting...");
+    setMessage("Submitting enrichment…");
     try {
-      let runId: string | undefined;
-      let totalUpdated = 0;
-      let totalProcessed = 0;
-      let remaining = 0;
-      let errorsCount = 0;
-      let stopped = false;
-
-      while (!controller.signal.aborted) {
-        const limit = full ? 500 : source === "yt" ? 200 : enrichBatchSize;
-        let url = `/api/enrich?source=${source}&limit=${limit}`;
-        if (full) url += "&full=true";
-        if (reprocess) url += "&reprocess=true";
-        if (runId) url += `&runId=${runId}`;
-
-        const { res, json } = await fetchJson(url, {
-          method: "POST",
-          signal: controller.signal,
-          retries: 2,
-        });
-
-        if (json?.stopped || (typeof json?.error === "string" && json.error.includes("stopped"))) {
-          stopped = true;
-          trackRunId(json.runId);
-          break;
-        }
-
-        if (!res.ok) {
-          if (res.status === 409 && json?.stopped) {
-            stopped = true;
-            break;
-          }
-          if (soundOnError) playErrorSound();
-          throw new Error(json?.error || `Enrich failed (${res.status})`);
-        }
-
-        if (!runId) runId = json.runId;
-        trackRunId(runId);
-        const batchProcessed = Number(json.processed) || 0;
-        const batchUpdated = Number(json.updated) || 0;
-        const batchRemaining = Number(json.remaining);
-        totalUpdated += batchUpdated;
-        totalProcessed += batchProcessed;
-        // Prefer explicit remaining; only fall back to 0 when the server said finished.
-        remaining = Number.isFinite(batchRemaining)
-          ? batchRemaining
-          : json.finished
-            ? 0
-            : remaining;
-        errorsCount += Array.isArray(json.errors) ? json.errors.length : 0;
-
-        if (json.errors?.length > 0 && soundOnError) playErrorSound();
-
-        const batchLabel =
-          json.batch && json.batches
-            ? `Batch ${json.batch} of ${json.batches}`
-            : null;
-
-        // Single-batch mode always stops after one request.
-        // Full mode continues while the server reports more remaining work.
-        const moreWork = full && !json.stopped && !json.finished && remaining > 0 && batchProcessed > 0;
-        if (!moreWork) {
-          if (json.stopped) {
-            stopped = true;
-            break;
-          }
-          if (full && soundOnComplete && totalProcessed > 0 && remaining === 0) playSuccessSound();
-          const sum =
-            (batchLabel ? `${batchLabel} · ` : "") +
-            `Enriched ${totalUpdated}/${totalProcessed}. Remaining: ${remaining}. Errors: ${errorsCount}.`;
-          setMessage(sum);
-          showToast(remaining > 0 ? "Enrichment paused with items still pending." : "Processing finished.");
-          break;
-        }
-
-        setMessage(
-          (batchLabel ? `${batchLabel} · ` : "") +
-            `${totalUpdated} updated so far · ${remaining} remaining…`
-        );
-      }
-
-      if (controller.signal.aborted || stopped) {
-        setMessage(
-          `Stopped. Enriched ${totalUpdated}/${totalProcessed} before cancel.` +
-            (errorsCount ? ` Errors: ${errorsCount}.` : "")
-        );
-        showToast("Operation stopped.");
-      }
+      const run = await operation.submit(`/api/enrich?source=${source}&limit=${source === "yt" ? 200 : enrichBatchSize}&full=${full}&reprocess=${reprocess}`);
+      if (!run) { setMessage("No bookmarks need enrichment."); return null; }
+      if (soundOnComplete && run.status === "completed" && run.updated > 0) playSuccessSound();
+      if (soundOnError && run.failed > 0) playErrorSound();
+      showToast(run.status === "completed" ? "Processing finished." : `Operation ${run.status}.`);
       router.refresh();
-      return { totalUpdated, totalProcessed, remaining, errorsCount, stopped };
-    } catch (e) {
-      if (isAbortError(e)) {
-        setMessage("Stopped.");
-        showToast("Operation stopped.");
-        router.refresh();
-        return null;
-      }
-      setMessage(e instanceof Error ? e.message : String(e));
-      return null;
-    } finally {
-      setLoad(key, false);
-      endClientOp(controller);
-    }
+      return { totalUpdated: run.updated, totalProcessed: run.processed, remaining: operationProgress(run).remaining, errorsCount: run.failed, stopped: run.status === "stopped" };
+    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); return null; }
+    finally { setLoad(key, false); }
   };
 
   /** Delta import then enrich all pending for this source, then best-effort embeddings. */
@@ -329,101 +229,15 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
         setMessage(`Sync done (${imported} new). Enriching pending…`);
       }
 
-      let runId: string | undefined;
-      let totalUpdated = 0;
-      let totalProcessed = 0;
-      let remaining = 0;
-      let errorsCount = 0;
-      let stopped = false;
-
-      while (!controller.signal.aborted) {
-        const limit = source === "yt" ? 200 : Math.max(enrichBatchSize, 50);
-        let url = `/api/enrich?source=${source}&limit=${limit}&full=true`;
-        if (runId) url += `&runId=${runId}`;
-
-        const { res, json } = await fetchJson(url, {
-          method: "POST",
-          signal: controller.signal,
-          retries: 2,
-        });
-
-        if (json?.stopped || (res.status === 409 && json?.stopped)) {
-          stopped = true;
-          trackRunId(json?.runId);
-          break;
-        }
-
-        if (!res.ok) {
-          if (soundOnError) playErrorSound();
-          throw new Error(json?.error || `Enrich failed (${res.status})`);
-        }
-
-        if (!runId) runId = json.runId;
-        trackRunId(runId);
-        const batchProcessed = Number(json.processed) || 0;
-        const batchUpdated = Number(json.updated) || 0;
-        const batchRemaining = Number(json.remaining);
-        totalUpdated += batchUpdated;
-        totalProcessed += batchProcessed;
-        remaining = Number.isFinite(batchRemaining)
-          ? batchRemaining
-          : json.finished
-            ? 0
-            : remaining;
-        errorsCount += Array.isArray(json.errors) ? json.errors.length : 0;
-
-        const moreWork = !json.stopped && !json.finished && remaining > 0 && batchProcessed > 0;
-        if (!moreWork) {
-          if (json.stopped) stopped = true;
-          break;
-        }
-        setMessage(`Inbox enriching… ${totalUpdated} done, ${remaining} remaining.`);
-      }
-
-      if (controller.signal.aborted || stopped) {
-        setMessage(
-          `Stopped after inbox sync (${imported} new). Enriched ${totalUpdated}/${totalProcessed} before cancel.`
-        );
-        showToast("Operation stopped.");
-        router.refresh();
-        return;
-      }
-
-      let embedMsg = "";
-      try {
-        let embUpdated = 0;
-        let embFailed = 0;
-        let embRemaining = 0;
-        for (let round = 0; round < 100 && !controller.signal.aborted; round++) {
-          const { res: embRes, json: embJson } = await fetchJson(
-            `/api/bookmarks/embeddings/sync?limit=100&source=${source}`,
-            { method: "POST", signal: controller.signal, retries: 1 }
-          );
-          if (!embRes.ok) break;
-          if (embJson.runId) trackRunId(embJson.runId);
-          embUpdated += embJson.updated ?? 0;
-          embFailed += embJson.failed ?? 0;
-          embRemaining = embJson.remaining ?? 0;
-          if ((embJson.updated ?? 0) + (embJson.failed ?? 0) === 0 || embRemaining === 0) break;
-          setMessage(
-            `Inbox indexing… ${embUpdated.toLocaleString()} done` +
-              (embRemaining > 0 ? `, ${embRemaining.toLocaleString()} remaining` : "") +
-              "…"
-          );
-        }
-        if (embUpdated || embFailed) {
-          embedMsg =
-            ` Indexed ${embUpdated.toLocaleString()}` +
-            (embFailed ? `, embed failures ${embFailed.toLocaleString()}` : "") +
-            (embRemaining > 0 ? `, ${embRemaining.toLocaleString()} still missing` : "") +
-            ".";
-        }
-      } catch (e) {
-        if (isAbortError(e)) throw e;
-        // Non-fatal — enrichment already completed.
-      }
-
-      if (controller.signal.aborted) throw new DOMException("Aborted", "AbortError");
+      const enrichment = await operation.submit(`/api/enrich?source=${source}&full=true`);
+      if (enrichment && enrichment.status !== "completed") { router.refresh(); return; }
+      const totalUpdated = enrichment?.updated ?? 0;
+      const totalProcessed = enrichment?.processed ?? 0;
+      const remaining = enrichment ? operationProgress(enrichment).remaining : 0;
+      const errorsCount = enrichment?.failed ?? 0;
+      if (!mountedRef.current || controller.signal.aborted) return;
+      const embedding = await operation.submit(`/api/bookmarks/embeddings/sync?source=${source}&full=true`);
+      const embedMsg = embedding ? ` Indexed ${embedding.updated}. Failed: ${embedding.failed}.` : "";
 
       if (soundOnComplete && (totalProcessed > 0 || imported > 0)) playSuccessSound();
       const warn = importWarning ? ` Sync warning: ${importWarning}.` : "";
@@ -450,105 +264,37 @@ export function useActions(source: "x" | "yt", enrichBatchSize: number, soundOnC
     }
   };
 
-  /**
-   * Batch-sync missing embeddings until the queue is empty (or a hard stop).
-   * Pass `source` to match dashboard tab counts; omit for global (Settings).
-   * `onProgress` receives live totals so the UI can keep "missing" in sync with "done".
-   */
+  const progressRef = useRef<((progress: { done: number; failed: number; remaining: number; target: number }) => void) | undefined>(undefined);
+  useEffect(() => {
+    if (operation.run?.type !== "embedding_sync") return;
+    const progress = operationProgress(operation.run);
+    progressRef.current?.({ done: progress.updated, failed: progress.failed, remaining: progress.remaining, target: progress.total });
+  }, [operation.run]);
+
   const runSyncEmbeddings = async (options?: {
     source?: "x" | "yt" | null;
-    onProgress?: (p: {
-      done: number;
-      failed: number;
-      remaining: number;
-      target: number;
-    }) => void;
+    rebuild?: boolean;
+    onProgress?: (progress: { done: number; failed: number; remaining: number; target: number }) => void;
   }) => {
-    const controller = beginClientOp();
+    progressRef.current = options?.onProgress;
     setLoad("embeddings", true);
-    setMessage("Syncing embeddings…");
+    setMessage("Submitting embedding sync…");
     try {
-      let totalUpdated = 0;
-      let totalFailed = 0;
-      let remaining = 0;
-      let target = 0;
-      const maxRounds = 500;
-      const scope = options?.source ? `&source=${options.source}` : "";
-
-      for (let round = 0; round < maxRounds; round++) {
-        const { res, json } = await fetchJson(
-          `/api/bookmarks/embeddings/sync?limit=100${scope}`,
-          { method: "POST", signal: controller.signal, retries: 1 }
-        );
-        if (!res.ok) throw new Error(json.error || json.message || "Embedding sync failed");
-        if (json.runId) trackRunId(json.runId);
-
-        const updated = json.updated ?? 0;
-        const failed = json.failed ?? 0;
-        remaining = json.remaining ?? 0;
-        totalUpdated += updated;
-        totalFailed += failed;
-
-        // First non-empty batch establishes the original queue size for "N of T".
-        if (round === 0 || target === 0) {
-          target = totalUpdated + totalFailed + remaining;
-        }
-
-        // No work left, or this batch made no progress (failed items stay in the
-        // queue ordered the same way — retrying forever would hang the UI).
-        if (updated === 0 && failed === 0) break;
-        if (remaining === 0) break;
-
-        options?.onProgress?.({
-          done: totalUpdated,
-          failed: totalFailed,
-          remaining,
-          target,
-        });
-
-        setMessage(
-          `Indexing embeddings… ${totalUpdated.toLocaleString()} of ${target.toLocaleString()}` +
-            (remaining > 0 ? ` · ${remaining.toLocaleString()} remaining` : "") +
-            (totalFailed > 0 ? ` · ${totalFailed.toLocaleString()} failed` : "") +
-            "…"
-        );
-
-        if (updated === 0) break;
-        if (updated + failed < 100) break;
-      }
-
-      if (soundOnComplete && totalUpdated > 0) playSuccessSound();
-      if (soundOnError && totalFailed > 0 && totalUpdated === 0) playErrorSound();
-
-      const sum =
-        totalUpdated === 0 && totalFailed === 0
-          ? "No bookmarks need embedding sync."
-          : `Indexed ${totalUpdated.toLocaleString()} of ${Math.max(target, totalUpdated).toLocaleString()}` +
-            (totalFailed > 0 ? `, ${totalFailed.toLocaleString()} failed` : "") +
-            (remaining > 0 ? `, ${remaining.toLocaleString()} still missing` : "") +
-            ".";
-      setMessage(sum);
-      showToast(totalUpdated > 0 ? "Embedding sync finished." : "Nothing to index.");
+      const run = await operation.submit(`/api/bookmarks/embeddings/sync?full=true${options?.source ? `&source=${options.source}` : ""}${options?.rebuild ? "&rebuild=true" : ""}`);
+      if (!run) { setMessage("No bookmarks need embedding sync."); return null; }
+      const progress = operationProgress(run);
+      if (soundOnComplete && run.status === "completed" && run.updated > 0) playSuccessSound();
+      if (soundOnError && run.failed > 0) playErrorSound();
       router.refresh();
-      return { totalUpdated, totalFailed, remaining, target };
-    } catch (e) {
-      if (isAbortError(e)) {
-        setMessage("Stopped.");
-        showToast("Operation stopped.");
-        router.refresh();
-        return null;
-      }
-      if (soundOnError) playErrorSound();
-      setMessage(e instanceof Error ? e.message : String(e));
-      return null;
-    } finally {
-      setLoad("embeddings", false);
-      endClientOp(controller);
-    }
+      return { totalUpdated: progress.updated, totalFailed: progress.failed, remaining: progress.remaining, target: progress.total };
+    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); return null; }
+    finally { setLoad("embeddings", false); }
   };
 
+
   return {
-    loading,
+    loading: { ...loading, enrichX: loading.enrichX || (source === "x" && operation.active && operation.run?.type !== "embedding_sync"), enrichYt: loading.enrichYt || (source === "yt" && operation.active && operation.run?.type !== "embedding_sync"), embeddings: loading.embeddings || (operation.active && operation.run?.type === "embedding_sync") },
+    operation,
     message,
     toast,
     cancelling,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { searchBookmarksSemantically } from "@/lib/bookmarks";
 import { answerLibraryQuestion } from "@/lib/llm";
+import { ASK_EVIDENCE_CHARACTERS, ASK_TOTAL_EVIDENCE_CHARACTERS, readSourceEvidence, selectQuestionEvidence } from "@/lib/source-evidence";
 
 const bodySchema = z.object({
   question: z.string().min(1).max(2000),
@@ -22,21 +23,28 @@ export async function POST(request: Request) {
     const question = parsed.data.question.trim();
     const source = parsed.data.source || undefined;
 
-    let candidates = await searchBookmarksSemantically(question);
-    if (source) {
-      candidates = candidates.filter((b) => b.source === source);
-    }
+    const candidates = await searchBookmarksSemantically(question, { source });
     // Prefer denser context for the LLM; semantic already ranks.
-    const top = candidates.slice(0, 12).map((b) => ({
-      id: b.id,
-      source: b.source,
-      tweetUrl: b.tweetUrl,
-      summary: b.summary,
-      text: b.text,
-      category: b.category,
-      authorUsername: b.authorUsername,
-      similarity: (b as { similarity?: number }).similarity,
-    }));
+    const retrieved = candidates.slice(0, 12);
+    const evidenceBudget = Math.min(ASK_EVIDENCE_CHARACTERS, Math.floor(ASK_TOTAL_EVIDENCE_CHARACTERS / Math.max(1, retrieved.length)));
+    const top = retrieved.map((b) => {
+      const evidence = b.source === "yt" ? readSourceEvidence(b.rawJson) : null;
+      return {
+        id: b.id,
+        source: b.source,
+        tweetUrl: b.tweetUrl,
+        summary: b.summary,
+        text: b.text,
+        category: b.category,
+        authorUsername: b.authorUsername,
+        similarity: b.similarity,
+        ...(b.source === "yt" ? {
+          sourceEvidence: selectQuestionEvidence(b.rawJson, question, evidenceBudget),
+          captureStatus: evidence?.capture.status ?? "missing",
+          captureReason: evidence?.capture.reason ?? (evidence ? null : "Transcript evidence has not been captured."),
+        } : {}),
+      };
+    });
 
     const result = await answerLibraryQuestion({ question, candidates: top });
 
@@ -55,6 +63,9 @@ export async function POST(request: Request) {
           category: hit.category,
           authorUsername: hit.authorUsername,
           similarity: hit.similarity,
+          excerpt: hit.sourceEvidence?.[0]?.text ?? null,
+          timestampSeconds: hit.sourceEvidence?.[0]?.startSeconds ?? null,
+          captureStatus: hit.captureStatus ?? null,
         };
       })
       .filter(Boolean);

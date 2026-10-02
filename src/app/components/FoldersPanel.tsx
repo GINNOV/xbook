@@ -3,16 +3,20 @@
 import { useFoldersPanel, Folder } from "../hooks/useFoldersPanel";
 import { formatFolderActivity } from "@/app/lib/formatters";
 import { XLogo } from "./Icons";
+import OperationStatus from "./OperationStatus";
+import Link from "next/link";
+import { folderLibraryHref } from "../lib/folder-links";
 
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
 
 export default function FoldersPanel({ folders, soundOnComplete, soundOnError }: Props) {
-  const { msg, loading, syncFolders, importFolder, importAllFolders, processFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
+  const { operation, msg, loading, syncFolders, importFolder, importAllFolders, processFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
   const btn = "rounded-full border border-black/10 px-4 py-2 text-sm font-semibold transition disabled:opacity-60";
   const rowBtn = (l: string, c: string) => `rounded-full px-3 py-1 text-xs font-bold uppercase transition hover:text-white disabled:opacity-60 ${c}`;
 
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-sm">
+      <OperationStatus operation={operation} />
       {msg?.text && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -20,28 +24,28 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
             <XLogo className="h-5 w-5" />
             Folders
           </h2>
-          <p className="text-xs text-slate-500">Counts show locally imported folder items.</p>
+          <p className="text-xs text-slate-500">Local counts open imported bookmarks. Import fetches source items; Summarize creates digests; Index builds search vectors.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all"}</button>
+          <button onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
           <button onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
         </div>
       </div>
       {folders.length ? (
         <div className="overflow-x-auto rounded-lg border border-black/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Imported</th><th className="px-4 py-2">Fetched</th><th className="px-4 py-2">Processed</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
+            <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant"><tr><th className="px-4 py-2">Folder Name</th><th className="px-4 py-2">Local bookmarks</th><th className="px-4 py-2">Fetched</th><th className="px-4 py-2">Summarized</th><th className="px-4 py-2 text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-black/5 bg-white">
               {folders.map(f => (
                 <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-semibold">{f.name ?? "Untitled folder"}</td>
-                  <td className="px-4 py-3 text-slate-500">{f.total ?? 0}</td>
+                  <td className="px-4 py-3 font-semibold"><Link className="text-primary hover:underline" href={folderLibraryHref("x", f.id)}>{f.name ?? "Untitled folder"}</Link></td>
+                  <td className="px-4 py-3 text-slate-500"><Link aria-label={`Open ${f.total ?? 0} local bookmarks in ${f.name ?? "Untitled folder"}`} className="text-primary hover:underline" href={folderLibraryHref("x", f.id)}>{f.total ?? 0}</Link></td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastFetchedAt)}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastProcessedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
-                      <button onClick={() => processFolder(f.id)} disabled={loading.all || loading.processing === f.id || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Process"}</button>
+                      <button onClick={() => processFolder(f.id)} disabled={loading.all || !!loading.processing || operation.active || operation.submitting || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
                     </div>
                   </td>
                 </tr>

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { BookmarkTextMode } from "@/lib/bookmark-query";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
-import type { BookmarkSortKey, SortDir } from "@/lib/bookmark-sort";
+import { isBookmarkSortKey, type BookmarkSortKey, type SortDir } from "@/lib/bookmark-sort";
 
 type SearchMode = "keyword" | "semantic" | "ask";
 
@@ -18,6 +19,7 @@ type Props = {
   status: string;
   video: boolean;
   semantic: boolean;
+  textMode?: BookmarkTextMode;
   folderId: string;
   sort: BookmarkSortKey;
   dir: SortDir;
@@ -32,6 +34,9 @@ type AskCitation = {
   category: string | null;
   authorUsername: string | null;
   source: string;
+  excerpt?: string | null;
+  timestampSeconds?: number | null;
+  captureStatus?: "complete" | "partial" | "missing" | null;
 };
 
 function Chevron({ open }: { open: boolean }) {
@@ -78,7 +83,7 @@ function FacetPill({
 }
 
 function buildFilterHref(
-  base: { source: string; q: string; status: string; video: boolean; semantic: boolean; sort: string; dir: string },
+  base: { source: string; q: string; status: string; video: boolean; semantic: boolean; textMode: BookmarkTextMode; sort: string; dir: string },
   patch: Record<string, string | null>
 ) {
   const params = new URLSearchParams();
@@ -87,6 +92,7 @@ function buildFilterHref(
   if (base.status) params.set("status", base.status);
   if (base.video) params.set("video", "true");
   if (base.semantic) params.set("semantic", "true");
+  if (base.textMode !== "substring") params.set("textMode", base.textMode);
   if (base.sort) params.set("sort", base.sort);
   if (base.dir) params.set("dir", base.dir);
 
@@ -109,12 +115,17 @@ export function FilterControls({
   status,
   video,
   semantic,
+  textMode = "substring",
   folderId,
-  sort,
   dir,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedSort = searchParams.get("sort");
+  const explicitSort = isBookmarkSortKey(requestedSort) ? requestedSort : "";
   const [mode, setMode] = useState<SearchMode>(semantic ? "semantic" : "keyword");
+  const carriedSort = explicitSort === "relevance" && mode !== "semantic" ? "" : explicitSort;
+  const carriedDir = carriedSort ? dir : "";
   const [query, setQuery] = useState(q);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const [askBusy, setAskBusy] = useState(false);
@@ -125,15 +136,15 @@ export function FilterControls({
   const clearHref = (() => {
     const params = new URLSearchParams();
     if (source) params.set("source", source);
-    if (sort) params.set("sort", sort);
-    if (dir) params.set("dir", dir);
+    if (carriedSort) params.set("sort", carriedSort);
+    if (carriedDir) params.set("dir", carriedDir);
     const qs = params.toString();
     return qs ? `/bookmarks?${qs}` : "/bookmarks";
   })();
   const hasFilter = q || category || folderId || status || video || semantic;
   const base = useMemo(
-    () => ({ source, q, status, video, semantic: mode === "semantic", sort, dir }),
-    [source, q, status, video, mode, sort, dir]
+    () => ({ source, q, status, video, semantic: mode === "semantic", textMode, sort: carriedSort, dir: carriedDir }),
+    [source, q, status, video, mode, textMode, carriedSort, carriedDir]
   );
 
   const sel =
@@ -205,8 +216,8 @@ export function FilterControls({
       <form method="GET" action="/bookmarks" onSubmit={onSubmit} className="space-y-3">
         {source ? <input type="hidden" name="source" value={source} /> : null}
         {mode === "semantic" ? <input type="hidden" name="semantic" value="true" /> : null}
-        {sort ? <input type="hidden" name="sort" value={sort} /> : null}
-        {dir ? <input type="hidden" name="dir" value={dir} /> : null}
+        {carriedSort ? <input type="hidden" name="sort" value={carriedSort} /> : null}
+        {carriedDir ? <input type="hidden" name="dir" value={carriedDir} /> : null}
 
         {/* Search row: box + mode switch */}
         <div className="flex flex-wrap items-stretch gap-2">
@@ -214,6 +225,7 @@ export function FilterControls({
             <input
               type="text"
               name="q"
+              aria-label={mode === "ask" ? "Ask your library" : "Search bookmarks"}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
@@ -237,7 +249,15 @@ export function FilterControls({
             </div>
           </div>
 
-          <select name="category" defaultValue={category} className={sel}>
+          {mode === "keyword" ? (
+            <select aria-label="Text matching" name="textMode" defaultValue={textMode} className={sel}>
+              <option value="substring">Substring</option>
+              <option value="phrase">Exact phrase</option>
+              <option value="word">Exact words</option>
+            </select>
+          ) : <input type="hidden" name="textMode" value={textMode} />}
+
+          <select aria-label="Category" name="category" defaultValue={category} className={sel}>
             <option value="">All categories</option>
             {categories.map((c) => (
               <option key={c.name} value={c.name}>
@@ -246,18 +266,18 @@ export function FilterControls({
             ))}
           </select>
 
-          <select name="status" defaultValue={status} className={sel}>
+          <select aria-label="Enrichment status" name="status" defaultValue={status} className={sel}>
             <option value="">All status</option>
             <option value="pending">Pending</option>
             <option value="summarized">Summarized</option>
           </select>
 
-          <select name="video" defaultValue={video ? "true" : ""} className={sel}>
+          <select aria-label="Content type" name="video" defaultValue={video ? "true" : ""} className={sel}>
             <option value="">All content</option>
             <option value="true">Videos only</option>
           </select>
 
-          <select name="folderId" defaultValue={folderId} className={sel}>
+          <select aria-label="Folder" name="folderId" defaultValue={folderId} className={sel}>
             <option value="">All folders</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>
@@ -291,6 +311,12 @@ export function FilterControls({
             </button>
           ) : null}
         </div>
+        {mode === "keyword" ? (
+          <p className="text-xs text-on-surface-variant">
+            Substring matches part of a word. Exact words matches every whole word.
+            Exact phrase matches adjacent words in order within one field. Matching ignores case and separates punctuation.
+          </p>
+        ) : null}
       </form>
 
       {/* Ask AI conversation panel */}
@@ -333,8 +359,18 @@ export function FilterControls({
                       </div>
                       <p className="mt-1 text-xs text-on-surface-variant">{c.reason}</p>
                       <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
-                        {c.summary || c.text || "No preview"}
+                        {c.excerpt || c.summary || c.text || "No preview"}
                       </p>
+                      {c.timestampSeconds != null ? (
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          Transcript at {Math.floor(c.timestampSeconds / 60)}:{String(Math.floor(c.timestampSeconds % 60)).padStart(2, "0")}
+                        </p>
+                      ) : null}
+                      {c.captureStatus === "partial" || c.captureStatus === "missing" ? (
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          {c.captureStatus === "partial" ? "Partial transcript capture" : "Transcript unavailable"}
+                        </p>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

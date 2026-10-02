@@ -1,9 +1,18 @@
 "use client";
 
+import { resolveRunStatus } from "@/lib/run-outcome";
+
 import { useState } from "react";
 import Link from "next/link";
 import { XLogo, YouTubeLogo, CloseIcon, SearchIcon } from "../Icons";
 import StopRunButton from "../StopRunButton";
+import { useOperationObserver } from "../../hooks/useOperationObserver";
+import OperationStatus from "../OperationStatus";
+
+function RunRecovery({ runId }: { runId: string }) {
+  const operation = useOperationObserver({ initialRunId: runId });
+  return <OperationStatus operation={operation} />;
+}
 import { ProcessingEvents } from "./ProcessingEvents";
 import { statusClass } from "@/app/lib/formatters";
 import { getFilterUrl } from "@/app/lib/processing-utils";
@@ -37,8 +46,8 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
             </span>
             <h2 className="font-headline text-3xl font-semibold tracking-tight capitalize">{selectedRun.type.replaceAll("_", " ")}</h2>
             <div className="ml-2 flex items-center gap-3">
-              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${statusClass(selectedRun.status)} bg-opacity-10 border border-current`}>
-                {selectedRun.status}
+              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${statusClass(resolveRunStatus(selectedRun))} bg-opacity-10 border border-current`}>
+                {resolveRunStatus(selectedRun)}
               </span>
               {configLine ? (
                 <span
@@ -65,7 +74,7 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
             />
           </div>
           <div className="flex items-center gap-3">
-            {(selectedRun.status === "running" || selectedRun.status === "queued") && <StopRunButton runId={selectedRun.id} />}
+            {!selectedRun.jobJson && (selectedRun.status === "running" || selectedRun.status === "queued") && <StopRunButton runId={selectedRun.id} />}
             <Link 
               href={getFilterUrl(currentParams, { runId: null })} 
               className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high hover:bg-surface-container-highest transition-colors shadow-sm"
@@ -76,6 +85,8 @@ export function RunDetails({ selectedRun, currentParams }: Props) {
           </div>
         </div>
       </header>
+
+      {selectedRun.jobJson && <RunRecovery key={selectedRun.id} runId={selectedRun.id} />}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[

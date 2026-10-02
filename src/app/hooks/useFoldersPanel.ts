@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { playSuccessSound, playErrorSound } from "@/lib/audio";
+import { useOperationObserver } from "./useOperationObserver";
+import { operationMessage } from "../lib/operation-observer";
 
 export interface Folder {
   id: string;
@@ -32,6 +34,7 @@ async function readJson(res: Response): Promise<any> {
 
 export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, soundOnError?: boolean) {
   const router = useRouter();
+  const operation = useOperationObserver({ source: "x", kind: "enrich", folders: true });
   const [msg, setMsg] = useState<{ text: string; isError: boolean } | null>(null);
   const [loading, setLoading] = useState({ syncing: false, all: false, importing: null as string | null, processing: null as string | null });
 
@@ -44,8 +47,8 @@ export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, so
       const res = await fetch("/api/folders/sync", { method: "POST" });
       const json = await readJson(res);
       if (!res.ok) throw new Error(json.error || "Sync failed");
-      log(`Synced ${json.total} folders. Reloading...`);
-      window.location.reload();
+      log(`Synced ${json.total} folders.`);
+      router.refresh();
     } catch (e) {
       log(e instanceof Error ? e.message : String(e), true);
     } finally {
@@ -94,24 +97,12 @@ export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, so
   const processFolder = async (fid: string) => {
     setLoad("processing", fid); log("");
     try {
-      let rid: string | null = null, proc = 0, upd = 0, errs = 0, batches = 0, halted = false;
-      while (batches < 50) {
-        const fetchUrl: string = `/api/enrich?source=x&folderId=${encodeURIComponent(fid)}${rid ? `&runId=${rid}` : ""}`;
-        const res = await fetch(fetchUrl, { method: "POST" });
-        const json = await readJson(res);
-        if (json?.stopped || (res.status === 409 && json?.stopped)) break;
-        if (res.status === 409) throw new Error(json.error || "Enrichment is already in progress.");
-        if (!res.ok) { if (soundOnError) playErrorSound(); throw new Error(json.error || "Process failed"); }
-        if (!rid) rid = json.runId;
-        const p = Number(json.processed || 0), u = Number(json.updated || 0), e = Array.isArray(json.errors) ? json.errors.length : 0;
-        const rem = Number(json.remaining);
-        proc += p; upd += u; errs += e; batches += 1;
-        if (e > 0 && soundOnError) playErrorSound();
-        if (json.finished || p === 0 || (Number.isFinite(rem) && rem === 0)) break;
-        if (e > 0 && e === p) { halted = true; break; }
-      }
-      if (soundOnComplete && !halted) playSuccessSound();
-      log(`Processed: ${upd}/${proc}. Batches: ${batches}. Errors: ${errs}.${halted ? " Halted." : ""}`);
+      const run = await operation.submit(`/api/enrich?source=x&folderId=${encodeURIComponent(fid)}&full=true`);
+      if (run) {
+        if (soundOnComplete && run.status === "completed") playSuccessSound();
+        if (soundOnError && run.failed > 0) playErrorSound();
+        log(operationMessage(run), run.status !== "completed");
+      } else log("No folder items need processing.");
       router.refresh();
     } catch (e) {
       log(e instanceof Error ? e.message : String(e), true);
@@ -120,5 +111,5 @@ export function useFoldersPanel(folders: Folder[], soundOnComplete?: boolean, so
     }
   };
 
-  return { msg, loading, syncFolders, importFolder, importAllFolders, processFolder };
+  return { operation, msg, loading, syncFolders, importFolder, importAllFolders, processFolder };
 }

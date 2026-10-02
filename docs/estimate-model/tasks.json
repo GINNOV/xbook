@@ -1,0 +1,1005 @@
+{
+  "version": 1,
+  "configuration": "GPT-6.1 Sol medium coordinator and workers assumed; previous coordinator unverified",
+  "worker_slots": 3,
+  "review_slots": 1,
+  "review_share": 0.2,
+  "timing": "Per-unit warm investigation/edit/local tests/local rework/independent acceptance; shared acceptance and extra cross-cutting rework separate",
+  "scenario_type": "judgment planning scenarios, not statistical quantiles or confidence bounds",
+  "tasks": [
+    {
+      "id": "I0",
+      "package": "R0",
+      "title": "Integrate isolated calibration changes and record exact source state",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [],
+      "success": "Nine bounded repairs retained; source fingerprint and regressions recorded.",
+      "basis": "judgment; nine isolated repairs already accepted",
+      "shared_files": []
+    },
+    {
+      "id": "B0",
+      "package": "R0",
+      "title": "Identify runtime/backend and seven-pane scope",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "I0"
+      ],
+      "success": "Bundle/backend/database identity known without changing live data; F01-F14 classified confirmed/fixed/gap/unconfirmed.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "B1",
+      "package": "R0",
+      "title": "Triage baseline unit/browser failures and lint dependency crash",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 15,
+        "base": 35,
+        "adverse": 90
+      },
+      "dependencies": [
+        "I0"
+      ],
+      "success": "Failures classified and resolved or approved deferrals; meaningful assertions retained.",
+      "basis": "judgment; baseline commands timed, repair times unknown",
+      "shared_files": []
+    },
+    {
+      "id": "B2",
+      "package": "R0",
+      "title": "Complete mixed-source and fault fixture matrix",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "I0"
+      ],
+      "success": "All fourteen findings mapped to fixtures and workflow acceptance.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "K0",
+      "package": "R0",
+      "title": "Freeze restore/job/query/capture contracts and file ownership",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "B0",
+        "B1",
+        "B2"
+      ],
+      "success": "One owner per shared contract; unknown requirements exposed before delegation.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "D1",
+      "package": "R1",
+      "title": "Stage and validate restore candidate",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "K0"
+      ],
+      "success": "Integrity, required tables and migration version validated; corrupt/incompatible/traversal candidates leave active fixture untouched.",
+      "basis": "judgment",
+      "shared_files": [
+        "db-backup"
+      ]
+    },
+    {
+      "id": "D4",
+      "package": "R1",
+      "title": "Durable maintenance ownership and restore recovery journal",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 45
+      },
+      "dependencies": [
+        "D1"
+      ],
+      "success": "Cross-process maintenance ownership and startup journal recover a process killed during staged replacement.",
+      "basis": "judgment",
+      "shared_files": [
+        "db-backup",
+        "db-client"
+      ]
+    },
+    {
+      "id": "D2",
+      "package": "R1",
+      "title": "Quiesce writes, swap database, reconnect",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 12,
+        "base": 20,
+        "adverse": 45
+      },
+      "dependencies": [
+        "D4"
+      ],
+      "success": "Concurrent writes excluded across backend processes; restored fixture accepts Prisma writes.",
+      "basis": "judgment",
+      "shared_files": [
+        "db-backup",
+        "db-client"
+      ]
+    },
+    {
+      "id": "D3",
+      "package": "R1",
+      "title": "Failure rollback and restore feedback",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 10,
+        "base": 18,
+        "adverse": 35
+      },
+      "dependencies": [
+        "D2"
+      ],
+      "success": "Injected swap/reconnect/crash failures recover original records and relationships.",
+      "basis": "judgment",
+      "shared_files": [
+        "db-backup"
+      ]
+    },
+    {
+      "id": "Q1",
+      "package": "R2",
+      "title": "Validate shared query and exact-text behavior",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "D3"
+      ],
+      "success": "Source/category/folder/status/video/sort/page/text contract agrees across library/agent; exact phrase/whole-word semantics explicit.",
+      "basis": "judgment; V1/V2 observed 4.25/2.81 min but smaller scopes",
+      "shared_files": [
+        "bookmarks",
+        "agent-route"
+      ]
+    },
+    {
+      "id": "Q2",
+      "package": "R2",
+      "title": "Keyword fallback, result-limit and semantic error feedback",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 5,
+        "base": 10,
+        "adverse": 20
+      },
+      "dependencies": [
+        "Q1"
+      ],
+      "success": "Unavailable embeddings retain keyword search and actionable feedback.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "M1",
+      "package": "R3",
+      "title": "Model/endpoint/dimension metadata migration and writes",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 7,
+        "base": 13,
+        "adverse": 25
+      },
+      "dependencies": [
+        "Q1"
+      ],
+      "success": "All indexed writes share identity; old rows preserved with unknown identities.",
+      "basis": "judgment; V4 observed 12.58 min with different migration scope",
+      "shared_files": [
+        "schema",
+        "embedding-index",
+        "enrich-routes"
+      ]
+    },
+    {
+      "id": "M2",
+      "package": "R3",
+      "title": "Stored/query vector compatibility and validation",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 24
+      },
+      "dependencies": [
+        "M1"
+      ],
+      "success": "Bad dimensions/bytes/nonfinite/zero/incompatible vectors do not rank.",
+      "basis": "judgment",
+      "shared_files": [
+        "bookmarks"
+      ]
+    },
+    {
+      "id": "M3",
+      "package": "R3",
+      "title": "Controlled compatible rebuild",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "M2"
+      ],
+      "success": "Restartable rebuild includes incompatible non-null vectors and preserves edits and IDs.",
+      "basis": "judgment; V5 checkpoint reused",
+      "shared_files": [
+        "embedding-job",
+        "embedding-sync"
+      ]
+    },
+    {
+      "id": "Y1",
+      "package": "R6",
+      "title": "Uploader/addition/availability metadata migration",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 24
+      },
+      "dependencies": [
+        "M3"
+      ],
+      "success": "Creator/publication/addition remain distinct; unknown/private/deleted states honest.",
+      "basis": "judgment",
+      "shared_files": [
+        "schema",
+        "youtube-mapping"
+      ]
+    },
+    {
+      "id": "P1",
+      "package": "R4",
+      "title": "Outcome and backward-compatibility contract",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 24
+      },
+      "dependencies": [
+        "D3"
+      ],
+      "success": "Success/partial/failure/stop/preflight/work-remaining agree in API and history.",
+      "basis": "judgment",
+      "shared_files": [
+        "processing"
+      ]
+    },
+    {
+      "id": "P2",
+      "package": "R4",
+      "title": "Durable enrichment submission and checkpoints",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 10,
+        "base": 18,
+        "adverse": 35
+      },
+      "dependencies": [
+        "P1",
+        "M3"
+      ],
+      "success": "Crash/duplicate requests preserve checkpoint and intervening human edits.",
+      "basis": "judgment; V5 is embedding-specific 10.72-min observation",
+      "shared_files": [
+        "enrich-routes",
+        "embedding-job"
+      ]
+    },
+    {
+      "id": "P3",
+      "package": "R4",
+      "title": "Server-owned continuation and startup recovery",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 12,
+        "base": 25,
+        "adverse": 50
+      },
+      "dependencies": [
+        "P2"
+      ],
+      "success": "Enrichment and embedding continue autonomously after navigation/restart; competing desktop/dev workers fenced.",
+      "basis": "judgment",
+      "shared_files": [
+        "processing-worker"
+      ]
+    },
+    {
+      "id": "P4",
+      "package": "R4",
+      "title": "Retry budget, abort propagation and preflight errors",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 8,
+        "base": 16,
+        "adverse": 30
+      },
+      "dependencies": [
+        "P3"
+      ],
+      "success": "Retries bounded; configuration failures stop early; supported calls abort on stop.",
+      "basis": "judgment",
+      "shared_files": [
+        "enrich-routes",
+        "processing-worker"
+      ]
+    },
+    {
+      "id": "P5",
+      "package": "R4",
+      "title": "Controls, reconnect, counters and historical display",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 25
+      },
+      "dependencies": [
+        "P4",
+        "Q2"
+      ],
+      "success": "Dashboard/folder/processing controls agree; ambiguous old outcomes not fabricated.",
+      "basis": "judgment",
+      "shared_files": [
+        "action-hooks"
+      ]
+    },
+    {
+      "id": "F1",
+      "package": "R5",
+      "title": "Folder links and action labels",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 3,
+        "base": 5,
+        "adverse": 10
+      },
+      "dependencies": [
+        "Q2"
+      ],
+      "success": "Local folder scope including empty state opens correctly; actions named accurately.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "F2",
+      "package": "R5",
+      "title": "X/YouTube/global/folder import checkpoint adapters",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "P4",
+        "Y1"
+      ],
+      "success": "Refresh preserves IDs, assignments and manual enrichment; caps checkpoint correctly.",
+      "basis": "judgment",
+      "shared_files": [
+        "import-routes"
+      ]
+    },
+    {
+      "id": "F3",
+      "package": "R5",
+      "title": "Server-owned Import all",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "F2"
+      ],
+      "success": "Navigation/restart preserve per-folder progress and prevent duplicate commits.",
+      "basis": "judgment",
+      "shared_files": [
+        "import-routes"
+      ]
+    },
+    {
+      "id": "F4",
+      "package": "R5",
+      "title": "Refresh/count labels and context preservation",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 4,
+        "base": 8,
+        "adverse": 16
+      },
+      "dependencies": [
+        "F3",
+        "F1"
+      ],
+      "success": "Entry/unique-video counts labeled; repeated import and refresh preserve context.",
+      "basis": "judgment",
+      "shared_files": [
+        "folder-ui"
+      ]
+    },
+    {
+      "id": "Y2",
+      "package": "R6",
+      "title": "Idempotent raw-data backfill and bounded refresh",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 7,
+        "base": 14,
+        "adverse": 30
+      },
+      "dependencies": [
+        "Y1",
+        "P3"
+      ],
+      "success": "Two backfills stable; quota/cap checkpoint and read/edit/ID preservation verified.",
+      "basis": "judgment",
+      "shared_files": [
+        "youtube-mapping"
+      ]
+    },
+    {
+      "id": "E1",
+      "package": "R7",
+      "title": "Versioned capture/provenance/recapture contract",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 24
+      },
+      "dependencies": [
+        "Y2",
+        "P4"
+      ],
+      "success": "Article/transcript/fallback capture preserves V6 evidence; unavailable/title-only source eligibility enforced in backend.",
+      "basis": "judgment",
+      "shared_files": [
+        "source-evidence",
+        "enrich-routes"
+      ]
+    },
+    {
+      "id": "E0",
+      "package": "R7",
+      "title": "Human correction preservation, explicit replacement and generation provenance",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 8,
+        "base": 18,
+        "adverse": 40
+      },
+      "dependencies": [
+        "E1"
+      ],
+      "success": "Ordinary reprocess preserves prior human corrections; explicit replacement recorded; concurrent edits still win.",
+      "basis": "judgment",
+      "shared_files": [
+        "source-evidence",
+        "enrich-routes"
+      ]
+    },
+    {
+      "id": "E2",
+      "package": "R7",
+      "title": "Bounded article fetch and extraction",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 10,
+        "base": 22,
+        "adverse": 45
+      },
+      "dependencies": [
+        "E0"
+      ],
+      "success": "Redirect/public-destination/size/stalled-body/extraction fixtures pass.",
+      "basis": "judgment",
+      "shared_files": [
+        "source-evidence"
+      ]
+    },
+    {
+      "id": "E3",
+      "package": "R7",
+      "title": "Transcript body bounds, cancellation and retry cleanup",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 25
+      },
+      "dependencies": [
+        "E2"
+      ],
+      "success": "Timeout covers body; stop cancels capture; successful retry clears obsolete errors.",
+      "basis": "judgment",
+      "shared_files": [
+        "source-evidence",
+        "enrich-routes"
+      ]
+    },
+    {
+      "id": "E4",
+      "package": "R7",
+      "title": "Section summaries and small-context budgets",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "E3"
+      ],
+      "success": "Tail facts survive bounded section/final summary with honest partial status.",
+      "basis": "judgment",
+      "shared_files": [
+        "llm",
+        "enrich-routes"
+      ]
+    },
+    {
+      "id": "E5",
+      "package": "R7",
+      "title": "Keyword candidate merge and evidence retrieval coverage",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 7,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "E4",
+        "M2",
+        "Q1"
+      ],
+      "success": "Scoped exact evidence missed by summary vectors can enter Ask without budget overflow.",
+      "basis": "judgment",
+      "shared_files": [
+        "bookmarks",
+        "source-evidence",
+        "ask-route"
+      ]
+    },
+    {
+      "id": "E6",
+      "package": "R7",
+      "title": "Citation support and insufficient-evidence behavior",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 25
+      },
+      "dependencies": [
+        "E5"
+      ],
+      "success": "Unknown IDs rejected; citations resolve supplied evidence; unsupported fixtures decline.",
+      "basis": "judgment",
+      "shared_files": [
+        "llm",
+        "ask-route"
+      ]
+    },
+    {
+      "id": "Y3",
+      "package": "R6",
+      "title": "Unavailable/title-only digest policy and display",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 8,
+        "base": 16,
+        "adverse": 35
+      },
+      "dependencies": [
+        "E0",
+        "F4"
+      ],
+      "success": "Prior capture readable with limits; backend eligibility verified; explicit replacement choice shown without forced overwrite.",
+      "basis": "judgment",
+      "shared_files": [
+        "library-ui"
+      ]
+    },
+    {
+      "id": "S1",
+      "package": "R8",
+      "title": "Draft chat/embedding tests and readiness states",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "F3",
+        "M2"
+      ],
+      "success": "Displayed draft values tested independently; model name alone does not imply ready.",
+      "basis": "judgment",
+      "shared_files": [
+        "settings-api"
+      ]
+    },
+    {
+      "id": "S2",
+      "package": "R8",
+      "title": "Settings forms, numeric/preset/save/privacy feedback",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "S1",
+        "P5",
+        "Y3"
+      ],
+      "success": "Invalid numbers blocked; draft/preset/tab/save states correct; local/LAN/remote/log-storage help accurate and diagnostics masked.",
+      "basis": "judgment",
+      "shared_files": [
+        "settings-ui"
+      ]
+    },
+    {
+      "id": "S3",
+      "package": "R8",
+      "title": "OAuth isolated expiry/refresh/callback/cancel acceptance",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 35
+      },
+      "dependencies": [
+        "S1"
+      ],
+      "success": "Both connectors isolated expiry/refresh/callback/cancel/disconnect cases preserve data and give recovery.",
+      "basis": "judgment",
+      "shared_files": [
+        "oauth-routes"
+      ]
+    },
+    {
+      "id": "L1",
+      "package": "R9",
+      "title": "Shared state predicates for filters and counts",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 25
+      },
+      "dependencies": [
+        "E6",
+        "P1"
+      ],
+      "success": "Unread/failed/blocked/stale/unindexed query results match counts.",
+      "basis": "judgment",
+      "shared_files": [
+        "bookmarks"
+      ]
+    },
+    {
+      "id": "L2",
+      "package": "R9",
+      "title": "Library state filters and independent state display",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 25
+      },
+      "dependencies": [
+        "L1",
+        "S2"
+      ],
+      "success": "Read/edit/failure states remain independent and filter context preserved.",
+      "basis": "judgment",
+      "shared_files": [
+        "library-ui"
+      ]
+    },
+    {
+      "id": "L3",
+      "package": "R9",
+      "title": "Reader action races, keyboard and responsive behavior",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 12,
+        "base": 25,
+        "adverse": 50
+      },
+      "dependencies": [
+        "L2"
+      ],
+      "success": "A response cannot appear in B; retry/focus/Escape and 900/390px journeys pass.",
+      "basis": "judgment",
+      "shared_files": [
+        "library-ui",
+        "action-hooks"
+      ]
+    },
+    {
+      "id": "H1",
+      "package": "R10",
+      "title": "Dashboard denominators, links and source-sync metrics",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "L3",
+        "F4"
+      ],
+      "success": "Coverage/links/source sync/counts agree; quotas, local caps and LLM usage distinct; normal processing neutral.",
+      "basis": "judgment",
+      "shared_files": [
+        "dashboard"
+      ]
+    },
+    {
+      "id": "H2",
+      "package": "R10",
+      "title": "Version/backend/updater failure feedback",
+      "lane": "B",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 35
+      },
+      "dependencies": [
+        "S3",
+        "P3"
+      ],
+      "success": "Unavailable updater has retry status and does not block startup; no update installed.",
+      "basis": "judgment",
+      "shared_files": [
+        "desktop-bootstrap"
+      ]
+    },
+    {
+      "id": "H3",
+      "package": "R10",
+      "title": "Seven-pane Docs/README/API examples",
+      "lane": "C",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 30
+      },
+      "dependencies": [
+        "H1",
+        "H2",
+        "E6",
+        "S2"
+      ],
+      "success": "Seven-pane Docs/README/AGENTS/API examples agree with behavior and remote-content/privacy/log semantics.",
+      "basis": "judgment",
+      "shared_files": [
+        "docs"
+      ]
+    },
+    {
+      "id": "T1",
+      "package": "R7/R11",
+      "title": "Fixed live-model question and translation evaluation",
+      "lane": "A",
+      "minutes": {
+        "optimistic": 6,
+        "base": 12,
+        "adverse": 30
+      },
+      "dependencies": [
+        "E6",
+        "S3"
+      ],
+      "success": "Approved endpoint supports tail/unsupported/partial questions and documented translation.",
+      "basis": "judgment; endpoint availability and bulk data volume excluded",
+      "shared_files": []
+    },
+    {
+      "id": "T2",
+      "package": "R11",
+      "title": "Full checks and seven-pane end-to-end journeys",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 15,
+        "base": 30,
+        "adverse": 75
+      },
+      "dependencies": [
+        "T1",
+        "H3"
+      ],
+      "success": "Seven-pane checks include duplicate/stop/provider-error/reconnect cases; ordinary acceptance defects fixed; unapproved required failures remain open.",
+      "basis": "judgment; raw build/test tools measured, broad acceptance mostly unmeasured",
+      "shared_files": []
+    },
+    {
+      "id": "T3",
+      "package": "R11",
+      "title": "Old database migration/backup/restore acceptance",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 45
+      },
+      "dependencies": [
+        "T2"
+      ],
+      "success": "Bookmark content/settings/logs/agent IDs/memberships/read/manual edits preserved under migrated restore.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "T4",
+      "package": "R11",
+      "title": "Desktop startup and interruption acceptance",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 15,
+        "base": 35,
+        "adverse": 100
+      },
+      "dependencies": [
+        "T3"
+      ],
+      "success": "npm run build:desktop then npx tauri build, with isolated startup start disposable bundle/DB/port; hot reload, port reuse, stop/restart and ownership checked; cold toolchain extra.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "T5",
+      "package": "R11",
+      "title": "Fixed-query recall and latency benchmark",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 40
+      },
+      "dependencies": [
+        "T4"
+      ],
+      "success": "Documented fixture sizes, known-item top5 recall and provider/local latency recorded.",
+      "basis": "judgment",
+      "shared_files": []
+    },
+    {
+      "id": "C1",
+      "package": "C1",
+      "title": "One extra cross-cutting acceptance correction cycle",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 15,
+        "base": 45,
+        "adverse": 120
+      },
+      "dependencies": [
+        "T5"
+      ],
+      "success": "Integration defects fixed and affected journeys rechecked without adding features.",
+      "basis": "explicit judgment reserve; ordinary local task correction already in unit budgets",
+      "shared_files": []
+    },
+    {
+      "id": "T6",
+      "package": "R11",
+      "title": "Reviewable screenshots, migration notes and final handoff",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 5,
+        "base": 10,
+        "adverse": 25
+      },
+      "dependencies": [
+        "C1"
+      ],
+      "success": "Changed files/evidence/outstanding checks delivered for review.",
+      "basis": "judgment",
+      "shared_files": []
+    }
+  ],
+  "optional_tasks": [
+    {
+      "id": "N1a",
+      "package": "N1/N2",
+      "title": "Separate personal notes and additive API/UI",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "T6"
+      ],
+      "success": "Notes survive reprocess/migrate/restore and are not sent to remote models by default.",
+      "basis": "judgment; approval required",
+      "shared_files": []
+    },
+    {
+      "id": "N1b",
+      "package": "N1/N2",
+      "title": "Selected Markdown export",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 10,
+        "base": 20,
+        "adverse": 40
+      },
+      "dependencies": [
+        "N1a"
+      ],
+      "success": "Exactly selected items exported with stable IDs/links and no credentials or unrelated data.",
+      "basis": "judgment; approval required",
+      "shared_files": []
+    },
+    {
+      "id": "N2",
+      "package": "N1/N2",
+      "title": "Addition compatibility and handoff",
+      "lane": "root",
+      "minutes": {
+        "optimistic": 8,
+        "base": 15,
+        "adverse": 35
+      },
+      "dependencies": [
+        "N1b"
+      ],
+      "success": "Existing API/library actions and repeat export remain compatible.",
+      "basis": "judgment; approval required",
+      "shared_files": []
+    }
+  ]
+}

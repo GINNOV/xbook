@@ -1,0 +1,10 @@
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  16:55:30
+   Duration  476ms (transform 89ms, setup 67ms, import 152ms, tests 39ms, environment 309ms)
+

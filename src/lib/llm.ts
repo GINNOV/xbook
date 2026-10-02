@@ -1,7 +1,11 @@
 import OpenAI from "openai";
+import { setTimeout as waitForRetry } from "node:timers/promises";
+import { normalizeEmbeddingEndpoint, validateEmbeddingVector, type EmbeddingIdentity, type GeneratedEmbedding } from "./embedding-vector";
 import { z } from "zod";
 import { getSettings } from "@/lib/settings";
 import { logLlmRequest, logProcessingEvent } from "@/lib/processing";
+import { formatEvidenceSection } from "@/lib/source-evidence";
+import type { TranscriptCapture, TranscriptSection } from "@/lib/youtubeTranscript";
 
 // --- Configuration & Schemas ---
 
@@ -46,6 +50,7 @@ export type Enrichment = {
   category: string;
   tags?: string[];
   embedding?: number[];
+  embeddingIdentity?: EmbeddingIdentity;
 };
 
 export type SummarizeInput = {
@@ -117,36 +122,54 @@ const PROMPTS = {
 
 // --- Core API Logic ---
 
-async function getLlmConfig() {
+export const llmConnectionSchema = z.object({
+  model: z.string().trim().min(1),
+  baseUrl: z.string().url(),
+  maxTokens: z.number().int().positive(),
+  contextWindow: z.number().int().positive(),
+  responseLimit: z.number().int().nonnegative(),
+  logLlmPayloads: z.boolean(),
+  customPrompt: z.string().nullable(),
+  systemPrompt: z.string(),
+  thinking: z.boolean(),
+});
+export type LlmConnection = z.infer<typeof llmConnectionSchema>;
+
+/** Effective settings are frozen per job. Authentication is resolved privately when executing. */
+export async function captureLlmConnection(): Promise<LlmConnection> {
   const env = envSchema.parse({
     OPENAI_BASE_URL: cleanEnv(process.env.OPENAI_BASE_URL),
     OPENAI_API_KEY: cleanEnv(process.env.OPENAI_API_KEY),
     OPENAI_MODEL: cleanEnv(process.env.OPENAI_MODEL),
   });
   const settings = await getSettings();
-  const baseUrl = settings.llmBaseUrl ?? env.OPENAI_BASE_URL ?? "http://localhost:1234/v1";
-  const apiKey = settings.llmApiKey ?? env.OPENAI_API_KEY ?? "lm-studio";
   const model = settings.llmModel ?? env.OPENAI_MODEL;
-  const systemPrompt = applyThinkingPreference(settings.llmSystemPrompt ?? DEFAULT_SYSTEM_PROMPT, settings.llmThinkingEnabled);
-  const contextWindow = settings.llmContextWindow ?? 128000;
-  const responseLimit = settings.llmResponseLimit ?? 2000;
-  const maxTokens = settings.llmMaxTokens ?? 2500;
-  const logLlmPayloads = settings.logLlmPayloads ?? true;
-
-  if (!model) {
-    throw new Error("Missing LLM model. Set it in Settings or .env.local.");
-  }
-
-  const client = new OpenAI({ 
-    apiKey, 
-    baseURL: baseUrl,
-    timeout: 300000, // 300s global timeout (5 minutes)
+  if (!model) throw new Error("Missing LLM model. Set it in Settings or .env.local.");
+  return llmConnectionSchema.parse({
+    model,
+    baseUrl: settings.llmBaseUrl ?? env.OPENAI_BASE_URL ?? "http://localhost:1234/v1",
+    maxTokens: settings.llmMaxTokens ?? 2500,
+    contextWindow: settings.llmContextWindow ?? 128000,
+    responseLimit: settings.llmResponseLimit ?? 2000,
+    logLlmPayloads: settings.logLlmPayloads ?? true,
+    customPrompt: settings.llmPrompt ?? null,
+    systemPrompt: applyThinkingPreference(settings.llmSystemPrompt ?? DEFAULT_SYSTEM_PROMPT, settings.llmThinkingEnabled),
+    thinking: settings.llmThinkingEnabled ?? false,
   });
-  return { client, model, baseUrl, maxTokens, contextWindow, responseLimit, logLlmPayloads, customPrompt: settings.llmPrompt, systemPrompt };
+}
+
+async function getLlmConfig(connection?: LlmConnection) {
+  const snapshot = connection ? llmConnectionSchema.parse(connection) : await captureLlmConnection();
+  const settings = await getSettings();
+  const apiKey = settings.llmApiKey ?? cleanEnv(process.env.OPENAI_API_KEY) ?? "lm-studio";
+  const client = new OpenAI({ apiKey, baseURL: snapshot.baseUrl, timeout: 300000, maxRetries: 0 });
+  return { ...snapshot, client };
 }
 
 /** Separate OpenAI-compatible client for embeddings (often a different host/model than chat). */
-async function getEmbeddingConfig() {
+export type EmbeddingConnection = { model: string; endpoint: string; apiKey?: string };
+
+async function getEmbeddingConfig(connection?: EmbeddingConnection) {
   const env = envSchema.parse({
     OPENAI_BASE_URL: cleanEnv(process.env.OPENAI_BASE_URL),
     OPENAI_API_KEY: cleanEnv(process.env.OPENAI_API_KEY),
@@ -164,16 +187,22 @@ async function getEmbeddingConfig() {
     cleanEnv(process.env.OPENAI_EMBEDDING_MODEL) ??
     "text-embedding-3-small";
 
+  const effective = connection ?? { model, endpoint: baseUrl, apiKey };
   const client = new OpenAI({
-    apiKey,
-    baseURL: baseUrl,
+    apiKey: effective.apiKey ?? apiKey,
+    baseURL: effective.endpoint,
     timeout: 60000,
+    maxRetries: 0,
   });
-  return { client, model, baseUrl };
+  return { client, model: effective.model, baseUrl: normalizeEmbeddingEndpoint(effective.endpoint) };
 }
 
 export async function validateModelAvailability(signal?: AbortSignal) {
-  const config = await getLlmConfig();
+  return validateLlmConnection(signal);
+}
+
+export async function validateLlmConnection(signal?: AbortSignal, connection?: LlmConnection) {
+  const config = await getLlmConfig(connection);
   try {
     const models = await config.client.models.list({ signal });
     const isLoaded = models.data.some((m) => m.id === config.model);
@@ -196,9 +225,10 @@ async function callLlm(params: {
   signal?: AbortSignal;
   processing?: { runId?: string | null; bookmarkId?: string | null };
   type?: string;
+  connection?: LlmConnection;
 }) {
   const { prompt, temperature, maxTokens, signal, processing, type = "enrichment" } = params;
-  const config = await getLlmConfig();
+  const config = await getLlmConfig(params.connection);
 
   await logProcessingEvent({
     runId: processing?.runId,
@@ -226,7 +256,7 @@ async function callLlm(params: {
 
     content = completion.choices[0]?.message?.content ?? "";
     if (!content || !content.trim()) {
-      throw new Error(`LLM returned an empty response for ${type}.`);
+      throw new InvalidEnrichmentResponseError(`LLM returned an empty response for ${type}.`);
     }
 
     return { 
@@ -252,6 +282,7 @@ async function callLlm(params: {
       error: message,
       includePayloads: config.logLlmPayloads,
     });
+    if (error instanceof InvalidEnrichmentResponseError) throw error;
     throw new Error(message);
   }
 }
@@ -287,7 +318,11 @@ function extractJson(content: string) {
   }
 }
 
+class InvalidEnrichmentResponseError extends Error {}
+
 export async function summarizeBookmark(input: {
+  connection?: LlmConnection;
+  embeddingConnection?: EmbeddingConnection;
   text?: string;
   authorUsername?: string;
   externalUrls?: string[];
@@ -300,7 +335,7 @@ export async function summarizeBookmark(input: {
     bookmarkId?: string | null;
   };
 }) {
-  const config = await getLlmConfig();
+  const config = await getLlmConfig(input.connection);
 
   // Use Context Window to slice input (approx 4 chars per token)
   const maxChars = config.contextWindow * 4;
@@ -325,6 +360,7 @@ export async function summarizeBookmark(input: {
   let currentTemperature = 0.2;
 
   while (attempt < maxAttempts) {
+    input.signal?.throwIfAborted();
     attempt++;
     try {
       if (input.signal?.aborted) {
@@ -348,20 +384,26 @@ export async function summarizeBookmark(input: {
         signal: input.signal,
         processing: input.processing,
         type: "enrichment",
+        connection: input.connection,
       });
 
       let parsed: any;
       try {
         parsed = extractJson(result.content);
       } catch (e: any) {
-        throw new Error(`Failed to parse LLM response: ${e.message}. Raw: "${result.content.slice(0, 150)}..."`);
+        throw new InvalidEnrichmentResponseError(`Failed to parse LLM response: ${e.message}. Raw: "${result.content.slice(0, 150)}..."`);
       }
 
-      const enrichment = normalizeEnrichment(parsed, input);
-      enrichment.embedding = await generateEmbedding(
+      let enrichment: Enrichment;
+      try { enrichment = normalizeEnrichment(parsed, input); }
+      catch (error) { throw new InvalidEnrichmentResponseError(error instanceof Error ? error.message : "Invalid enrichment JSON fields"); }
+      const generated = await generateEmbeddingResult(
         `${enrichment.summary}\n${enrichment.category}\n${(enrichment.tags || []).join(", ")}`,
-        input.signal
+        input.signal,
+        input.embeddingConnection
       ).catch(() => undefined);
+      enrichment.embedding = generated?.vector;
+      enrichment.embeddingIdentity = generated?.identity;
 
       await logLlmRequest({
         runId: input.processing?.runId,
@@ -379,20 +421,16 @@ export async function summarizeBookmark(input: {
       return enrichment;
     } catch (error: any) {
       lastError = error;
-      const errMsg = error instanceof Error ? error.message : "Unknown error";
 
-      // If response is empty or cut off, retry with a large max_token limit (16000)
-      if (errMsg.includes("empty response") || errMsg.includes("never closed it")) {
-        currentMaxTokens = 16000;
-      } else if (errMsg.includes("parse LLM response") || errMsg.includes("JSON")) {
-        // If JSON parsing fails, try lower temperature and clear token constraints
-        currentTemperature = 0.1;
-        currentMaxTokens = 16000;
-      }
+      // The durable worker owns transport retries. Only malformed model output
+      // retries locally; cancellation and configuration errors return immediately.
+      if (input.signal?.aborted || !(error instanceof InvalidEnrichmentResponseError)) throw error;
+      currentTemperature = 0.1;
+      currentMaxTokens = config.responseLimit > 0 ? Math.min(config.responseLimit, config.maxTokens) : config.maxTokens;
 
       if (attempt < maxAttempts) {
         const delay = attempt * 1500;
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await waitForRetry(delay, undefined, { signal: input.signal });
       }
     }
   }
@@ -446,6 +484,9 @@ export type LibraryAskCandidate = {
   category: string | null;
   authorUsername: string | null;
   similarity?: number;
+  sourceEvidence?: TranscriptSection[];
+  captureStatus?: TranscriptCapture["status"];
+  captureReason?: string | null;
 };
 
 export type LibraryAskResult = {
@@ -469,6 +510,8 @@ export async function answerLibraryQuestion(input: {
         c.category ? `category=${c.category}` : null,
         c.tweetUrl ? `url=${c.tweetUrl}` : null,
         `content=${body || "(empty)"}`,
+        c.captureStatus ? `transcript_capture=${c.captureStatus}${c.captureReason ? ` (${c.captureReason})` : ""}` : null,
+        c.sourceEvidence?.length ? `selected_source_excerpts=\n${c.sourceEvidence.map(formatEvidenceSection).join("\n")}` : null,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -480,6 +523,8 @@ export async function answerLibraryQuestion(input: {
     "Answer the user's question using ONLY the candidate bookmarks below.",
     "If nothing relevant is present, say so clearly and suggest a better query.",
     "Prefer concise, practical answers. Cite bookmarks by id in citations.",
+    "Source excerpts are evidence; bookmark summaries are generated previews. Prefer the excerpts for factual claims.",
+    "Transcript excerpts are selected passages, not the whole video. Respect missing or partial capture and never claim uncaptured details are known.",
     "",
     "Return ONLY valid JSON (no markdown fences):",
     '{ "answer": "string", "citations": [ { "id": "bookmark-id", "reason": "why this item helps" } ] }',
@@ -531,8 +576,17 @@ export async function answerLibraryQuestion(input: {
   return parsed;
 }
 
+export async function getEffectiveEmbeddingIdentity() {
+  const { model, baseUrl } = await getEmbeddingConfig();
+  return { model, endpoint: baseUrl };
+}
+
 export async function generateEmbedding(text: string, signal?: AbortSignal) {
-  const config = await getEmbeddingConfig();
+  return (await generateEmbeddingResult(text, signal)).vector;
+}
+
+export async function generateEmbeddingResult(text: string, signal?: AbortSignal, connection?: EmbeddingConnection): Promise<GeneratedEmbedding> {
+  const config = await getEmbeddingConfig(connection);
   try {
     const response = await config.client.embeddings.create({
       model: config.model,
@@ -542,7 +596,8 @@ export async function generateEmbedding(text: string, signal?: AbortSignal) {
     if (!embedding?.length) {
       throw new Error("Embedding API returned an empty vector.");
     }
-    return embedding;
+    validateEmbeddingVector(embedding);
+    return { vector: embedding, identity: { model: config.model, endpoint: config.baseUrl, dimensions: embedding.length } };
   } catch (error) {
     const status =
       error && typeof error === "object" && "status" in error

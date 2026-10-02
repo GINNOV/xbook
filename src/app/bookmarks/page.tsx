@@ -56,10 +56,21 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
           status={d.st}
           video={d.vid}
           semantic={d.sem}
+          textMode={d.textMode}
           folderId={d.fid}
           sort={d.sort}
           dir={d.dir}
         />
+        {d.data.search.fallback ? (
+          <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            Semantic search is unavailable. Showing text matches within your selected filters.
+            {" "}<Link href="/settings" className="font-semibold underline">Check the embedding model in Settings</Link>, then retry Semantic.
+          </p>
+        ) : d.data.search.mode === "semantic" ? (
+          <p role="status" className="text-sm text-on-surface-variant">
+            Semantic search shows up to {d.data.search.limit} matches within your selected filters.
+          </p>
+        ) : null}
         <BookmarksList initial={d.data.bookmarks} sort={d.sort} dir={d.dir} source={d.src} />
         <PaginationControls from={from} to={to} total={d.data.total} currentPage={d.currentPage} totalPages={d.totalPages} pageHref={href} />
       </div>

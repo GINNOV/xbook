@@ -71,9 +71,11 @@ vi.mock("openai", () => {
 describe("LLM Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSettings).mockResolvedValue(defaultSettings);
   });
 
   const defaultSettings = {
+    id: "default",
     llmBaseUrl: "http://localhost:1234/v1",
     llmApiKey: "test-key",
     llmModel: "test-model",
@@ -86,8 +88,7 @@ describe("LLM Service", () => {
 
   it("should add no-think instruction when LLM thinking is disabled", async () => {
     vi.mocked(getSettings)
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: false })
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: false });
+      .mockResolvedValue({ ...defaultSettings, llmThinkingEnabled: false });
     const mockOpenAI = new OpenAI() as MockOpenAI;
     mockOpenAI.chat.completions.create.mockResolvedValue({
       choices: [{ message: { content: '{ "summary": "test", "category": "Tech", "tags": ["a"] }' } }],
@@ -112,8 +113,7 @@ describe("LLM Service", () => {
 
   it("should omit no-think instruction when LLM thinking is enabled", async () => {
     vi.mocked(getSettings)
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: true })
-      .mockResolvedValueOnce({ ...defaultSettings, llmThinkingEnabled: true });
+      .mockResolvedValue({ ...defaultSettings, llmThinkingEnabled: true });
     const mockOpenAI = new OpenAI() as MockOpenAI;
     mockOpenAI.chat.completions.create.mockResolvedValue({
       choices: [{ message: { content: '{ "summary": "test", "category": "Tech", "tags": ["a"] }' } }],
@@ -178,6 +178,20 @@ describe("LLM Service", () => {
     vi.useRealTimers();
   });
 
+  it("does not retry authentication failures inside enrichment", async () => {
+    const create = OpenAI.prototype.chat.completions.create;
+    vi.mocked(create).mockRejectedValueOnce(new Error("401 Unauthorized"));
+    await expect(summarizeBookmark({ text: "Fixture" })).rejects.toThrow("401 Unauthorized");
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call a provider after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(summarizeBookmark({ text: "Fixture", signal: controller.signal })).rejects.toThrow();
+    expect(OpenAI.prototype.chat.completions.create).not.toHaveBeenCalled();
+  });
+
   it("should retry and succeed if the first attempt returns an empty response", async () => {
     vi.useFakeTimers();
     const mockOpenAI = new OpenAI() as any;
@@ -200,7 +214,7 @@ describe("LLM Service", () => {
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(2);
     expect(mockOpenAI.chat.completions.create).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        max_tokens: 16000
+        max_tokens: 100
       }),
       expect.anything()
     );
@@ -230,7 +244,7 @@ describe("LLM Service", () => {
     expect(mockOpenAI.chat.completions.create).toHaveBeenLastCalledWith(
       expect.objectContaining({
         temperature: 0.1,
-        max_tokens: 16000
+        max_tokens: 100
       }),
       expect.anything()
     );

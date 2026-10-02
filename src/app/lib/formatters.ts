@@ -1,3 +1,6 @@
+import { resolveRunStatus } from "@/lib/run-outcome";
+export { resolveRunStatus } from "@/lib/run-outcome";
+
 export const formatDate = (v: any) => v ? new Date(v).toLocaleString() : "Not finished";
 export const formatDateShort = (v: any) => v ? new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : "-";
 export const formatTime = (v: any) => v ? new Date(v).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : "-";
@@ -80,8 +83,8 @@ export function formatRunOutcome(run: RunOutcomeInput): string {
   const updated = Number(run.updated ?? 0) || 0;
   const failed = Number(run.failed ?? 0) || 0;
   const skipped = Number(run.skipped ?? 0) || 0;
-  const status = (run.status ?? "").toLowerCase();
-  const inFlight = status === "running" || status === "queued";
+  const status = resolveRunStatus(run).toLowerCase();
+  const inFlight = status === "running" || status === "queued" || status === "paused";
 
   const segments: string[] = [];
 

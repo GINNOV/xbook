@@ -1,0 +1,70 @@
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+(node:20785) PromiseRejectionHandledWarning: Promise rejection was handled asynchronously (rejection id: 1)
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/unit/llm.test.ts (8 tests | 2 failed) 17ms
+     × should retry and succeed if the first attempt returns an empty response 3ms
+     × should retry and succeed if the first attempt returns malformed JSON 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/llm.test.ts > LLM Service > should retry and succeed if the first attempt returns an empty response
+Error: LLM returned an empty response for enrichment.
+ ❯ callLlm src/lib/llm.ts:284:11
+    282|       includePayloads: config.logLlmPayloads,
+    283|     });
+    284|     throw new Error(message);
+       |           ^
+    285|   }
+    286| }
+ ❯ Module.summarizeBookmark src/lib/llm.ts:377:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/llm.test.ts > LLM Service > should retry and succeed if the first attempt returns malformed JSON
+AssertionError: expected 'recovered summary' to be 'recovered JSON' // Object.is equality
+
+Expected: "recovered JSON"
+Received: "recovered summary"
+
+ ❯ tests/unit/llm.test.ts:228:28
+    226|     const result = await promise;
+    227|
+    228|     expect(result.summary).toBe("recovered JSON");
+       |                            ^
+    229|     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(2…
+    230|     expect(mockOpenAI.chat.completions.create).toHaveBeenLastCalledWit…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: LLM returned an empty response for enrichment.
+ ❯ callLlm src/lib/llm.ts:284:11
+    282|       includePayloads: config.logLlmPayloads,
+    283|     });
+    284|     throw new Error(message);
+       |           ^
+    285|   }
+    286| }
+ ❯ Module.summarizeBookmark src/lib/llm.ts:377:22
+
+This error originated in "tests/unit/llm.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should retry and succeed if the first attempt returns an empty response". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  2 failed | 24 passed (26)
+     Errors  1 error
+   Start at  17:14:42
+   Duration  3.93s (transform 217ms, setup 182ms, import 519ms, tests 3.95s, environment 1.42s)
+

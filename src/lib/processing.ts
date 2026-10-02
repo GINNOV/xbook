@@ -1,13 +1,10 @@
 import { pendingEnrichmentWhere } from "@/lib/bookmarks";
 import { prisma } from "@/lib/db";
 import { processingEvents } from "@/lib/signals";
+import { z } from "zod";
 
-type RunStatus =
-  | "queued"
-  | "running"
-  | "completed"
-  | "failed"
-  | "stopped";
+import { resolveRunStatus, terminalRunStatuses, type RunStatus } from "@/lib/run-outcome";
+export { resolveRunStatus, type RunStatus } from "@/lib/run-outcome";
 
 type EventStatus =
   | "queued"
@@ -79,42 +76,44 @@ export async function updateOperationRun(
     skipped?: number;
     notes?: string | null;
     finish?: boolean;
+    remaining?: number;
+    preflightError?: boolean;
     /** Shallow-merged into existing configJson (batch progress, etc.). */
     configPatch?: Record<string, unknown> | null;
   }
 ) {
   if (!runId) return null;
 
-  let configJson: string | undefined;
-  if (input.configPatch && typeof input.configPatch === "object") {
-    const existing = await prisma.operationRun.findUnique({
-      where: { id: runId },
-      select: { configJson: true },
-    });
-    let base: Record<string, unknown> = {};
-    if (existing?.configJson) {
+  const run = await prisma.$transaction(async (tx) => {
+    // Reserve SQLite's write lock before reading so a stop cannot race the update.
+    await tx.$executeRaw`UPDATE "OperationRun" SET "status" = "status" WHERE 0`;
+    const existing = await tx.operationRun.findUnique({ where: { id: runId } });
+    if (!existing || terminalRunStatuses.includes(existing.status)) return existing;
+    let configJson = existing.configJson;
+    if (input.configPatch) {
+      let base: Record<string, unknown> = {};
       try {
-        base = JSON.parse(existing.configJson) as Record<string, unknown>;
-      } catch {
-        base = {};
-      }
+        const parsed = z.record(z.string(), z.unknown()).safeParse(JSON.parse(configJson ?? "{}"));
+        if (parsed.success) base = parsed.data;
+      } catch { /* Older malformed configuration. */ }
+      configJson = JSON.stringify({ ...base, ...input.configPatch });
     }
-    configJson = JSON.stringify({ ...base, ...input.configPatch });
-  }
-
-  const run = await prisma.operationRun.update({
-    where: { id: runId },
-    data: {
-      ...(input.status ? { status: input.status } : {}),
-      ...(input.total !== undefined ? { total: input.total } : {}),
-      ...(input.processed !== undefined ? { processed: input.processed } : {}),
-      ...(input.updated !== undefined ? { updated: input.updated } : {}),
-      ...(input.failed !== undefined ? { failed: input.failed } : {}),
-      ...(input.skipped !== undefined ? { skipped: input.skipped } : {}),
-      ...(input.notes !== undefined ? { notes: input.notes } : {}),
-      ...(configJson !== undefined ? { configJson } : {}),
-      ...(input.finish ? { finishedAt: new Date() } : {}),
-    },
+    const status = resolveRunStatus({ ...existing, ...input, status: input.status ?? existing.status });
+    const changed = await tx.operationRun.updateMany({
+      where: { id: runId, status: existing.status },
+      data: {
+        status,
+        ...(input.total !== undefined ? { total: input.total } : {}),
+        ...(input.processed !== undefined ? { processed: input.processed } : {}),
+        ...(input.updated !== undefined ? { updated: input.updated } : {}),
+        ...(input.failed !== undefined ? { failed: input.failed } : {}),
+        ...(input.skipped !== undefined ? { skipped: input.skipped } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        ...(input.configPatch ? { configJson } : {}),
+        ...(input.finish || terminalRunStatuses.includes(status) ? { finishedAt: status === "paused" ? null : new Date() } : {}),
+      },
+    });
+    return changed.count ? tx.operationRun.findUnique({ where: { id: runId } }) : existing;
   });
   processingEvents.emit("run_updated", run);
   return run;
@@ -133,17 +132,27 @@ export async function incrementOperationRun(
   }
 ) {
   if (!runId) return null;
-  const run = await prisma.operationRun.update({
-    where: { id: runId },
-    data: {
-      ...(input.status ? { status: input.status } : {}),
-      ...(input.processed !== undefined ? { processed: { increment: input.processed } } : {}),
-      ...(input.updated !== undefined ? { updated: { increment: input.updated } } : {}),
-      ...(input.failed !== undefined ? { failed: { increment: input.failed } } : {}),
-      ...(input.skipped !== undefined ? { skipped: { increment: input.skipped } } : {}),
-      ...(input.notes !== undefined ? { notes: input.notes } : {}),
-      ...(input.finish ? { finishedAt: new Date() } : {}),
-    },
+  const run = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`UPDATE "OperationRun" SET "status" = "status" WHERE 0`;
+    const existing = await tx.operationRun.findUnique({ where: { id: runId } });
+    if (!existing || !["queued", "running"].includes(existing.status)) return existing;
+    const counts = {
+      processed: existing.processed + (input.processed ?? 0),
+      updated: existing.updated + (input.updated ?? 0),
+      failed: existing.failed + (input.failed ?? 0),
+      skipped: existing.skipped + (input.skipped ?? 0),
+    };
+    const status = resolveRunStatus({ ...existing, ...counts, status: input.status ?? existing.status });
+    await tx.operationRun.updateMany({
+      where: { id: runId, status: { in: ["queued", "running"] } },
+      data: {
+        ...counts,
+        status,
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        ...(input.finish || terminalRunStatuses.includes(status) ? { finishedAt: status === "paused" ? null : new Date() } : {}),
+      },
+    });
+    return tx.operationRun.findUnique({ where: { id: runId } });
   });
   processingEvents.emit("run_updated", run);
   return run;
@@ -230,7 +239,7 @@ function safeBaseUrl(value: string) {
 
 export async function clearProcessingLogs() {
   const inactiveRunIds = (await prisma.operationRun.findMany({
-    where: { status: { in: ["completed", "failed", "stopped"] } },
+    where: { status: { in: ["completed", "partial", "failed", "stopped"] } },
     select: { id: true }
   })).map(r => r.id);
 

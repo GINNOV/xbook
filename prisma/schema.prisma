@@ -32,6 +32,16 @@ model Bookmark {
   mediaDescription String?
   mediaJson        String?
   embedding        Bytes?
+  embeddingContentHash String?
+  embeddingIndexedAt DateTime?
+  embeddingModel String?
+  embeddingEndpoint String?
+  embeddingDimensions Int?
+  playlistAddedAt DateTime?
+  uploaderChannelId String?
+  availability String?
+  captureJson String?
+  summarySource String?
   enrichmentError  String?
   enrichmentFailures Int           @default(0)
   folder           BookmarkFolder?   @relation(fields: [folderId], references: [id])
@@ -130,10 +140,18 @@ model OperationRun {
   notes       String?
   /// Snapshot of model / endpoint / knobs used for this run (JSON).
   configJson  String?
+  jobJson String?
+  idempotencyKey String? @unique
+  leaseOwner String?
+  leaseUntil DateTime?
+  revision Int @default(0)
+  cancelRequestedAt DateTime?
   startedAt   DateTime          @default(now())
   finishedAt  DateTime?
   llmRequests LlmRequestLog[]
   events      ProcessingEvent[]
+
+  @@index([status, leaseUntil])
 }
 
 model ProcessingEvent {

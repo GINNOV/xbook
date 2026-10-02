@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import OperationStatus from "../OperationStatus";
 import { useActions } from "../../hooks/useActions";
 
 type Props = {
@@ -30,7 +31,7 @@ export function EnrichmentSummary({
   soundOnComplete = false,
   soundOnError = false,
 }: Props) {
-  const { loading, message, runSyncEmbeddings } = useActions(
+  const { loading, message, operation, runSyncEmbeddings } = useActions(
     source,
     50,
     soundOnComplete,
@@ -42,7 +43,7 @@ export function EnrichmentSummary({
   const liveIndexed = syncing ? progress.indexed : indexed;
   const liveUnindexed = syncing ? progress.unindexed : unindexed;
 
-  const indexable = liveIndexed + liveUnindexed;
+  const indexable = sum + pend;
   const coverage = indexable > 0 ? Math.min(100, (liveIndexed / indexable) * 100) : 0;
   const needsIndex = liveUnindexed > 0;
   const sourceLabel = source === "yt" ? "YouTube" : "X";
@@ -51,8 +52,9 @@ export function EnrichmentSummary({
     setProgress({ indexed, unindexed });
     void runSyncEmbeddings({
       source,
+      rebuild: true,
       onProgress: ({ done, remaining }) => {
-        setProgress({ indexed: indexed + done, unindexed: remaining });
+        setProgress({ indexed: done, unindexed: remaining });
       },
     });
   };
@@ -90,7 +92,7 @@ export function EnrichmentSummary({
           <span className={needsIndex ? "text-amber-900" : undefined}>
             <span className="font-semibold tabular-nums">{fmt(liveUnindexed)}</span>{" "}
             <span className={needsIndex ? "text-amber-800" : "text-on-surface-variant"}>
-              missing
+              needs indexing
             </span>
           </span>
         </div>
@@ -105,8 +107,8 @@ export function EnrichmentSummary({
           </p>
           <p className="mt-1 text-xs text-amber-900/80 leading-snug">
             {syncing
-              ? "Progress matches this tab’s missing queue (summarized items without embeddings)."
-              : "Summarized items without embeddings — semantic search will skip them until indexed."}
+              ? "Progress covers summarized items with missing, stale, legacy, or incompatible vectors."
+              : "Rebuild missing, stale, or incompatible vectors for the configured embedding model. Keyword search remains available. Bookmarks and folders are preserved."}
           </p>
           <button
             type="button"
@@ -114,11 +116,13 @@ export function EnrichmentSummary({
             disabled={syncing || liveUnindexed === 0}
             className="mt-3 rounded-lg bg-amber-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-900 disabled:opacity-60"
           >
-            {syncing ? "Syncing embeddings…" : "Sync embeddings"}
+            {syncing ? "Syncing embeddings…" : "Rebuild index"}
           </button>
           {message && <p className="mt-2 text-xs text-amber-900/90">{message}</p>}
         </div>
       )}
+
+      {operation.run?.type === "embedding_sync" && <OperationStatus operation={operation} />}
 
       <div className="mt-5 border-t border-outline-variant/30 pt-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant/70">

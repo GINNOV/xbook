@@ -1,0 +1,24 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test tests/e2e/search.spec.ts
+
+[2m[WebServer] [22mLoaded Prisma config from prisma.config.ts.
+[2m[WebServer] [22m
+[2m[WebServer] [22mPrisma schema loaded from prisma/schema.prisma.
+[2m[WebServer] [22m(node:14615) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:14616) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:14617) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:14619) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14619) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/search.spec.ts:43:5 › exact word and phrase controls preserve scope and explicit sort (2.7s)
+  ✓  2 [chromium] › tests/e2e/search.spec.ts:71:5 › unavailable embeddings keeps scoped exact results and a Settings recovery link (1.7s)
+
+  2 passed (6.9s)

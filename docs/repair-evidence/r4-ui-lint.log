@@ -1,0 +1,14 @@
+
+> xbook@0.4.3 lint
+> eslint
+
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/app/api/processing/events/route.ts
+  18:66  warning  '_job' is defined but never used           @typescript-eslint/no-unused-vars
+  21:35  warning  '_job' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/src/lib/operation-job.ts
+  188:22  warning  '_remaining' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)
+

@@ -1,3 +1,4 @@
+import { runStatusWhere } from "@/lib/run-outcome";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getProcessingSummary } from "@/lib/processing";
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
 
   const where = {
     ...(source ? { source } : {}),
-    ...(status ? { status } : {}),
+    ...(status ? { AND: [runStatusWhere(status)] } : {}),
     ...(type ? { type } : {}),
     ...(errorsOnly ? { OR: [{ failed: { gt: 0 } }, { status: { in: ["failed", "stopped"] } }] } : {}),
   };

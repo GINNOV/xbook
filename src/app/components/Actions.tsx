@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import OperationStatus from "./OperationStatus";
+import { operationMessage } from "../lib/operation-observer";
 import { useActions } from "../hooks/useActions";
 import { HelpTooltip } from "./settings/SharedFields";
 import type { SetupReadiness } from "@/lib/setup-readiness";
@@ -30,6 +32,7 @@ export default function Actions({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const {
     loading,
+    operation,
     message,
     toast,
     cancelling,
@@ -189,9 +192,10 @@ export default function Actions({
         )}
       </div>
 
-      {message && <p className="text-sm text-slate-700">{message}</p>}
+      <OperationStatus operation={operation} />
+      {message && (!operation.run || message !== operationMessage(operation.run)) && <p className="text-sm text-slate-700">{message}</p>}
       {toast && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className={`rounded-2xl border px-4 py-3 text-sm ${operation.run && ["failed", "partial", "paused"].includes(operation.run.status) ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
           {toast}
         </div>
       )}

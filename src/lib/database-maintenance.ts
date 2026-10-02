@@ -52,7 +52,7 @@ export function recoverInterruptedRestore(databasePath: string): boolean {
   if (!fs.existsSync(journalPath)) return false;
   const journal = journalSchema.parse(JSON.parse(fs.readFileSync(journalPath, "utf8")));
   const directory = path.dirname(databasePath);
-  if (path.dirname(journal.recovery) !== directory || !path.basename(journal.recovery).startsWith(`${path.basename(databasePath)}.recovery-`)) {
+  if (path.dirname(journal.recovery) !== directory || !(path.basename(journal.recovery).startsWith(`${path.basename(databasePath)}.recovery-`) || path.basename(journal.recovery) === `${path.basename(databasePath)}.recovery`)) {
     throw new Error("Restore recovery journal contains an invalid snapshot path.");
   }
   if (journal.stage !== "committed") {

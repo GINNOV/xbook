@@ -118,14 +118,16 @@ describe("WAL-safe database backups", () => {
 
   it("downloads a valid WAL snapshot and removes the temporary copy after reading", async () => {
     const temporaryDirectories = vi.spyOn(fsPromises, "mkdtemp");
+    const synchronousDirectories = vi.spyOn(fs, "mkdtempSync");
     const response = await download(new Request("http://localhost/api/settings/database/backup"));
     expect(response.status).toBe(200);
     expect(response.headers.get("content-disposition")).toContain("xbook-backup-");
     const output = path.join(directory, "download.db");
     fs.writeFileSync(output, Buffer.from(await response.arrayBuffer()));
     assertSnapshot(output);
-    expect(temporaryDirectories.mock.results).toHaveLength(1);
-    for (const result of temporaryDirectories.mock.results) {
+    const temporaryResults = [...temporaryDirectories.mock.results, ...synchronousDirectories.mock.results];
+    expect(temporaryResults).toHaveLength(1);
+    for (const result of temporaryResults) {
       expect(fs.existsSync(await result.value)).toBe(false);
     }
     expect(fs.existsSync(path.join(directory, "backups"))).toBe(false);

@@ -1,0 +1,2 @@
+R2 pre-integration npx tsc --noEmit exited 0 at 2026-10-02 14:37 UTC.
+The subsequent R3 schema change requires new semantic fixture fields; its in-flight result is in r2-r3-integration-types.log.

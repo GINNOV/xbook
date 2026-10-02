@@ -1,3 +1,4 @@
+import { runStatusWhere } from "@/lib/run-outcome";
 import { prisma } from "@/lib/db";
 
 async function findRuns(where: any) {
@@ -10,7 +11,7 @@ async function findSelected(id: string) {
 
 export async function getProcessingData(p: any) {
   const status = p?.status || "", source = p?.source || "", errorsOnly = p?.errorsOnly === "true";
-  const where = { ...(status && { status }), ...(source && { source }), ...(p?.type && { type: p.type }), ...(errorsOnly && { OR: [{ failed: { gt: 0 } }, { status: { in: ["failed", "stopped"] } }] }) };
+  const where = { ...(status && { AND: [runStatusWhere(status)] }), ...(source && { source }), ...(p?.type && { type: p.type }), ...(errorsOnly && { OR: [{ failed: { gt: 0 } }, { status: { in: ["failed", "stopped"] } }] }) };
   const [runs, selectedRun] = await Promise.all([findRuns(where), p?.runId ? findSelected(p.runId) : null]);
   return { runs, selectedRun, status, source, errorsOnly };
 }

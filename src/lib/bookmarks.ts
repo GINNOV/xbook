@@ -1,5 +1,12 @@
 import { prisma } from "./db";
-import { generateEmbedding } from "./llm";
+import { bookmarkIndexState } from "./embedding-index";
+import { decodeEmbedding, validateEmbeddingVector } from "./embedding-vector";
+import { getIndexHealth } from "./index-health";
+import { effectiveBookmarkPagination } from "./bookmark-pagination";
+import type { Prisma, ProcessingEvent } from "@prisma/client";
+import { bookmarkQuerySchema, matchesBookmarkText, type BookmarkQueryInput, type BookmarkQuery, type BookmarkSearchScope } from "./bookmark-query";
+export type { BookmarkSearchScope } from "./bookmark-query";
+import { generateEmbeddingResult, getEffectiveEmbeddingIdentity } from "./llm";
 import {
   parseBookmarkSort,
   prismaBookmarkOrderBy,
@@ -14,15 +21,25 @@ export type BookmarkItem = {
 };
 
 export function cosineSimilarity(vecA: number[], vecB: number[]) {
+  validateEmbeddingVector(vecA);
+  validateEmbeddingVector(vecB, vecA.length);
   let dot = 0, nA = 0, nB = 0;
   for (let i = 0; i < vecA.length; i++) { dot += vecA[i] * vecB[i]; nA += vecA[i] * vecA[i]; nB += vecB[i] * vecB[i]; }
   return dot / (Math.sqrt(nA) * Math.sqrt(nB));
 }
 
-export async function searchBookmarksSemantically(query: string) {
-  const qe = await generateEmbedding(query);
-  const bs = await prisma.bookmark.findMany({ where: { embedding: { not: null } }, select: { id: true, embedding: true } });
-  const results = bs.map(b => ({ id: b.id, similarity: cosineSimilarity(qe, Array.from(new Float32Array(b.embedding!.buffer))) })).sort((a, b) => b.similarity - a.similarity).slice(0, 50);
+export async function searchBookmarksSemantically(query: string, scope: BookmarkSearchScope = {}) {
+  const generated = await generateEmbeddingResult(query);
+  const qe = generated.vector;
+  const where = await buildWhereClause({ ...scope, query: undefined });
+  const bs = await prisma.bookmark.findMany({ where: { AND: [where, { embedding: { not: null } }] }, select: { id: true, summary: true, category: true, tags: true, embedding: true, embeddingModel: true, embeddingEndpoint: true, embeddingDimensions: true, embeddingContentHash: true, embeddingIndexedAt: true } });
+  const results = bs.flatMap(b => {
+    if (!b.embedding || bookmarkIndexState(b, generated.identity) !== "usable") return [];
+    // Prisma may return a view into a larger buffer; copy only this vector's bytes.
+    const embedding = decodeEmbedding(b.embedding);
+    return [{ id: b.id, similarity: cosineSimilarity(qe, embedding) }];
+  }).sort((a, b) => b.similarity - a.similarity || a.id.localeCompare(b.id)).slice(0, 50);
+  if (bs.length && !results.length) throw new Error("No compatible embeddings. Rebuild the index for the current model; keyword search remains available.");
   const full = await prisma.bookmark.findMany({ where: { id: { in: results.map(r => r.id) } }, include: { folder: true } });
   return results.map(r => { const f = full.find(fb => fb.id === r.id); return f ? { ...f, similarity: r.similarity } : null; }).filter((b): b is NonNullable<typeof b> => !!b);
 }
@@ -75,17 +92,21 @@ export function needsEmbeddingWhere(source?: "x" | "yt" | string | null) {
   };
 }
 
-function buildStatusFilter(status?: string) {
+function buildStatusFilter(status?: BookmarkQuery["status"]) {
   if (status === "pending") return pendingEnrichmentWhere();
   if (status === "summarized") return summarizedEnrichmentWhere();
+  if (status === "unread") return { readAt: null };
+  if (status === "failed") return failedEnrichmentWhere();
+  if (status === "blocked") return blockedEnrichmentWhere();
+
   return {};
 }
 
-function buildWhereClause(p: any) {
+async function buildWhereClause(p: BookmarkSearchScope & { query?: string }) {
   const videoUrls = ["/video/", "youtube.com", "youtu.be", "vimeo.com"];
   // Compose with AND so multiple OR groups (query, status=pending, video) never
   // overwrite each other via object-spread key collision.
-  const clauses: Record<string, unknown>[] = [];
+  const clauses: Prisma.BookmarkWhereInput[] = [];
   if (p.query) {
     clauses.push({
       OR: [
@@ -101,6 +122,10 @@ function buildWhereClause(p: any) {
   if (p.category) clauses.push({ category: p.category });
   if (p.folderId) clauses.push({ folderId: p.folderId });
   if (p.source) clauses.push({ source: p.source });
+  if (p.status === "stale" || p.status === "unindexed") {
+    const health = await getIndexHealth(prisma, await getEffectiveEmbeddingIdentity(), p.source);
+    clauses.push({ id: { in: p.status === "stale" ? health.staleIds : health.rebuildIds } });
+  }
   const statusFilter = buildStatusFilter(p.status);
   if (Object.keys(statusFilter).length > 0) clauses.push(statusFilter);
   if (p.video) {
@@ -113,7 +138,12 @@ function buildWhereClause(p: any) {
   return { AND: clauses };
 }
 
-const mapB = (b: any) => ({
+type BookmarkRecord = Prisma.BookmarkGetPayload<{ include: { folder: true } }> & {
+  processingEvents?: Array<Pick<ProcessingEvent, "message">>;
+  similarity?: number;
+};
+
+const mapB = (b: BookmarkRecord) => ({
   ...b, folderName: b.folder?.name ?? null, importedAt: b.importedAt?.toISOString() ?? null,
   createdAt: b.createdAt?.toISOString() ?? null, summarizedAt: b.summarizedAt?.toISOString() ?? null,
   editedAt: b.editedAt?.toISOString() ?? null, readAt: b.readAt?.toISOString() ?? null,
@@ -121,16 +151,53 @@ const mapB = (b: any) => ({
   error: b.enrichmentError || b.processingEvents?.[0]?.message || null,
 });
 
-export async function getBookmarks(p: any) {
-  const { sort, dir } = parseBookmarkSort(p.sort, p.dir);
-  if (p.semantic && p.query) return performSemanticSearch(p.query, p.page, p.pageSize, sort, dir);
-  const where = buildWhereClause(p);
+const bookmarkInclude = {
+  folder: true,
+  processingEvents: { where: { status: "failed" }, orderBy: { createdAt: "desc" }, take: 1, select: { message: true } },
+} satisfies Prisma.BookmarkInclude;
+
+export async function getBookmarks(input: BookmarkQueryInput) {
+  const query = bookmarkQuerySchema.parse(input);
+  if (query.semantic && query.query) {
+    try {
+      return { ...await performSemanticSearch(query.query, query.page, query.pageSize, query.sort, query.dir, query),
+        sort: query.sort, dir: query.dir, search: { mode: "semantic" as const, fallback: null, limit: 50 } };
+    } catch {
+      const fallbackSort = parseBookmarkSort(query.sort, query.dir, false);
+      return { ...await getKeywordBookmarks({ ...query, ...fallbackSort }),
+        ...fallbackSort, search: { mode: "keyword" as const, fallback: "embedding_unavailable" as const, limit: null } };
+    }
+  }
+  return { ...await getKeywordBookmarks(query), sort: query.sort, dir: query.dir,
+    search: { mode: "keyword" as const, fallback: null, limit: null } };
+}
+
+async function getKeywordBookmarks(query: BookmarkQuery) {
+  const exact = query.query && query.textMode !== "substring";
+  const where = await buildWhereClause({ ...query, query: exact ? undefined : query.query });
+  const orderBy = [prismaBookmarkOrderBy(query.sort, query.dir), { id: "asc" as const }];
+  if (exact && query.textMode !== "substring") {
+    // SQLite does not expose Unicode whole-word matching through Prisma. Scope first,
+    // then match complete tokens and paginate the matching rows rather than the input rows.
+    const candidates = await prisma.bookmark.findMany({ where,
+      select: { id: true, text: true, summary: true, category: true, authorUsername: true, authorName: true, tags: true }, orderBy });
+    const matched = candidates.filter((bookmark) => matchesBookmarkText(
+      [bookmark.text, bookmark.summary, bookmark.category, bookmark.authorUsername, bookmark.authorName, bookmark.tags],
+      query.query, query.textMode === "phrase" ? "phrase" : "word",
+    ));
+    const effective = effectiveBookmarkPagination(query.page, query.pageSize, matched.length);
+    const offset = (effective.page - 1) * effective.pageSize;
+    const pageIds = matched.slice(offset, offset + effective.pageSize).map((bookmark) => bookmark.id);
+    const pageRows = await prisma.bookmark.findMany({ where: { id: { in: pageIds } }, include: bookmarkInclude, orderBy });
+    return { bookmarks: pageRows.map(mapB), total: matched.length,
+      page: effective.page, pageSize: effective.pageSize };
+  }
   const total = await prisma.bookmark.count({ where });
+  const { page, pageSize } = effectiveBookmarkPagination(query.page, query.pageSize, total);
   const raw = await prisma.bookmark.findMany({
-    where, include: { folder: true, processingEvents: { where: { status: "failed" }, orderBy: { createdAt: "desc" }, take: 1, select: { message: true } } },
-    orderBy: prismaBookmarkOrderBy(sort, dir), skip: (p.page - 1) * p.pageSize, take: p.pageSize,
+    where, include: bookmarkInclude, orderBy, skip: (page - 1) * pageSize, take: pageSize,
   });
-  return { bookmarks: raw.map(mapB), total };
+  return { bookmarks: raw.map(mapB), total, page, pageSize };
 }
 
 async function performSemanticSearch(
@@ -139,12 +206,14 @@ async function performSemanticSearch(
   pageSize: number,
   sort: ReturnType<typeof parseBookmarkSort>["sort"],
   dir: ReturnType<typeof parseBookmarkSort>["dir"],
+  scope: BookmarkSearchScope,
 ) {
-  const all = await searchBookmarksSemantically(query);
+  const all = await searchBookmarksSemantically(query, scope);
   const mapped = all.map(mapB);
   const sorted = sortBookmarkItems(mapped, sort, dir);
-  const skip = (page - 1) * pageSize;
-  return { bookmarks: sorted.slice(skip, skip + pageSize), total: sorted.length };
+  const effective = effectiveBookmarkPagination(page, pageSize, sorted.length);
+  const skip = (effective.page - 1) * effective.pageSize;
+  return { bookmarks: sorted.slice(skip, skip + effective.pageSize), total: sorted.length, page: effective.page, pageSize: effective.pageSize };
 }
 
 export type FilterCategory = { name: string; count: number };
