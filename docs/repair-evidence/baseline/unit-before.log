@@ -36,4 +36,3 @@ Error: import failed: {"ok":false,"error":"prisma.bookmarkFolder.updateMany is n
       Tests  1 failed | 255 passed (256)
    Start at  16:15:17
    Duration  7.67s (transform 2.34s, setup 2.09s, import 6.19s, tests 12.95s, environment 14.44s)
-

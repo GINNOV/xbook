@@ -15,4 +15,3 @@
 [2m[WebServer] [22m
 [2m[WebServer] [22mRun kill 6730 to stop it.
 Error: Process from config.webServer was not able to start. Exit code: 1
-

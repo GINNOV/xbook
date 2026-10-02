@@ -32,4 +32,3 @@
 [2m[WebServer] [22m
 [2m[WebServer] [22mNode.js v24.21.0
 Error: Process from config.webServer was not able to start. Exit code: 1
-

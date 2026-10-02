@@ -30,4 +30,3 @@ prisma:getConfig config data retrieved without errors in getConfig Wasm +1ms
 Datasource "db": SQLite database "dev.db" at "file:./dev.db"
 
 Error: Schema engine error:
-

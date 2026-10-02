@@ -15,4 +15,3 @@
   10:31  warning  'writeRestoreJournal' is defined but never used  @typescript-eslint/no-unused-vars
 
 ✖ 5 problems (0 errors, 5 warnings)
-

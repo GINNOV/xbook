@@ -30,9 +30,9 @@ Import trace:
   Finished TypeScript in 6.0s ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/34) ...
-  Generating static pages using 9 workers (8/34) 
-  Generating static pages using 9 workers (16/34) 
-  Generating static pages using 9 workers (25/34) 
+  Generating static pages using 9 workers (8/34)
+  Generating static pages using 9 workers (16/34)
+  Generating static pages using 9 workers (25/34)
 ✓ Generating static pages using 9 workers (34/34) in 132ms
   Finalizing page optimization ...
 
@@ -98,4 +98,3 @@ Route (app)
 
 ○  (Static)   prerendered as static content
 ƒ  (Dynamic)  server-rendered on demand
-
