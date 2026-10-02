@@ -21,4 +21,3 @@ export const transcriptCaptureSchema = z.discriminatedUnion("status", [
 ]);
 export type TranscriptSection = z.infer<typeof transcriptSectionSchema>;
 export type TranscriptCapture = z.infer<typeof transcriptCaptureSchema>;
-

@@ -40,7 +40,7 @@ describe("useFoldersPanel", () => {
   });
 
   it("should process a folder", async () => {
-    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) : 
+    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) :
       mockJsonResponse({ ok: true, processed: 0, updated: 0, errors: [], remaining: 0, finished: true })
     );
 
@@ -54,7 +54,7 @@ describe("useFoldersPanel", () => {
   });
 
   it("should handle sync failure", async () => {
-    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) : 
+    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) :
       mockJsonResponse({ error: "Sync failed" }, { ok: false, status: 500 })
     );
 
@@ -69,7 +69,7 @@ describe("useFoldersPanel", () => {
   });
 
   it("should handle import failure", async () => {
-    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) : 
+    vi.mocked(fetch).mockImplementation(async (url: Parameters<typeof fetch>[0]) => String(url).includes("?take=") ? mockJsonResponse({ runs: [] }) :
       mockJsonResponse({ error: "Import failed" }, { ok: false, status: 500 })
     );
 
