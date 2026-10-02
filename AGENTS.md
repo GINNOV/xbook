@@ -44,7 +44,7 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 - Linting: ESLint via `eslint-config-next`.
 
 ## Testing Guidelines
-- No automated tests are configured yet. If you add tests, place them near the feature or in a `__tests__` folder and document the runner and command in this file.
+- Unit tests use Vitest in `tests/unit/`; run `npm test`. Database export regression tests use real temporary SQLite databases: `npm test -- tests/unit/db-export.test.ts`.
 
 ## Commit & Pull Request Guidelines
 - Commit messages in history are short, imperative sentences (e.g., "added hash system"). Follow that pattern unless you introduce a formal convention.

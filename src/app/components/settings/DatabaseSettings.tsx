@@ -38,6 +38,7 @@ export function DatabaseSettings() {
   } = useDatabaseSettings();
 
   const [customName, setCustomName] = useState("");
+  const [includeSecrets, setIncludeSecrets] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
@@ -76,12 +77,27 @@ export function DatabaseSettings() {
             
             <div className="flex flex-col gap-3">
               <a
-                href="/api/settings/database/backup"
+                href={`/api/settings/database/backup?includeSecrets=${includeSecrets}`}
                 download
                 className={`${secondaryButtonClass} text-center inline-block w-full`}
               >
                 Download active database (.db)
               </a>
+
+              <label className="flex items-start gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={includeSecrets}
+                  onChange={(event) => setIncludeSecrets(event.target.checked)}
+                />
+                Include API keys and account tokens in download
+              </label>
+              <p className="text-xs text-slate-500">
+                {includeSecrets
+                  ? "Anyone with this file can use your connected accounts. Store it securely and do not share it."
+                  : "Downloads exclude API keys and account tokens. Reconnect your accounts after restoring on another device."}
+                {" "}Server backups retain credentials for local recovery.
+              </p>
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-slate-600">
