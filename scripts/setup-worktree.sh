@@ -83,6 +83,7 @@ elif [[ -f "$ROOT/dev.db" ]]; then
   echo "==> SQLite already present (dev.db)"
 else
   echo "==> Fresh SQLite — applying migrations"
+  node -e 'const Database = require("better-sqlite3"); new Database("dev.db").close();'
   DATABASE_URL="file:./dev.db" npx prisma migrate deploy
 fi
 
