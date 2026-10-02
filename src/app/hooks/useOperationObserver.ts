@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { operationActive, operationCheckpoint, operationRunSchema, readOperationResponse, type ObservedOperation } from "../lib/operation-observer";
 
-type Scope = { discover?: boolean; initialRunId?: string; source?: "x" | "yt" | null; kind?: "enrich" | "embedding"; folders?: boolean };
-export function useOperationObserver({ discover = true, initialRunId, source, kind, folders = false }: Scope = {}) {
+type Scope = { discover?: boolean; initialRunId?: string; source?: "x" | "yt" | null; kind?: "enrich" | "embedding" | "import"; folders?: boolean };
+export function useOperationObserver({ discover = true, initialRunId, source, kind, folders }: Scope = {}) {
   const [run, setRun] = useState<ObservedOperation | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +35,7 @@ export function useOperationObserver({ discover = true, initialRunId, source, ki
           if (!controller.signal.aborted && !submitted.current) setConnectionError(null);
           const active = json.runs.find((candidate) => {
             const checkpoint = operationCheckpoint(candidate);
-            return checkpoint && (!kind || checkpoint.kind === kind) && Boolean(checkpoint.scope.folderId) === folders && (operationActive(candidate) || candidate.status === "paused");
+            return checkpoint && (!kind || checkpoint.kind === kind) && (folders === undefined || Boolean(checkpoint.scope.folderId) === folders) && (operationActive(candidate) || candidate.status === "paused");
           });
           if (active && mounted.current && !submitted.current) { apply(active); return; }
         }
@@ -93,10 +93,11 @@ export function useOperationObserver({ discover = true, initialRunId, source, ki
       if (!json.runId && !json.run) { setRun(null); localStorage.removeItem(storageKey); return null; }
       const detail = json.run ?? operationRunSchema.parse({
         id: json.runId, source: json.source ?? source ?? null,
-        type: url.includes("/embeddings/") ? "embedding_sync" : "enrichment",
+        type: url.includes("/embeddings/") ? "embedding_sync" : url.includes("/import?") ? "import" : "enrichment",
         status: "queued", total: json.processed + json.remaining,
         processed: json.processed, updated: json.updated, failed: json.failed, skipped: json.skipped,
       });
+      localStorage.setItem(storageKey, detail.id);
       if (!mounted.current) return null;
       if (!operationActive(detail)) { apply(detail); return detail; }
       const completion = new Promise<ObservedOperation | null>((resolve) => { waiter.current?.(null); waiter.current = resolve; });

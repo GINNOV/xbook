@@ -4,6 +4,8 @@ import { FilterControls } from "@/app/components/bookmarks/FilterControls";
 import { PaginationControls } from "@/app/components/bookmarks/PaginationControls";
 import { getBookmarksPageData, buildPageHref } from "@/app/lib/bookmarks-fetcher";
 import { XLogo, YouTubeLogo } from "@/app/components/Icons";
+import { prisma } from "@/lib/db";
+import { folderLibraryHref } from "../lib/folder-links";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 100;
@@ -11,6 +13,10 @@ const PAGE_SIZE = 100;
 export default async function BookmarksPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const p = await searchParams;
   const d = await getBookmarksPageData(p, PAGE_SIZE);
+  const selectedFolder = d.fid ? await prisma.bookmarkFolder.findUnique({ where: { id: d.fid }, select: { id: true, name: true } }) : null;
+  const folderOptions = selectedFolder && !d.filters.folders.some((folder) => folder.id === selectedFolder.id)
+    ? [...d.filters.folders, { ...selectedFolder, count: 0 }] : d.filters.folders;
+  const narrowedFolder = Boolean(d.q || d.cat || d.st || d.vid || d.sem);
   const from = d.data.total === 0 ? 0 : (d.currentPage - 1) * PAGE_SIZE + 1;
   const to = (d.currentPage - 1) * PAGE_SIZE + d.data.bookmarks.length;
   const href = buildPageHref(p);
@@ -48,7 +54,7 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
         </header>
         <FilterControls
           categories={d.filters.categories}
-          folders={d.filters.folders}
+          folders={folderOptions}
           counts={d.filters.counts}
           q={d.q}
           source={d.src}
@@ -71,6 +77,13 @@ export default async function BookmarksPage({ searchParams }: { searchParams?: P
             Semantic search shows up to {d.data.search.limit} matches within your selected filters.
           </p>
         ) : null}
+        {selectedFolder && <section aria-label="Selected folder" className="rounded-xl border border-outline-variant/30 p-4 text-sm">
+          <p className="font-semibold">{selectedFolder.name ?? "Untitled folder"}</p>
+          {d.data.total === 0 ? <p role="status" className="mt-1 text-on-surface-variant">
+            {narrowedFolder ? "No local items in this folder match the selected filters." : "This folder has no locally imported items yet."}{" "}
+            {narrowedFolder && (d.src === "x" || d.src === "yt") ? <Link className="text-primary underline" href={folderLibraryHref(d.src, d.fid)}>Clear filters within this folder</Link> : <Link className="text-primary underline" href={`/folders?tab=${d.src === "yt" ? "yt" : "x"}`}>Import from Folder Management</Link>}
+          </p> : <p className="mt-1 text-on-surface-variant">Showing local items in this folder.</p>}
+        </section>}
         <BookmarksList initial={d.data.bookmarks} sort={d.sort} dir={d.dir} source={d.src} />
         <PaginationControls from={from} to={to} total={d.data.total} currentPage={d.currentPage} totalPages={d.totalPages} pageHref={href} />
       </div>

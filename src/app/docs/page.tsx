@@ -27,7 +27,7 @@ const userGuides = [
     href: "/docs/process-inbox",
     title: "Process inbox",
     teaser:
-      "One Dashboard button: sync, enrich pending items, and index embeddings. Advanced Sync / Enrich / Batch too.",
+      "One Dashboard button: import, summarize pending items, and index embeddings in one resumable server run.",
   },
   {
     step: "5",
@@ -57,7 +57,7 @@ export default function DocsPage() {
       <div className="mx-auto max-w-4xl space-y-16">
         <header className="space-y-6 text-center">
           <h1 className="font-headline text-6xl font-semibold tracking-tight text-primary">
-            Getting Started with Xbook
+            XBook guides
           </h1>
           <p className="mx-auto max-w-2xl text-xl text-on-surface-variant leading-relaxed italic">
             &quot;Turning your digital pile of links into a searchable personal brain.&quot;
@@ -92,8 +92,7 @@ export default function DocsPage() {
             <h2 className="text-3xl font-bold">Scenarios</h2>
           </div>
           <p className="text-on-surface-variant max-w-2xl">
-            Two clear wins where Xbook pays for itself—bookmark today, retrieve (or write from) it later without
-            digging through platform UIs.
+            Use saved source material to retrieve an item or draft a supported follow-up.
           </p>
           <div className="grid gap-6 md:grid-cols-2">
             <article className="rounded-2xl bg-white p-8 shadow-sm border border-outline-variant/30 space-y-4">
@@ -108,11 +107,11 @@ export default function DocsPage() {
                 Process inbox turns that pile into a local library with summaries, tags, and vector embeddings.
               </p>
               <div className="rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-4 space-y-2">
-                <p className="text-xs font-bold uppercase text-on-surface-variant">How to leverage it</p>
+                <p className="text-xs font-bold uppercase text-on-surface-variant">Steps</p>
                 <ol className="list-decimal list-inside space-y-1.5 text-sm text-on-surface-variant leading-6">
                   <li>Bookmark freely on X and YouTube as you discover ideas.</li>
                   <li>
-                    On the Dashboard, click <strong>Process inbox</strong> (sync + enrich + index in one pass).
+                    On the Dashboard, click <strong>Process inbox</strong> (import, summarize, and index in one saved run).
                   </li>
                   <li>
                     In the Library, use semantic search—e.g. &quot;housing policy arguments&quot; or &quot;local LLM
@@ -138,7 +137,7 @@ export default function DocsPage() {
                 every link.
               </p>
               <div className="rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-4 space-y-2">
-                <p className="text-xs font-bold uppercase text-on-surface-variant">How to leverage it</p>
+                <p className="text-xs font-bold uppercase text-on-surface-variant">Steps</p>
                 <ol className="list-decimal list-inside space-y-1.5 text-sm text-on-surface-variant leading-6">
                   <li>
                     Run <strong>Process inbox</strong> regularly so summaries and search indexes stay current.
@@ -205,7 +204,7 @@ export default function DocsPage() {
                   <>
                     Still in Settings → <strong>AI</strong>: pick a preset (LM Studio, Ollama, …), set the chat
                     model (and an embedding model for semantic search), <strong>Save settings</strong>, then{" "}
-                    <strong>Test LLM connection</strong>.{" "}
+                    <strong>Test chat with displayed values</strong> and <strong>Test embeddings with displayed values</strong>.{" "}
                     <Link href="/docs/llm" className="text-primary hover:underline font-semibold">
                       Details
                     </Link>

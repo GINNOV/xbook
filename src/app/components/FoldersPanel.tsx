@@ -10,14 +10,15 @@ import { folderLibraryHref } from "../lib/folder-links";
 type Props = { folders: Folder[]; soundOnComplete?: boolean; soundOnError?: boolean; };
 
 export default function FoldersPanel({ folders, soundOnComplete, soundOnError }: Props) {
-  const { operation, msg, loading, syncFolders, importFolder, importAllFolders, processFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
+  const { operation, msg, loading, syncFolders, importFolder, importAllFolders, processFolder, indexFolder } = useFoldersPanel(folders, soundOnComplete, soundOnError);
+  const busy = loading.syncing || loading.all || !!loading.importing || !!loading.processing || !!loading.indexing || operation.active || operation.submitting;
   const btn = "rounded-full border border-black/10 px-4 py-2 text-sm font-semibold transition disabled:opacity-60";
   const rowBtn = (l: string, c: string) => `rounded-full px-3 py-1 text-xs font-bold uppercase transition hover:text-white disabled:opacity-60 ${c}`;
 
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-sm">
       <OperationStatus operation={operation} />
-      {msg?.text && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
+      {msg?.text && (!operation.run || operation.connectionError) && <div className={`rounded-lg p-3 text-sm font-semibold mb-2 shadow-sm border ${msg.isError ? "bg-red-50 text-red-800 border-red-100" : "bg-emerald-50 text-emerald-800 border-emerald-100"}`}>{msg.text}</div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-2xl font-semibold">
@@ -27,8 +28,8 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
           <p className="text-xs text-slate-500">Local counts open imported bookmarks. Import fetches source items; Summarize creates digests; Index builds search vectors.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button title="Import source bookmarks for all folders; existing summaries are preserved." onClick={importAllFolders} disabled={loading.all || loading.syncing || !!loading.importing || !!loading.processing} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
-          <button title="Refresh source folder names." onClick={syncFolders} disabled={loading.syncing || loading.all} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
+          <button title="Import source bookmarks for all folders; existing summaries are preserved." onClick={importAllFolders} disabled={busy} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60">{loading.all ? "Importing..." : "Import all folders"}</button>
+          <button title="Refresh source folder names." onClick={syncFolders} disabled={busy} className={btn}>{loading.syncing ? "Syncing..." : "Sync folder names"}</button>
         </div>
       </div>
       {folders.length ? (
@@ -44,8 +45,9 @@ export default function FoldersPanel({ folders, soundOnComplete, soundOnError }:
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatFolderActivity(f.lastProcessedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => importFolder(f.id)} disabled={loading.all || loading.importing === f.id || loading.processing === f.id} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
-                      <button onClick={() => processFolder(f.id)} disabled={loading.all || !!loading.processing || operation.active || operation.submitting || loading.importing === f.id} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
+                      <button onClick={() => importFolder(f.id)} disabled={busy} className={rowBtn("Import", "bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700")}>{loading.importing === f.id ? "..." : "Import"}</button>
+                      <button title="Summarize locally imported bookmarks." onClick={() => processFolder(f.id)} disabled={busy || !f.total} className={rowBtn("Process", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.processing === f.id ? "..." : "Summarize"}</button>
+                      <button title="Rebuild missing or incompatible search vectors for this folder." onClick={() => void indexFolder(f.id)} disabled={busy || !f.total} className={rowBtn("Index", "border border-black/10 text-slate-700 hover:bg-black")}>{loading.indexing === f.id ? "Indexing…" : "Index"}</button>
                     </div>
                   </td>
                 </tr>

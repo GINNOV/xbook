@@ -9,9 +9,12 @@ export default function OperationStatus({ operation }: Props) {
   const { run, active, controlling, connectionError, stop, resume } = operation;
   if (!run && !connectionError) return null;
   const progress = run && operationProgress(run);
+  const importing = run && operationCheckpoint(run)?.import;
   const canResume = run && operationCheckpoint(run) && ["paused", "stopped", "failed", "partial"].includes(run.status);
   return <div className="rounded-xl border border-outline-variant/30 p-3 text-sm" aria-live="polite">
     {run && <p>{operationMessage(run)}</p>}
+    {importing?.capBlocked && <p className="mt-1 text-amber-900">The new-entry cap paused this import. Change the source cap in Settings or resume when the next month begins; saved progress is retained.</p>}
+    {importing && importing.folderErrors.length > 0 && <ul className="mt-1 text-error">{importing.folderErrors.map((failure) => <li key={failure.folderId}>Folder {failure.folderId}: {failure.message}</li>)}</ul>}
     {connectionError && <p role="alert" className="text-error">{connectionError}</p>}
     {active && <p className="text-xs text-on-surface-variant">Work continues on the server when you leave this page.</p>}
     <div className="mt-2 flex flex-wrap gap-3">

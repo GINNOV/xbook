@@ -78,4 +78,19 @@ describe("useUpdater", () => {
     expect(mockInvoke).toHaveBeenCalledWith("relaunch_app", undefined);
     expect(result.current.updateAvailable).toBe(true);
   });
+
+  it("keeps startup usable with visible failure and a successful retry without installation", async () => {
+    (global.window as any).__TAURI_INTERNALS__ = {};
+    mockCheck.mockRejectedValueOnce(new Error("Network unavailable private diagnostic"));
+    const { result } = renderHook(() => useUpdater());
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(result.current.updateError).toContain("Startup continues");
+    expect(result.current.updateError).not.toContain("private diagnostic");
+    mockCheck.mockResolvedValueOnce(null);
+    act(() => result.current.retryUpdateCheck());
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(result.current.updateError).toBeNull();
+    expect(mockCheck).toHaveBeenCalledTimes(2); expect(mockInvoke).not.toHaveBeenCalled();
+    expect(global.confirm).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import OperationStatus from "../OperationStatus";
 import { useUsageSettings } from "../../hooks/settings/useUsageSettings";
 import { useSettingsContext } from "../../hooks/settings/useSettingsContext";
 import { HelpTooltip, SettingsSection, secondaryButtonClass } from "./SharedFields";
@@ -14,6 +15,7 @@ export function UsageSettings({ usedThisMonth }: Props) {
     markingLatest,
     resettingBaseline,
     syncingEmbeddings,
+    operation,
     markLatest,
     resetBaseline,
     syncEmbeddings,
@@ -25,15 +27,17 @@ export function UsageSettings({ usedThisMonth }: Props) {
       description="Cap monthly imports to avoid API bans or unexpected costs."
       defaultOpen
     >
+      <OperationStatus operation={operation} />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <label className="text-sm font-semibold">
-            X monthly cap * <HelpTooltip text="Maximum number of bookmarks to fetch from X per month." />
+            X monthly cap * <HelpTooltip text="Maximum new local entries imported from X per month. Refreshing existing entries does not consume this cap." />
           </label>
           <input
             type="number"
             min={1}
             max={10000}
+            aria-label="X monthly cap"
             value={form.monthlyCap ?? ""}
             onChange={updateNumberField("monthlyCap")}
             className="w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm"
@@ -42,17 +46,18 @@ export function UsageSettings({ usedThisMonth }: Props) {
         </div>
         <div className="space-y-2">
           <label className="text-sm font-semibold">
-            YouTube monthly cap * <HelpTooltip text="Maximum number of video entries to fetch from YouTube per month." />
+            YouTube monthly cap * <HelpTooltip text="Maximum new local playlist entries imported from YouTube per month, separate from Google API request quota." />
           </label>
           <input
             type="number"
             min={1}
             max={10000}
+            aria-label="YouTube monthly cap"
             value={form.ytMonthlyCap ?? ""}
             onChange={updateNumberField("ytMonthlyCap")}
             className="w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm"
           />
-          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight">Sync stops when quota is reached</p>
+          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight">Import pauses at this cap; Google request quota is separate</p>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-semibold">
@@ -62,11 +67,12 @@ export function UsageSettings({ usedThisMonth }: Props) {
             type="number"
             min={1}
             max={200}
+            aria-label="Enrichment batch size"
             value={form.enrichBatchSize ?? ""}
             onChange={updateNumberField("enrichBatchSize")}
             className="w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm"
           />
-          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight">System default is 50 per run</p>
+          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight">Items per operation batch; each bookmark has its own model request.</p>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">

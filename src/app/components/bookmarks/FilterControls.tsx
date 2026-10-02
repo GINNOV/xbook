@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { z } from "zod";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { BookmarkTextMode } from "@/lib/bookmark-query";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
@@ -25,19 +26,8 @@ type Props = {
   dir: SortDir;
 };
 
-type AskCitation = {
-  id: string;
-  reason: string;
-  tweetUrl: string;
-  summary: string | null;
-  text: string | null;
-  category: string | null;
-  authorUsername: string | null;
-  source: string;
-  excerpt?: string | null;
-  timestampSeconds?: number | null;
-  captureStatus?: "complete" | "partial" | "missing" | null;
-};
+const askCitationSchema = z.object({ id: z.string(), reason: z.string(), tweetUrl: z.string().url(), summary: z.string().nullable(), text: z.string().nullable(), category: z.string().nullable(), authorUsername: z.string().nullable(), source: z.string(), excerpt: z.string().nullable().optional(), timestampSeconds: z.number().nonnegative().nullable().optional(), captureStatus: z.enum(["complete", "partial", "missing"]).nullable().optional() });
+type AskCitation = z.infer<typeof askCitationSchema>;
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -133,6 +123,12 @@ export function FilterControls({
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [askCitations, setAskCitations] = useState<AskCitation[]>([]);
 
+  const askRequest = useRef<AbortController | null>(null);
+  const [answeredQuestion, setAnsweredQuestion] = useState("");
+  useEffect(() => { askRequest.current?.abort(); setAskBusy(false); }, [query, source, mode]);
+  useEffect(() => { setAskAnswer(null); setAskCitations([]); setAskError(null); setQuery(q); }, [source, q]);
+  useEffect(() => () => askRequest.current?.abort(), []);
+
   const clearHref = (() => {
     const params = new URLSearchParams();
     if (source) params.set("source", source);
@@ -181,24 +177,24 @@ export function FilterControls({
     }
     setAskBusy(true);
     setAskError(null);
-    setAskAnswer(null);
-    setAskCitations([]);
+    askRequest.current?.abort();
+    const controller = new AbortController(); askRequest.current = controller;
     try {
       const res = await fetch("/api/bookmarks/ask", {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, source: source || null }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || `Ask failed (${res.status})`);
-      }
-      setAskAnswer(json.answer as string);
-      setAskCitations((json.citations as AskCitation[]) || []);
+      const json: unknown = await res.json();
+      if (!res.ok) throw new Error(z.object({ error: z.string() }).safeParse(json).data?.error ?? `Ask failed (${res.status})`);
+      const result = z.object({ ok: z.literal(true), answer: z.string().min(1), citations: z.array(askCitationSchema) }).parse(json);
+      if (controller.signal.aborted || askRequest.current !== controller) return;
+      setAskAnswer(result.answer); setAskCitations(result.citations); setAnsweredQuestion(question);
     } catch (e) {
-      setAskError(e instanceof Error ? e.message : "Ask failed");
+      if (!controller.signal.aborted && askRequest.current === controller) setAskError(e instanceof Error ? e.message : "Ask failed");
     } finally {
-      setAskBusy(false);
+      if (askRequest.current === controller) setAskBusy(false);
     }
   };
 
@@ -266,7 +262,7 @@ export function FilterControls({
             ))}
           </select>
 
-          <select aria-label="Enrichment status" name="status" defaultValue={status} className={sel}>
+          <select aria-label="Library state" name="status" defaultValue={status} className={sel}>
             <option value="">All status</option>
             <option value="pending">Pending</option>
             <option value="summarized">Summarized</option>
@@ -331,9 +327,10 @@ export function FilterControls({
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Chat find · uses your configured LLM + embeddings
           </p>
-          {askError ? <p className="text-sm text-error">{askError}</p> : null}
+          {askError ? <div role="alert" className="text-sm text-error"><p>{askError}</p><button type="button" disabled={askBusy} onClick={() => void runAsk()} className="mt-2 underline">Retry question</button></div> : null}
           {askAnswer ? (
             <div className="space-y-3">
+              <p className="text-xs text-on-surface-variant">Saved answer for: {answeredQuestion}</p>
               <div className="rounded-lg bg-surface-container-lowest px-4 py-3 text-sm leading-6 text-on-surface whitespace-pre-wrap">
                 {askAnswer}
               </div>

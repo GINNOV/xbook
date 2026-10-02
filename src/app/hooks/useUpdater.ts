@@ -11,14 +11,16 @@ export function useUpdater() {
 
   useEffect(() => {
     // Check if running in Tauri environment
-    if (typeof window === "undefined" || !(window as any).__TAURI_INTERNALS__) {
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
       return;
     }
 
+    let mounted = true;
     const checkUpdates = async () => {
       try {
         const { check } = await import("@tauri-apps/plugin-updater");
-        const update = await check();
+        const update = await check({ timeout: 10000 });
+        if (!mounted) return;
         if (update) {
           console.log(`[Updater] New version found: ${update.version}`);
           setUpdateVersion(update.version);
@@ -45,11 +47,11 @@ export function useUpdater() {
           console.log("[Updater] No updates found.");
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Update check failed";
-        setUpdateError(`Update check failed: ${message}. Startup continues. Retry when the update server is reachable.`);
+        if (!mounted) return;
+        setUpdateError("Update check failed. Startup continues. Check your network connection and retry when the update server is reachable.");
         console.warn("[Updater] Update check failed:", err);
       } finally {
-        setIsUpdating(false);
+        if (mounted) setIsUpdating(false);
       }
     };
 
@@ -58,7 +60,7 @@ export function useUpdater() {
       checkUpdates();
     }, 5000);
 
-    return () => clearTimeout(timer);
+    return () => { mounted = false; clearTimeout(timer); };
   }, [checkNonce]);
 
   return {

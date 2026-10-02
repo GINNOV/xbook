@@ -10,6 +10,7 @@ type Props = {
   testX: () => void | Promise<void>;
   testingX: boolean;
   xTest: string | null;
+  connectionLabel: string;
 };
 
 export function OauthSection({
@@ -20,13 +21,14 @@ export function OauthSection({
   testX,
   testingX,
   xTest,
+  connectionLabel,
 }: Props) {
   const input = "w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm";
   return (
     <section className="rounded-lg border border-black/10 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-lg font-semibold">OAuth settings</h2><p className="text-xs text-slate-500">Required for bookmark sync.</p></div>
-        <p className="text-xs text-slate-500">Status: {form.xAccessToken ? "Connected" : "Not connected"}</p>
+        <p className="text-xs text-slate-500">Status: {connectionLabel}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2"><label className="text-sm font-semibold">X client ID *</label><input type="text" value={form.xClientId ?? ""} onChange={updateField("xClientId")} placeholder="Client ID" className={input} /></div>
@@ -36,9 +38,9 @@ export function OauthSection({
         <div className="space-y-2 md:col-span-2"><label className="text-sm font-semibold">OAuth redirect URI *</label><input type="text" value={form.xRedirectUri ?? ""} onChange={updateField("xRedirectUri")} placeholder="callback url" className={input} /></div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button onClick={connectOAuth} className={primaryButtonClass}>Save & Connect</button>
-        <button onClick={clearOAuth} className={secondaryButtonClass}>Disconnect</button>
-        <button onClick={testX} disabled={testingX} className={secondaryButtonClass}>{testingX ? "Testing…" : "Test connection"}</button>
+        <button type="button" onClick={connectOAuth} className={primaryButtonClass}>Save & Connect</button>
+        <button type="button" onClick={clearOAuth} className={secondaryButtonClass}>Disconnect</button>
+        <button type="button" onClick={testX} disabled={testingX} className={secondaryButtonClass}>{testingX ? "Testing…" : "Test displayed X connection"}</button>
         {xTest && <p className="text-sm text-slate-600">{xTest}</p>}
       </div>
     </section>

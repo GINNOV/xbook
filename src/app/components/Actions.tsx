@@ -61,7 +61,7 @@ export default function Actions({
     : isEnriching
       ? "Enriching…"
       : isSyncing
-        ? "Syncing…"
+        ? "Importing…"
         : null;
 
   const processTitle = !canProcessInbox
@@ -145,7 +145,7 @@ export default function Actions({
                   source === "x" ? "bg-black" : "bg-red-700"
                 }`}
               >
-                {isSyncing ? "Syncing..." : `Sync ${source.toUpperCase()}`}
+                {isSyncing ? "Importing..." : `Import ${source.toUpperCase()}`}
               </button>
               <button
                 type="button"

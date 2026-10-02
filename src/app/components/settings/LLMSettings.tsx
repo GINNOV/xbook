@@ -4,6 +4,7 @@ import { useState } from "react";
 import { HelpTooltip, SecretField, SettingsSection, secondaryButtonClass } from "./SharedFields";
 import { useLLMSettings } from "../../hooks/settings/useLLMSettings";
 import { useSettingsContext } from "../../hooks/settings/useSettingsContext";
+import { endpointDestination } from "../../lib/settings-draft";
 import { MAX_LLM_CONCURRENCY } from "@/lib/llm-limits";
 
 const presetButtonClass =
@@ -14,6 +15,7 @@ export function LLMSettings() {
     useSettingsContext();
   const {
     llmTest,
+    modelMessage,
     testingLlm,
     clearingLogs,
     modelHistory,
@@ -24,6 +26,7 @@ export function LLMSettings() {
     testEmbedding,
     testingEmbedding,
     embeddingTest,
+    chatTestState, embeddingTestState,
     applyLlmPreset,
     clearProcessingHistory,
     resetPrompt,
@@ -37,10 +40,12 @@ export function LLMSettings() {
   return (
     <SettingsSection
       title="AI / LLM"
-      description="A saved model name is configured, not tested. Local, LAN, and remote endpoints receive the bookmark text sent for enrichment, search, or Ask. Secrets stay masked in diagnostics. Technical logs can store prompts when payload logging is on."
+      description="A saved model name is configured, not tested. Local, LAN, and remote endpoints receive the bookmark text sent for enrichment, search, or Ask. Secrets stay masked in diagnostics. Technical logs retain text previews. Payload logging adds full prompts and responses."
       defaultOpen
     >
       <div>
+        <p className="text-sm text-on-surface-variant">Chat destination: {endpointDestination(form.llmBaseUrl).kind} · {endpointDestination(form.llmBaseUrl).destination}. Embedding destination: {endpointDestination(form.llmEmbeddingBaseUrl || form.llmBaseUrl).kind} · {endpointDestination(form.llmEmbeddingBaseUrl || form.llmBaseUrl).destination}.</p>
+        <p className="mt-2 text-xs text-on-surface-variant">Local endpoints run on this computer; LAN endpoints send data to a network device; remote endpoints send data over the internet. Chat receives bookmark source text, prompts, and Ask context. Embeddings receive saved digest text and search queries. Technical logs retain prompt and response previews even when payload logging is off. Turning it on also stores full prompts and responses; backups may include these logs.</p>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <span className="mr-1 font-semibold text-slate-700">Presets:</span>
           <button type="button" onClick={() => applyLlmPreset("remote")} className={presetButtonClass}>
@@ -65,6 +70,7 @@ export function LLMSettings() {
             </label>
             <input
               type="text"
+              aria-label="LLM base URL"
               value={form.llmBaseUrl ?? ""}
               onChange={updateField("llmBaseUrl")}
               placeholder="http://127.0.0.1:1234/v1"
@@ -93,7 +99,8 @@ export function LLMSettings() {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={form.llmModel ?? ""}
+                  aria-label="LLM model"
+              value={form.llmModel ?? ""}
                   onChange={updateField("llmModel")}
                   onFocus={() => setShowHistory(true)}
                   placeholder="qwen2.5-coder-14b"
@@ -104,6 +111,7 @@ export function LLMSettings() {
                   onClick={fetchModels}
                   disabled={fetchingModels || !form.llmBaseUrl}
                   title="Fetch models from server"
+                  aria-label="Fetch models from displayed endpoint"
                   className="flex h-11 w-11 items-center justify-center rounded-md border border-black/10 bg-slate-50 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <svg
@@ -146,6 +154,7 @@ export function LLMSettings() {
             </label>
             <input
               type="text"
+              aria-label="Embedding model"
               value={form.llmEmbeddingModel ?? ""}
               onChange={updateField("llmEmbeddingModel")}
               placeholder="nomic-embed-text"
@@ -159,6 +168,7 @@ export function LLMSettings() {
             </label>
             <input
               type="text"
+              aria-label="Embedding base URL"
               value={form.llmEmbeddingBaseUrl ?? ""}
               onChange={updateField("llmEmbeddingBaseUrl")}
               placeholder="http://127.0.0.1:11434/v1"
@@ -180,8 +190,9 @@ export function LLMSettings() {
               Unsaved changes
             </span>
           )}
-          {llmTest ? <p className="text-sm text-slate-600">{llmTest}</p> : null}
-          {embeddingTest ? <p className="text-sm text-slate-600">{embeddingTest}</p> : null}
+          {modelMessage ? <p role="status" className="text-sm text-slate-600">{modelMessage}</p> : null}
+          {llmTest ? <p role={chatTestState === "unavailable" ? "alert" : "status"} className="text-sm text-slate-600">Chat: {llmTest}</p> : null}
+          {embeddingTest ? <p role={embeddingTestState === "unavailable" ? "alert" : "status"} className="text-sm text-slate-600">Embeddings: {embeddingTest}</p> : null}
         </div>
 
         <div className="mt-6 border-t border-black/5 pt-4">
@@ -209,7 +220,8 @@ export function LLMSettings() {
                   type="number"
                   min={1}
                   max={MAX_LLM_CONCURRENCY}
-                  value={form.llmConcurrency ?? ""}
+                  aria-label="LLM concurrency"
+              value={form.llmConcurrency ?? ""}
                   onChange={updateNumberField("llmConcurrency")}
                   placeholder="1"
                   className="w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm"
@@ -224,7 +236,8 @@ export function LLMSettings() {
                   type="number"
                   min={1000}
                   max={1000000}
-                  value={form.llmContextWindow ?? ""}
+                  aria-label="Context window"
+              value={form.llmContextWindow ?? ""}
                   onChange={updateNumberField("llmContextWindow")}
                   placeholder="128000"
                   className="w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm"
@@ -233,13 +246,14 @@ export function LLMSettings() {
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold">
                   Limit response length{" "}
-                  <HelpTooltip text="Maximum tokens for the generated response. Set to 0 for no limit (model default)." />
+                  <HelpTooltip text="Additional response token cap. Set to 0 to disable this cap; maximum-token and context budgets still apply to enrichment." />
                 </label>
                 <input
                   type="number"
                   min={0}
                   max={128000}
-                  value={form.llmResponseLimit ?? ""}
+                  aria-label="Limit response length"
+              value={form.llmResponseLimit ?? ""}
                   onChange={updateNumberField("llmResponseLimit")}
                   placeholder="2000"
                   className={`w-full rounded-md border border-black/10 bg-white px-4 py-3 text-sm ${
@@ -248,7 +262,7 @@ export function LLMSettings() {
                 />
                 {form.llmResponseLimit === 0 && (
                   <p className="text-[10px] font-bold uppercase tracking-tight text-emerald-600">
-                    No output limit active
+                    Response cap disabled; other token budgets still apply
                   </p>
                 )}
               </div>

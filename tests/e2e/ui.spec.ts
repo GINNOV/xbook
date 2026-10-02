@@ -108,7 +108,7 @@ test("dashboard, libraries, folders, processing, and settings routes render", as
   await page.goto("/bookmarks?source=x&q=e2e_author");
   await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
   const seededBookmark = page.getByRole("button", {
-    name: /A seeded bookmark used to verify/,
+    name: /^Read bookmark: A seeded bookmark used to verify/,
   });
   await expect(seededBookmark).toBeVisible();
   await seededBookmark.click();

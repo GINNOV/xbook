@@ -5,15 +5,13 @@ export default function DocsLlmPage() {
   return (
     <DocsPageShell
       title="Configure your AI (LLM)"
-      description="Enrich and semantic search need a working language model. Point Xbook at LM Studio, Ollama, vLLM, or any OpenAI-compatible endpoint."
+      description="Enrichment needs chat; semantic search needs a compatible embedding model. Point Xbook at LM Studio, Ollama, vLLM, or any OpenAI-compatible endpoint."
     >
       <div className="space-y-8">
         <div className="rounded-2xl border border-amber-500/30 bg-amber-50/80 p-6 space-y-2">
           <p className="text-sm font-bold text-amber-900">Why this matters</p>
           <p className="text-sm text-on-surface-variant leading-6">
-            <strong>Enrich</strong> and <strong>semantic search</strong> need a working language model. Without LLM
-            settings, Sync can still import bookmarks, but summaries, tags, categories, and vector search will not
-            run—or will fail in Processing with connection errors.
+            <strong>Enrich</strong> uses your chat model. <strong>Semantic search</strong> uses your embedding model. Import works without either. Missing or unavailable models leave actionable failures in Processing; keyword search remains available.
           </p>
         </div>
 
@@ -22,10 +20,10 @@ export default function DocsLlmPage() {
           <Link href="/settings" className="text-primary hover:underline font-semibold">
             Settings
           </Link>{" "}
-          → <strong>AI</strong> (section title: <strong>LLM configuration</strong>). Xbook talks to any{" "}
+          → <strong>AI</strong> (section title: <strong>AI / LLM</strong>). Xbook talks to any{" "}
           <strong>OpenAI-compatible</strong> chat/completions endpoint—local apps (LM Studio, Ollama) or remote APIs.
-          Use a preset button to fill sensible defaults, then set the exact model name your server is serving. Save
-          settings before testing.
+          Use a preset button to fill sensible defaults, then set the exact model name your server is serving. Test
+          the displayed draft with the separate chat and embedding buttons, then save before starting an operation.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -79,7 +77,7 @@ export default function DocsLlmPage() {
             <ul className="text-sm text-on-surface-variant leading-6 space-y-1.5 list-disc list-inside">
               <li>
                 Example base URL:{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 text-xs">http://192.168.0.69:8000/v1</code>
+                <code className="rounded bg-white px-1.5 py-0.5 text-xs">https://api.example.com/v1</code>
               </li>
               <li>
                 Example model: <code className="rounded bg-white px-1.5 py-0.5 text-xs">gemma-4-26b</code>
@@ -149,14 +147,20 @@ export default function DocsLlmPage() {
             </div>
           </div>
           <p className="text-sm text-on-surface-variant leading-6">
-            After saving, use <strong>Test LLM connection</strong> in Settings → AI. Only when that succeeds should
-            you run <strong>Process inbox</strong> (or Enrich under Advanced) on the Dashboard. Watch{" "}
+            Use <strong>Test chat with displayed values</strong> and <strong>Test embeddings with displayed values</strong> in Settings → AI. Tests use the draft and do not save it. Empty embedding URL uses the displayed chat URL; an empty model cannot pass by using a saved model. Save settings before Process inbox. Watch{" "}
             <Link href="/processing" className="text-primary hover:underline font-semibold">
               Processing
             </Link>{" "}
             if jobs fail—connection refused usually means the local server is not running or the port is wrong.
           </p>
         </div>
+
+        <section className="rounded-2xl border border-outline-variant/30 bg-white p-6 space-y-3">
+          <h2 className="text-lg font-bold">Data destinations and logs</h2>
+          <p className="text-sm leading-6 text-on-surface-variant">Local endpoints receive data on this computer. LAN endpoints receive it on another network device. Remote endpoints receive it over the internet. Chat receives source text, your prompts, and retrieved Ask context. Embeddings receive saved digest text and search queries.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">Processing stores prompt and response previews even when payload logging is off. Turning payload logging on also stores full prompts and responses. These local logs and full backups can contain private source text. Endpoint diagnostics mask credentials.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">Summaries use English by default unless your custom prompt overrides that instruction. Target language affects the on-demand Translate action.</p>
+        </section>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-outline-variant/30 space-y-4">
           <h2 className="text-lg font-bold text-on-surface">Advanced: prompts &amp; thinking</h2>
@@ -181,8 +185,7 @@ export default function DocsLlmPage() {
                 The model must return a compact JSON object with{" "}
                 <code className="rounded bg-white px-1 py-0.5 text-xs">summary</code>,{" "}
                 <code className="rounded bg-white px-1 py-0.5 text-xs">category</code>, and{" "}
-                <code className="rounded bg-white px-1 py-0.5 text-xs">tags</code>. Xbook parses the first JSON object
-                in the reply.
+                <code className="rounded bg-white px-1 py-0.5 text-xs">tags</code>. Xbook validates the returned enrichment fields before saving them.
               </li>
             </ol>
           </div>
@@ -196,7 +199,7 @@ export default function DocsLlmPage() {
                 ],
                 [
                   "LLM prompt (advanced)",
-                  "The enrichment task template: summary style, category list, tagging, media/transcript rules, English-only JSON values. Leave blank to use the built-in researcher default, or click Reset prompt to default after customizing. Edit only if you want a different voice or taxonomy—not when switching hosts.",
+                  "The enrichment task template: summary style, category list, tagging, media/transcript rules, English JSON values by default. A custom prompt can request another language. Leave blank to use the built-in researcher default, or click Reset prompt to default after customizing. Edit only if you want a different voice or taxonomy—not when switching hosts.",
                 ],
                 [
                   "Enable LLM thinking",
@@ -204,7 +207,7 @@ export default function DocsLlmPage() {
                 ],
                 [
                   "Limit response length",
-                  "Caps max tokens for the reply (default around 2000). Fine for compact JSON. Raise it if Processing shows empty responses or “JSON never closed” (often truncated output or long reasoning).",
+                  "Adds a response token cap. Zero disables this extra cap; maximum-token and context budgets still apply to enrichment.",
                 ],
                 [
                   "Context window (input)",

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { importOperationFixture } from "../../fixtures/import-operation";
 import { useActions } from "@/app/hooks/useActions";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -11,11 +12,29 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("useActions", () => {
   it("imports new bookmarks and reports the imported count", async () => {
-    mockProvider(() => json({ ok: true, imported: 5 }));
+    const run = importOperationFixture({ imported: 5 });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => url.includes("?take=") ? json({ runs: [] }) : url.startsWith("/api/import?") ? json({ runId: run.id }, 202) : json({ run })));
     const { result, unmount } = renderHook(() => useActions("x", 50));
-    await act(async () => { await result.current.runImport(); });
+    let completion: ReturnType<typeof result.current.runImport>;
+    await act(async () => { completion = result.current.runImport(); await Promise.resolve(); });
+    await waitFor(() => expect(result.current.loading.x).toBe(false));
+    await completion!;
     expect(fetch).toHaveBeenCalledWith("/api/import?source=x", expect.objectContaining({ method: "POST" }));
-    expect(result.current.message).toContain("Imported 5");
+    expect(result.current.message).toContain("5 new");
+    unmount();
+  });
+
+  it("submits the entire inbox pipeline once without browser phase submissions", async () => {
+    const run = importOperationFixture({ pipeline: true });
+    const requests: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") requests.push(url);
+      return url.includes("?take=") ? json({ runs: [] }) : url.startsWith("/api/import?") ? json({ runId: run.id }, 202) : json({ run });
+    }));
+    const { result, unmount } = renderHook(() => useActions("x", 50));
+    await act(async () => { void result.current.runProcessInbox(); await Promise.resolve(); });
+    await waitFor(() => expect(result.current.loading.inboxX).toBe(false));
+    expect(requests).toEqual(["/api/import?source=x&pipeline=true"]);
     unmount();
   });
 

@@ -22,6 +22,9 @@ describe("useYouTubeSettings", () => {
     vi.mocked(isTauriApp).mockReturnValue(false);
     vi.mocked(useSettingsContext).mockReturnValue({
       form: { ytClientId: "yt-123", ytRedirectUri: "http://localhost:4010/api/oauth/youtube/callback" },
+      applySavedPatch: vi.fn(),
+      connectionTests: {},
+      testConnection: vi.fn(),
       setMessage: mockSetMessage,
       setForm: mockSetForm,
       setSaving: mockSetSaving,

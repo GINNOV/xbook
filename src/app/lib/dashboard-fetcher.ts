@@ -36,7 +36,7 @@ export async function getDashboardStats(tab: "x" | "yt") {
     prisma.bookmark.count({ where: { ...sourceWhere, ...blockedEnrichmentWhere() } }),
     getUsageMonth(new Date(), tab),
     prisma.settings.findUnique({ where: { id: "default" } }),
-    prisma.importRun.findFirst({ orderBy: { startedAt: "desc" } }),
+    prisma.operationRun.findFirst({ where: { source: tab, type: { in: ["import_pipeline", "x_sync", "x_folder_import", "youtube_sync", "youtube_playlist_import"] }, processed: { gt: 0 } }, orderBy: { startedAt: "desc" } }),
     prisma.operationRun.findMany({
       where: { source: tab },
       orderBy: { startedAt: "desc" },
@@ -50,15 +50,12 @@ export async function getDashboardStats(tab: "x" | "yt") {
         },
       },
     }),
-    getEffectiveEmbeddingIdentity().then((identity) => getIndexHealth(prisma, identity, tab)),
+    getEffectiveEmbeddingIdentity().catch(() => undefined).then((identity) => getIndexHealth(prisma, identity, tab)),
   ]);
 
   const recent = await prisma.bookmark.findMany({
     where: {
-      OR: [
-        { source: tab },
-        { source: { notIn: ["x", "yt"] } },
-      ],
+      source: tab,
     },
     include: { folder: true },
     orderBy: { importedAt: "desc" },
@@ -78,7 +75,7 @@ export async function getDashboardStats(tab: "x" | "yt") {
     failedItemsCount: failed,
     /** Pending items exhausted of auto-retries (enrichmentFailures ≥ 3). */
     skippedItemsCount: blocked,
-    indexHealth: { withEmbedding: indexHealth.usable, unindexed: indexHealth.rebuildIds.length, stale: indexHealth.staleIds.length, states: indexHealth.states },
+    indexHealth: { withEmbedding: indexHealth.usable, unindexed: indexHealth.rebuildIds.length, missing: indexHealth.states.missing.length, stale: indexHealth.staleIds.length, states: indexHealth.states },
   };
 }
 

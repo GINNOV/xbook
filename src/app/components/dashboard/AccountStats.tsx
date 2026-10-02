@@ -1,4 +1,5 @@
 import { XLogo, YouTubeLogo } from "../Icons";
+import Link from "next/link";
 
 type Props = {
   tab: "x" | "yt";
@@ -12,6 +13,8 @@ type Props = {
   total: number;
   /** "live" = X API usage; "local" = this app's import counter against your configured cap */
   usageSource?: "live" | "local";
+  importUsed?: number;
+  importCap?: number;
 };
 
 export function AccountStats({
@@ -25,6 +28,8 @@ export function AccountStats({
   pend,
   total,
   usageSource = "local",
+  importUsed = used,
+  importCap = cap,
 }: Props) {
   const isPrepaid = tab === "x" && bal !== null;
   const isLiveApi = tab === "x" && live && usageSource === "live";
@@ -70,6 +75,9 @@ export function AccountStats({
           <p className="text-xs font-semibold uppercase text-on-surface-variant">{unit}</p>
         </div>
         <p className="mt-1 text-sm text-on-surface-variant leading-tight">{note}</p>
+        {(isLiveApi || isPrepaid) && <p className="mt-2 text-xs text-on-surface-variant">Local new-entry imports: {importUsed.toLocaleString()} of {importCap.toLocaleString()} configured monthly cap.</p>}
+        {tab === "yt" && <p className="mt-2 text-xs text-on-surface-variant">This local entry cap does not measure YouTube API quota.</p>}
+        <p className="mt-2 text-xs text-on-surface-variant"><Link className="text-primary underline" href="/processing">LLM requests and token usage</Link> are recorded separately in Processing.</p>
         {tab === "x" && cost !== null && (
           <p className="mt-1 text-[10px] font-bold uppercase text-on-surface-variant/60">
             Cost per call: ${cost}
@@ -98,21 +106,21 @@ export function AccountStats({
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-xs uppercase text-on-surface-variant">Summarized</p>
-            <p className="font-semibold tabular-nums">{sum.toLocaleString()}</p>
+            <p className="font-semibold tabular-nums"><Link href={`/bookmarks?source=${tab}&status=summarized`}>{sum.toLocaleString()}</Link></p>
           </div>
           <div>
             <p className="text-xs uppercase text-on-surface-variant" title="Items with no summary yet">
               Pending
             </p>
             <p className={`font-semibold tabular-nums ${pend > 0 ? "text-secondary" : ""}`}>
-              {pend.toLocaleString()}
+              <Link href={`/bookmarks?source=${tab}&status=pending`}>{pend.toLocaleString()}</Link>
             </p>
           </div>
         </div>
         <p className="mt-3 text-[11px] font-medium text-on-surface-variant/60">
           Total stored locally:{" "}
-          <span className="font-bold text-on-surface tabular-nums">{total.toLocaleString()}</span>{" "}
-          {tab === "yt" ? "videos" : "tweets"}
+          <Link className="font-bold text-on-surface tabular-nums" href={`/bookmarks?source=${tab}`}>{total.toLocaleString()}</Link>{" "}
+          {tab === "yt" ? "playlist entries" : "posts"}
           {sum + pend === total ? null : (
             <span className="block mt-0.5 text-error/80">
               Counts out of sync (summarized + pending ≠ total)

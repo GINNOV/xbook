@@ -21,7 +21,7 @@ const scenarios: Scenario[] = [
       "Run Process inbox on your X and YouTube saves, then use semantic search in the Library to surface the right items by meaning.",
     steps: [
       "Bookmark freely on X and YouTube as you discover ideas.",
-      "On the Dashboard, click Process inbox (sync + enrich + index in one pass).",
+      "On the Dashboard, click Process inbox (import, summarize, and index in one saved run).",
       'In the Library, search by concept—e.g. "housing policy arguments" or "local LLM setup tips."',
     ],
     win: "Your bookmark graveyard becomes a private, searchable second brain—no exact phrase required.",
@@ -77,7 +77,7 @@ export default function DocsScenariosPage() {
             Scenarios
           </h1>
           <p className="max-w-2xl text-lg text-on-surface-variant leading-relaxed">
-            Practical ways to leverage Xbook. We highlight a few strong patterns here and will
+            Practical ways to use XBook. We highlight a few strong patterns here and will
             expand this catalog as more use cases emerge.
           </p>
         </header>
@@ -100,7 +100,7 @@ export default function DocsScenariosPage() {
               <p className="text-sm text-on-surface-variant leading-6">{scenario.summary}</p>
               <div className="rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-4 space-y-2">
                 <p className="text-xs font-bold uppercase text-on-surface-variant">
-                  How to leverage it
+                  Steps
                 </p>
                 <ol className="list-decimal list-inside space-y-1.5 text-sm text-on-surface-variant leading-6">
                   {scenario.steps.map((step) => (

@@ -42,16 +42,16 @@ test.afterAll(async () => {
 
 test("exact word and phrase controls preserve scope and explicit sort", async ({ page }) => {
   await page.goto(`/bookmarks?${parameters}`);
-  await expect(page.getByRole("button", { name: new RegExp(matching) })).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(substring) })).toBeVisible();
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toBeVisible();
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${substring}`) })).toBeVisible();
 
   await page.getByLabel("Text matching").selectOption("word");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page).toHaveURL(/textMode=word/);
-  await expect(page.getByRole("button", { name: new RegExp(matching) })).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(substring) })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toBeVisible();
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${substring}`) })).toHaveCount(0);
   await expect(page.getByLabel("Category")).toHaveValue("R2 models");
-  await expect(page.getByLabel("Folder")).toHaveValue("r2-search-folder");
+  await expect(page.getByLabel("Folder", { exact: true })).toHaveValue("r2-search-folder");
   const current = new URL(page.url()).searchParams;
   expect(current.get("sort")).toBe("author");
   expect(current.get("dir")).toBe("asc");
@@ -61,10 +61,10 @@ test("exact word and phrase controls preserve scope and explicit sort", async ({
   await page.getByLabel("Text matching").selectOption("phrase");
   await page.getByLabel("Search bookmarks").fill("embedding nomic");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("button", { name: new RegExp(matching) })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toHaveCount(0);
   await page.getByLabel("Search bookmarks").fill("nomic embedding");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("button", { name: new RegExp(matching) })).toBeVisible();
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toBeVisible();
   await page.screenshot({ path: "docs/repair-evidence/r2-exact-search.png", fullPage: true });
 });
 
@@ -73,11 +73,11 @@ test("unavailable embeddings keeps scoped exact results and a Settings recovery 
   const fallback = page.getByRole("status").filter({ hasText: "Semantic search is unavailable" });
   await expect(fallback).toBeVisible();
   await expect(fallback.getByRole("link", { name: /embedding model in Settings/ })).toHaveAttribute("href", "/settings");
-  await expect(page.getByRole("button", { name: new RegExp(matching) })).toBeVisible();
-  await expect(page.getByRole("button", { name: new RegExp(substring) })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /R2 excluded category/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toBeVisible();
+  await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${substring}`) })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Read bookmark: R2 excluded category/ })).toHaveCount(0);
   await expect(page.getByLabel("Text matching")).toHaveValue("word");
   await expect(page.getByLabel("Category")).toHaveValue("R2 models");
-  await expect(page.getByLabel("Folder")).toHaveValue("r2-search-folder");
+  await expect(page.getByLabel("Folder", { exact: true })).toHaveValue("r2-search-folder");
   await page.screenshot({ path: "docs/repair-evidence/r2-semantic-fallback.png", fullPage: true });
 });

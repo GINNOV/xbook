@@ -1,45 +1,28 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSettingsContext } from "./useSettingsContext";
+import { connectionFingerprint } from "../../lib/settings-draft";
 import { isTauriApp, openExternalUrl } from "@/app/lib/tauri";
 import { liveYouTubeRedirectUri, waitForYouTubeToken } from "@/app/lib/youtube-oauth-connect";
 
 export function useYouTubeSettings() {
-  const { form, setForm, setSaving, setMessage, persistSettings } = useSettingsContext();
+  const { form, setForm, setSaving, setMessage, persistSettings, applySavedPatch, connectionTests, testConnection } = useSettingsContext();
   
-  const [ytTest, setYtTest] = useState<string | null>(null);
-  const [testingYt, setTestingYt] = useState(false);
+  const test = connectionTests.yt?.fingerprint === connectionFingerprint("yt", form) ? connectionTests.yt : undefined;
   const [runningYtDiagnostics, setRunningYtDiagnostics] = useState(false);
   const [ytDiagnosticResult, setYtDiagnosticResult] = useState<unknown>(null);
   const [generatingYtUrl, setGeneratingYtUrl] = useState(false);
   const [oauthWaiting, setOauthWaiting] = useState(false);
+  const waitingController = useRef<AbortController | null>(null);
+  useEffect(() => () => waitingController.current?.abort(), []);
+  const stopWaiting = () => {
+    waitingController.current?.abort(); setOauthWaiting(false);
+    setMessage("Stopped waiting for sign-in. Account authorization and saved library items are unchanged.");
+  };
   const ytJsonInputRef = useRef<HTMLInputElement | null>(null);
 
-  const testYt = async () => {
-    setTestingYt(true);
-    setYtTest(null);
-    try {
-      const res = await fetch("/api/settings/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "yt", ...form }),
-      });
-      const json = await res.json();
-      const errorMessage =
-        typeof json.error === "string"
-          ? json.error
-          : json.error
-            ? JSON.stringify(json.error)
-            : null;
-      if (!res.ok) throw new Error(errorMessage ?? "YouTube test failed");
-      setYtTest(json.message ?? "YouTube connection ok.");
-    } catch (error) {
-      setYtTest(error instanceof Error ? error.message : "YouTube test failed");
-    } finally {
-      setTestingYt(false);
-    }
-  };
+  const testYt = () => testConnection("yt");
 
   const clearYouTubeOAuth = async () => {
     setSaving(true);
@@ -58,14 +41,13 @@ export function useYouTubeSettings() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Clear failed");
-      setForm((prev) => ({
-        ...prev,
+      applySavedPatch({
         ytAccessToken: null,
         ytRefreshToken: null,
         ytTokenExpiresAt: null,
         ytScope: null,
         ytTokenType: null,
-      }));
+      });
       setMessage("YouTube OAuth connection cleared.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Clear failed");
@@ -90,26 +72,34 @@ export function useYouTubeSettings() {
     if (isTauriApp()) {
       setMessage("Complete YouTube sign-in in your browser. This window updates when it finishes.");
     }
-    await openExternalUrl("/api/oauth/youtube/start");
+    try { await openExternalUrl("/api/oauth/youtube/start"); }
+    catch (error) { setOauthWaiting(false); setMessage(error instanceof Error ? error.message : "Unable to open sign-in. Try again."); return; }
     if (!isTauriApp()) {
       setOauthWaiting(false);
       return;
     }
 
-    const connected = await waitForYouTubeToken({ previousExpiresAt });
+    waitingController.current?.abort();
+    const controller = new AbortController(); waitingController.current = controller;
+    let connected;
+    try { connected = await waitForYouTubeToken({ previousExpiresAt, signal: controller.signal }); }
+    catch (error) {
+      if (controller.signal.aborted) return;
+      setOauthWaiting(false); setMessage(error instanceof Error ? error.message : "Sign-in check failed. Try testing the connection."); return;
+    }
+    if (controller.signal.aborted) return;
     setOauthWaiting(false);
     if (connected) {
       const expiry = connected.ytTokenExpiresAt;
-      setForm((prev) => ({
-        ...prev,
-        ytAccessToken: connected.ytAccessToken ?? prev.ytAccessToken,
-        ytRefreshToken: connected.ytRefreshToken ?? prev.ytRefreshToken,
+      applySavedPatch({
+        ytAccessToken: connected.ytAccessToken ?? form.ytAccessToken,
+        ytRefreshToken: connected.ytRefreshToken ?? form.ytRefreshToken,
         ytTokenExpiresAt:
-          expiry instanceof Date ? expiry.toISOString() : expiry ?? prev.ytTokenExpiresAt,
-        ytScope: connected.ytScope ?? prev.ytScope,
-        ytTokenType: connected.ytTokenType ?? prev.ytTokenType,
-        ytRedirectUri: connected.ytRedirectUri ?? prev.ytRedirectUri,
-      }));
+          expiry instanceof Date ? expiry.toISOString() : expiry ?? form.ytTokenExpiresAt,
+        ytScope: connected.ytScope ?? form.ytScope,
+        ytTokenType: connected.ytTokenType ?? form.ytTokenType,
+        ytRedirectUri: connected.ytRedirectUri ?? form.ytRedirectUri,
+      });
       setMessage("YouTube connected.");
       return;
     }
@@ -193,12 +183,13 @@ export function useYouTubeSettings() {
   };
 
   return {
-    ytTest,
-    testingYt,
+    ytTest: test?.message ?? null,
+    testingYt: test?.status === "testing",
     runningYtDiagnostics,
     ytDiagnosticResult,
     generatingYtUrl,
     oauthWaiting,
+    stopWaiting,
     ytJsonInputRef,
     testYt,
     clearYouTubeOAuth,

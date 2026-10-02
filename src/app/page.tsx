@@ -32,12 +32,16 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
           liveXUsage={live.liveXUsage}
           costPerCall={live.costPerCall}
           usageSource={live.usageSource}
+          importUsed={stats.usage.usedBookmarks}
+          importCap={tab === "yt" ? stats.settings?.ytMonthlyCap ?? 100 : stats.settings?.monthlyCap ?? 100}
           enrichBatchSize={stats.settings?.enrichBatchSize ?? 50}
           lastSync={lastSync}
           failedCount={stats.failedItemsCount}
           blockedCount={stats.skippedItemsCount}
           indexedCount={stats.indexHealth?.withEmbedding ?? 0}
           unindexedCount={stats.indexHealth?.unindexed ?? 0}
+          missingCount={stats.indexHealth.missing}
+          staleCount={stats.indexHealth.stale}
           settings={stats.settings}
           readiness={readiness}
         />

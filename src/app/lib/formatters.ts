@@ -1,3 +1,4 @@
+import { operationCheckpoint, operationMessage, operationRunSchema } from "./operation-observer";
 import { resolveRunStatus } from "@/lib/run-outcome";
 export { resolveRunStatus } from "@/lib/run-outcome";
 
@@ -35,6 +36,9 @@ const RUN_TYPE_LABELS: Record<string, string> = {
   folder_enrichment: "Folder enrichment",
   single_reprocess: "Single reprocess",
   embedding_sync: "Embedding sync",
+  import_pipeline: "Import, summarize and index",
+  x_folder_import: "X folder import",
+  youtube_playlist_import: "YouTube playlist import",
   x_sync: "X sync",
   youtube_sync: "YouTube sync",
 };
@@ -71,6 +75,7 @@ export type RunOutcomeInput = {
   failed?: number | null;
   skipped?: number | null;
   notes?: string | null;
+  jobJson?: string | null;
 };
 
 /**
@@ -78,6 +83,8 @@ export type RunOutcomeInput = {
  * Prefers counts over generic notes; falls back to notes / "No details".
  */
 export function formatRunOutcome(run: RunOutcomeInput): string {
+  const snapshot = operationRunSchema.safeParse(run);
+  if (snapshot.success && operationCheckpoint(snapshot.data)?.kind === "import") return operationMessage(snapshot.data);
   const total = Number(run.total ?? 0) || 0;
   const processed = Number(run.processed ?? 0) || 0;
   const updated = Number(run.updated ?? 0) || 0;

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useOperationObserver } from "../useOperationObserver";
+import { operationMessage } from "../../lib/operation-observer";
 import { useSettingsContext } from "./useSettingsContext";
 
 export function useUsageSettings() {
@@ -8,7 +10,7 @@ export function useUsageSettings() {
   
   const [markingLatest, setMarkingLatest] = useState(false);
   const [resettingBaseline, setResettingBaseline] = useState(false);
-  const [syncingEmbeddings, setSyncingEmbeddings] = useState(false);
+  const operation = useOperationObserver({ kind: "embedding" });
 
   const markLatest = async () => {
     setMarkingLatest(true);
@@ -41,24 +43,18 @@ export function useUsageSettings() {
   };
 
   const syncEmbeddings = async () => {
-    setSyncingEmbeddings(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/bookmarks/embeddings/sync", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Sync failed");
-      setMessage(`Started embedding sync. Processed: ${json.updated}, Failed: ${json.failed}`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sync failed");
-    } finally {
-      setSyncingEmbeddings(false);
-    }
+      const run = await operation.submit("/api/bookmarks/embeddings/sync?full=true");
+      setMessage(run ? operationMessage(run) : "No bookmarks need embedding sync.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Sync failed"); }
   };
 
   return {
     markingLatest,
     resettingBaseline,
-    syncingEmbeddings,
+    syncingEmbeddings: operation.active || operation.submitting,
+    operation,
     markLatest,
     resetBaseline,
     syncEmbeddings,

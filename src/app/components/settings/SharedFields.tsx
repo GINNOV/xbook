@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type React from "react";
 import type { InputHTMLAttributes } from "react";
 
@@ -147,13 +147,17 @@ type SecretFieldProps = {
 
 export function SecretField({ label, value, onChange, placeholder, inputProps }: SecretFieldProps) {
   const [visible, setVisible] = useState(false);
+  const generatedId = useId();
+  const inputId = inputProps?.id ?? generatedId;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
-        <label className="text-sm font-semibold">{label}</label>
+        <label htmlFor={inputId} className="text-sm font-semibold">{label}</label>
         <button
           type="button"
+          aria-controls={inputId}
+          aria-pressed={visible}
           onClick={() => setVisible((prev) => !prev)}
           className="text-xs font-semibold text-slate-500 transition hover:text-slate-800"
         >
@@ -162,6 +166,7 @@ export function SecretField({ label, value, onChange, placeholder, inputProps }:
       </div>
       <input
         {...inputProps}
+        id={inputId}
         type={visible ? "text" : "password"}
         value={value ?? ""}
         onChange={onChange}

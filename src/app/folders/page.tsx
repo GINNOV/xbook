@@ -7,6 +7,7 @@ import { toIsoDate } from "@/lib/folders";
 import { fetchYouTubePlaylists } from "@/lib/youtube";
 import { getSettings } from "@/lib/settings";
 import { localVideoIdentity } from "../lib/folder-links";
+import type { Folder } from "../hooks/useFoldersPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,9 @@ export default async function FoldersPage({ searchParams }: PageProps) {
   if (tab === "yt") {
     try { ytLivePlaylists = await fetchYouTubePlaylists(); } catch { /* Local folders remain usable when the provider is unavailable. */ }
   }
-  const ytById = new Map<string, { id: string; name: string | null; total: number; uniqueVideos: number; sourceEntries: number | null; lastFetchedAt: string | null; lastProcessedAt: string | null }>(ytFolders.map((folder) => [folder.id, {
+  const ytById = new Map<string, Folder>(ytFolders.map((folder) => [folder.id, {
     id: folder.id, name: folder.name, total: localByFolder.get(folder.id)?.total ?? 0,
-    uniqueVideos: localByFolder.get(folder.id)?.videos.size ?? 0, sourceEntries: null satisfies number | null,
+    uniqueVideos: localByFolder.get(folder.id)?.videos.size ?? 0, sourceEntries: null,
     lastFetchedAt: toIsoDate(folder.lastFetchedAt), lastProcessedAt: toIsoDate(folder.lastProcessedAt),
   }]));
   for (const playlist of ytLivePlaylists ?? []) {

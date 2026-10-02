@@ -14,6 +14,9 @@ describe("useXSettings", () => {
     vi.clearAllMocks();
     vi.mocked(useSettingsContext).mockReturnValue({
       form: { xUsername: "testuser" },
+      applySavedPatch: vi.fn(),
+      connectionTests: {},
+      testConnection: vi.fn(),
       setMessage: mockSetMessage,
       setForm: mockSetForm,
       setSaving: mockSetSaving,

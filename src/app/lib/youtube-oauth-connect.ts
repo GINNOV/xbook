@@ -18,6 +18,7 @@ function expiresKey(value: string | Date | null | undefined): string {
 }
 
 export async function waitForYouTubeToken(options: {
+  signal?: AbortSignal;
   previousExpiresAt?: string | Date | null;
   timeoutMs?: number;
   intervalMs?: number;
@@ -30,8 +31,10 @@ export async function waitForYouTubeToken(options: {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    const res = await fetchImpl("/api/settings", { cache: "no-store" });
+    options.signal?.throwIfAborted();
+    const res = await fetchImpl("/api/settings", { cache: "no-store", ...(options.signal ? { signal: options.signal } : {}) });
     const json = (await res.json()) as { settings?: YouTubeTokenSnapshot };
+    options.signal?.throwIfAborted();
     const settings = json.settings;
     const nextExpiry = expiresKey(settings?.ytTokenExpiresAt);
     if (settings?.ytAccessToken && nextExpiry && nextExpiry !== previous) {
@@ -39,7 +42,13 @@ export async function waitForYouTubeToken(options: {
     }
     const remaining = deadline - Date.now();
     if (remaining <= 0) break;
-    await new Promise((resolve) => setTimeout(resolve, Math.min(intervalMs, remaining)));
+    await new Promise<void>((resolve, reject) => {
+      const finish = () => { options.signal?.removeEventListener("abort", cancel); resolve(); };
+      const timer = setTimeout(finish, Math.min(intervalMs, remaining));
+      const cancel = () => { clearTimeout(timer); options.signal?.removeEventListener("abort", cancel); reject(options.signal?.reason ?? new DOMException("Aborted", "AbortError")); };
+      options.signal?.addEventListener("abort", cancel, { once: true });
+      if (options.signal?.aborted) cancel();
+    });
   }
   return null;
 }

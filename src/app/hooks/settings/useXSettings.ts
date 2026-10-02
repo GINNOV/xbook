@@ -2,43 +2,20 @@
 
 import { useState } from "react";
 import { useSettingsContext } from "./useSettingsContext";
+import { connectionFingerprint } from "../../lib/settings-draft";
 import { openExternalUrl } from "@/app/lib/tauri";
 
 export function useXSettings() {
-  const { form, setForm, setSaving, setMessage, persistSettings } = useSettingsContext();
+  const { form, setForm, setSaving, setMessage, persistSettings, applySavedPatch, connectionTests, testConnection } = useSettingsContext();
   
-  const [xTest, setXTest] = useState<string | null>(null);
-  const [testingX, setTestingX] = useState(false);
+  const test = connectionTests.x?.fingerprint === connectionFingerprint("x", form) ? connectionTests.x : undefined;
   const [lookupUsername, setLookupUsername] = useState("");
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [runningXDiagnostics, setRunningXDiagnostics] = useState(false);
   const [xDiagnosticResult, setXDiagnosticResult] = useState<unknown>(null);
 
-  const testX = async () => {
-    setTestingX(true);
-    setXTest(null);
-    try {
-      const res = await fetch("/api/settings/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "x", ...form }),
-      });
-      const json = await res.json();
-      const errorMessage =
-        typeof json.error === "string"
-          ? json.error
-          : json.error
-            ? JSON.stringify(json.error)
-            : null;
-      if (!res.ok) throw new Error(errorMessage ?? "X test failed");
-      setXTest(json.message ?? "X connection ok.");
-    } catch (error) {
-      setXTest(error instanceof Error ? error.message : "X test failed");
-    } finally {
-      setTestingX(false);
-    }
-  };
+  const testX = () => testConnection("x");
 
   const clearOAuth = async () => {
     setSaving(true);
@@ -57,14 +34,13 @@ export function useXSettings() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Clear failed");
-      setForm((prev) => ({
-        ...prev,
+      applySavedPatch({
         xAccessToken: null,
         xRefreshToken: null,
         xTokenExpiresAt: null,
         xScope: null,
         xTokenType: null,
-      }));
+      });
       setMessage("X OAuth connection cleared.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Clear failed");
@@ -129,8 +105,8 @@ export function useXSettings() {
   };
 
   return {
-    xTest,
-    testingX,
+    xTest: test?.message ?? null,
+    testingX: test?.status === "testing",
     lookupUsername,
     setLookupUsername,
     lookupMessage,

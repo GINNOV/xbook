@@ -39,7 +39,7 @@ export default function DocsProcessInboxPage() {
           </p>
           <ol className="list-decimal list-inside space-y-2 text-sm text-on-surface-variant leading-6">
             <li>
-              <strong>Sync / import</strong> — pull new bookmarks or saved videos from the platform (no LLM
+              <strong>Import</strong> — pull new bookmarks or saved videos from the platform (no LLM
               required).
             </li>
             <li>
@@ -64,6 +64,18 @@ export default function DocsProcessInboxPage() {
           </p>
         </div>
 
+        <section className="rounded-2xl border border-outline-variant/30 bg-white p-6 space-y-3">
+          <h2 className="text-lg font-bold">Continue from saved progress</h2>
+          <p className="text-sm leading-6 text-on-surface-variant">Process inbox submits one server-owned run for import, summarization, and indexing. Navigating away does not cancel the run. Reopen the Dashboard or Processing to observe the same run and its cumulative counts. Stop persists a checkpoint; Resume continues that run after you repair its cause.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">A monthly new-entry cap pauses import with buffered work intact. Raise the relevant source cap in Settings → Limits, then Resume. Provider request quota is separate. A partial run contains completed work and unresolved failures; it is not complete. Failed-folder retry preserves completed folders and saved page progress.</p>
+          <h2 className="text-lg font-bold">Folders and playlist entries</h2>
+          <p className="text-sm leading-6 text-on-surface-variant"><Link href="/folders" className="text-primary hover:underline">Folder Management</Link> separates Sync names, Import, Summarize, and Index. Names and local counts open the exact source and folder. Import all continues on the server while you navigate. Refreshing an existing entry preserves manual summaries, read dates, and IDs.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">Local playlist entries and unique videos are different counts. A video saved in two playlists has two entries. Source playlist totals can exceed locally imported counts. Unknown upload dates and authors remain unknown; playlist-added time is not the upload date. Repair saved metadata repairs cached fields without changing bookmark IDs.</p>
+          <h2 className="text-lg font-bold">Read Dashboard and Processing counts</h2>
+          <p className="text-sm leading-6 text-on-surface-variant">Dashboard health follows the selected X or YouTube source. Index coverage is usable vectors divided by all local items in that source. Missing vectors on summarized items, stale or incompatible vectors, and pending summaries remain separate. Count links open the matching Library filter. Last import activity comes from a source import run that processed work.</p>
+          <p className="text-sm leading-6 text-on-surface-variant">Processing shows authoritative run status, cumulative outcomes, saved causes, and recovery actions. Import pages and completed folders are not bookmark attempts. Opening Processing does not start another run.</p>
+        </section>
+
         <div className="rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-6 space-y-4">
           <h2 className="text-lg font-bold text-on-surface">Advanced actions</h2>
           <p className="text-sm text-on-surface-variant leading-6">
@@ -71,7 +83,7 @@ export default function DocsProcessInboxPage() {
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border border-outline-variant/40 bg-white p-4 space-y-1">
-              <p className="text-sm font-bold text-on-surface">Sync X / Sync YT</p>
+              <p className="text-sm font-bold text-on-surface">Import X / Import YT</p>
               <p className="text-sm text-on-surface-variant leading-6">
                 Import only—fetch new items without enriching.
               </p>
