@@ -134,13 +134,20 @@ describe("generic durable operations", () => {
   });
   it("recovers legacy runs and finalizes a crash after the final durable item commit", async () => {
     const runId = await submit(undefined, ["a"]);
-    const legacy = await prisma.operationRun.create({ data: { type: "enrichment_full", status: "running" } });
-    await prisma.importRun.create({ data: {} });
+    const legacy = await prisma.operationRun.create({ data: { type: "enrichment_full", status: "running", notes: "Original failure context" } });
+    const invalidIndex = await prisma.operationRun.create({ data: { type: "embedding_sync", status: "running", notes: "Original embedding diagnostics" } });
+    const imported = await prisma.importRun.create({ data: { notes: "Original import diagnostics" } });
     await runOperationJob(prisma, { runId, adapter });
     await prisma.operationRun.update({ where: { id: runId }, data: { status: "running", leaseOwner: "dead-process", leaseUntil: new Date(0), finishedAt: null } });
     await recoverLegacyOperations();
     expect(await prisma.operationRun.findUnique({ where: { id: legacy.id } })).toMatchObject({ status: "failed", notes: expect.stringContaining("Start a new operation") });
     expect(await prisma.importRun.count({ where: { finishedAt: null } })).toBe(0);
+    expect((await prisma.operationRun.findUniqueOrThrow({ where: { id: invalidIndex.id } })).notes).toBe("Original embedding diagnostics\nInterrupted older embedding run has no valid checkpoint. Start a new embedding sync.");
+    const importAfter = await prisma.importRun.findUniqueOrThrow({ where: { id: imported.id } });
+    expect(importAfter.notes).toBe("Original import diagnostics\nInterrupted older import. Start a new import to continue.");
+    expect((await prisma.operationRun.findUniqueOrThrow({ where: { id: legacy.id } })).notes).toContain("Original failure context");
+    await recoverLegacyOperations();
+    expect((await prisma.importRun.findUniqueOrThrow({ where: { id: imported.id } })).notes).toBe(importAfter.notes);
     await processOperationQueue();
     expect(await prisma.operationRun.findUnique({ where: { id: runId } })).toMatchObject({ status: "completed", updated: 1 });
   });

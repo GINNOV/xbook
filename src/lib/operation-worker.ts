@@ -13,23 +13,27 @@ export async function recoverLegacyEmbeddingJobs(db: PrismaClient = prisma) {
   for (const run of legacyEmbeddings) {
     const config = parseEmbeddingJobConfig(run.configJson);
     if (!config) {
-      await db.operationRun.updateMany({ where: { id: run.id, jobJson: null, configJson: run.configJson }, data: { status: "failed", finishedAt: new Date(), notes: "Interrupted older embedding run has no valid checkpoint. Start a new embedding sync." } });
+      await db.operationRun.updateMany({ where: { id: run.id, jobJson: null, configJson: run.configJson, status: run.status, notes: run.notes }, data: { status: "failed", finishedAt: new Date(), notes: [run.notes, "Interrupted older embedding run has no valid checkpoint. Start a new embedding sync."].filter(Boolean).join("\n") } });
       continue;
     }
     if (config.embeddingJob.leaseUntil > Date.now()) continue;
     const job = { version: 1, kind: "embedding", requestHash: run.id, scope: { source: run.source === "x" || run.source === "yt" ? run.source : null, folderId: null, replaceEdited: false },
       settings: { embedding: { model: typeof config.embeddingModel === "string" ? config.embeddingModel : "", endpoint: typeof config.embeddingBaseUrl === "string" ? config.embeddingBaseUrl : "http://localhost:1234/v1" } },
       items: config.embeddingJob.items.map((item) => ({ ...item, attempts: item.status === "pending" ? 0 : 1, retryAt: 0, error: null })), maxAttempts: 3, error: null, repairAction: null };
-    await db.operationRun.updateMany({ where: { id: run.id, configJson: run.configJson, jobJson: null }, data: { status: "queued", jobJson: JSON.stringify(job), leaseOwner: null, leaseUntil: null } });
+    await db.operationRun.updateMany({ where: { id: run.id, configJson: run.configJson, jobJson: null, status: run.status }, data: { status: "queued", jobJson: JSON.stringify(job), leaseOwner: null, leaseUntil: null } });
   }
 }
 export async function recoverLegacyOperations(db: PrismaClient = prisma) {
   await recoverLegacyEmbeddingJobs(db);
   // Older runs cannot prove item completion from their progress events.
-  await db.operationRun.updateMany({ where: { jobJson: null, type: { not: "embedding_sync" }, status: { in: ["queued", "running"] } }, data: {
-    status: "failed", finishedAt: new Date(), notes: "Interrupted older operation has no durable checkpoint. Start a new operation to continue.",
+  const interrupted = await db.operationRun.findMany({ where: { jobJson: null, type: { not: "embedding_sync" }, status: { in: ["queued", "running"] } } });
+  for (const run of interrupted) await db.operationRun.updateMany({ where: { id: run.id, jobJson: null, status: run.status, notes: run.notes }, data: {
+    status: "failed", finishedAt: new Date(), notes: [run.notes, "Interrupted older operation has no durable checkpoint. Start a new operation to continue."].filter(Boolean).join("\n"),
   } });
-  await db.importRun.updateMany({ where: { finishedAt: null }, data: { finishedAt: new Date(), notes: "Interrupted older import. Start a new import to continue." } });
+  const imports = await db.importRun.findMany({ where: { finishedAt: null } });
+  for (const run of imports) await db.importRun.updateMany({ where: { id: run.id, finishedAt: null, notes: run.notes }, data: {
+    finishedAt: new Date(), notes: [run.notes, "Interrupted older import. Start a new import to continue."].filter(Boolean).join("\n"),
+  } });
 }
 export async function processOperationQueue() {
   await recoverLegacyEmbeddingJobs();
