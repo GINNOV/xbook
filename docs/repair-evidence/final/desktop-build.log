@@ -161,9 +161,9 @@ Import trace:
   Finished TypeScript in 4.1s ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/33) ...
-  Generating static pages using 9 workers (8/33) 
-  Generating static pages using 9 workers (16/33) 
-  Generating static pages using 9 workers (24/33) 
+  Generating static pages using 9 workers (8/33)
+  Generating static pages using 9 workers (16/33)
+  Generating static pages using 9 workers (24/33)
 ✓ Generating static pages using 9 workers (33/33) in 144ms
   Finalizing page optimization ...
 
@@ -249,4 +249,3 @@ Standalone desktop build complete! Location: src-tauri/resources/
         Warn Skipping signing due to --no-sign flag.
     Finished 1 bundle at:
         /Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri/target/release/bundle/macos/xbook.app
-

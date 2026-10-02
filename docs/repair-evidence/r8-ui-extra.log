@@ -59,4 +59,3 @@ Number of calls: 1
       Tests  1 failed | 12 passed (13)
    Start at  18:16:47
    Duration  877ms (transform 188ms, setup 84ms, import 332ms, tests 248ms, environment 620ms)
-
