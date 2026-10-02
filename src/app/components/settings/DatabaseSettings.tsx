@@ -77,7 +77,7 @@ export function DatabaseSettings() {
             
             <div className="flex flex-col gap-3">
               <a
-                href={`/api/settings/database/backup?includeSecrets=${includeSecrets}`}
+                href={`/api/settings/database/backup?${new URLSearchParams({ customName, includeSecrets: String(includeSecrets) })}`}
                 download
                 className={`${secondaryButtonClass} text-center inline-block w-full`}
               >
