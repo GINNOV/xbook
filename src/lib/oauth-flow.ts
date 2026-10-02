@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "./db";
 import { getSettings, type AppSettings } from "./settings";
 import { generateCodeChallenge, generateCodeVerifier, generateState } from "./pkce";
-import { resolveLoopbackRedirectUri } from "./oauth-redirect";
+import { requestPublicOrigin, resolveLoopbackRedirectUri } from "./oauth-redirect";
 import { credentialWhere, oauthJson, requestOAuthTokens, tokenUpdate, type OAuthProvider } from "./oauth-tokens";
 
 export const OAUTH_SESSION_TTL_MS = 10 * 60 * 1000;
@@ -57,13 +57,14 @@ export async function createOAuthUrl(provider: OAuthProvider, origin: string, se
 }
 
 export async function oauthStart(provider: OAuthProvider, request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = requestPublicOrigin(request);
   try { return NextResponse.redirect(await createOAuthUrl(provider, origin, await getSettings())); }
   catch { const redirect = new URL("/settings", origin); redirect.searchParams.set("error", provider === "x" ? "missing_client_id" : "missing_yt_client_id"); return NextResponse.redirect(redirect); }
 }
 
 export async function oauthCallback(provider: OAuthProvider, request: Request) {
   const url = new URL(request.url);
+  const origin = requestPublicOrigin(request);
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
   const denied = url.searchParams.has("error");
@@ -86,13 +87,13 @@ export async function oauthCallback(provider: OAuthProvider, request: Request) {
     if (reserved.count !== 1) throw new Error("OAuth sign-in changed or was cancelled. Start sign-in again in Settings.");
     claimed = claim;
     if (denied) {
-      const redirect = new URL(provider === "x" ? "/settings" : "/oauth/done", url.origin);
+      const redirect = new URL(provider === "x" ? "/settings" : "/oauth/done", origin);
       if (provider === "yt") redirect.searchParams.set("provider", "youtube");
       redirect.searchParams.set("error", "Sign-in cancelled. Existing connection was preserved.");
       return NextResponse.redirect(redirect);
     }
     const snapshot = await getSettings();
-    const configuration = config(provider, snapshot, url.origin);
+    const configuration = config(provider, snapshot, origin);
     if (configurationFingerprint(configuration) !== data.configuration) throw new Error("OAuth configuration changed. Save Settings and start sign-in again.");
     const body = new URLSearchParams({ grant_type: "authorization_code", code: code ?? "", client_id: data.clientId, redirect_uri: data.redirectUri, code_verifier: data.verifier });
     const headers: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
@@ -119,7 +120,7 @@ export async function oauthCallback(provider: OAuthProvider, request: Request) {
       request.signal.throwIfAborted();
       if (saved.count !== 1) throw new Error("OAuth connection changed. Start sign-in again in Settings.");
     });
-    const redirect = new URL(provider === "x" ? "/settings" : "/oauth/done", url.origin);
+    const redirect = new URL(provider === "x" ? "/settings" : "/oauth/done", origin);
     redirect.searchParams.set(provider === "x" ? "oauth" : "provider", provider === "x" ? "success" : "youtube");
     return NextResponse.redirect(redirect);
   } catch (error) {
