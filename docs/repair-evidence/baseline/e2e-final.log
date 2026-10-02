@@ -8,7 +8,7 @@
 [2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
 [2m[WebServer] [22m(node:7849) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
-[2m[WebServer] [22m⨯ Error [PrismaClientKnownRequestError]: 
+[2m[WebServer] [22m⨯ Error [PrismaClientKnownRequestError]:
 [2m[WebServer] [22mInvalid `{imported module ./src/lib/db.ts}["prisma"].usageMonth.upsert()` invocation in
 [2m[WebServer] [22m/Users/joseph/.codex/worktrees/complete-repairs/xbook/.next/dev/server/chunks/ssr/[root-of-the-server]__1vq94bf._.js:2275:146
 [2m[WebServer] [22m
@@ -60,4 +60,3 @@ ReferenceError: exports is not defined in ES module scope
   5 |
   6 | export default async function setup() {
     at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/e2e/setup.ts:3:23
-

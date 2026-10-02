@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
+import { z } from "zod";
 import { DatabaseMaintenance, writeRestoreJournal } from "@/lib/database-maintenance";
 
 const require = createRequire(import.meta.url);
@@ -15,13 +16,17 @@ const { compileMaintenance, validateNodeBinary } = require("../../scripts/deskto
 let directory: string;
 let active: string;
 let compiled: string;
+const migrationDirectory = path.resolve("prisma/migrations");
+const migrationNames = fs.readdirSync(migrationDirectory).filter((name) => fs.existsSync(path.join(migrationDirectory, name, "migration.sql"))).sort();
+const oldMigrationCount = migrationNames.length - 1;
+const lastMigration = migrationNames.at(-1);
+if (!lastMigration || oldMigrationCount < 1) throw new Error("Startup fixtures require at least two known migrations.");
 
 function fixture(filename: string, id: string, limit: number) {
   const db = new Database(filename);
   db.exec("CREATE TABLE _prisma_migrations (id TEXT PRIMARY KEY NOT NULL, checksum TEXT NOT NULL, finished_at DATETIME, migration_name TEXT NOT NULL, logs TEXT, rolled_back_at DATETIME, started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, applied_steps_count INTEGER NOT NULL DEFAULT 0)");
-  const migrations = path.resolve("prisma/migrations");
-  for (const name of fs.readdirSync(migrations).filter((name) => fs.existsSync(path.join(migrations, name, "migration.sql"))).sort().slice(0, limit)) {
-    const sql = fs.readFileSync(path.join(migrations, name, "migration.sql"), "utf8");
+  for (const name of migrationNames.slice(0, limit)) {
+    const sql = fs.readFileSync(path.join(migrationDirectory, name, "migration.sql"), "utf8");
     db.exec(sql);
     db.prepare("INSERT INTO _prisma_migrations (id,checksum,finished_at,migration_name,applied_steps_count) VALUES (?,?,CURRENT_TIMESTAMP,?,1)").run(randomUUID(), createHash("sha256").update(sql).digest("hex"), name);
   }
@@ -42,11 +47,29 @@ afterEach(() => { fs.rmSync(directory, { recursive: true, force: true }); });
 const startup = (databasePath: string, migrate: () => Promise<void> | void, wait = true) => prepareDatabaseStartup({ databasePath, migrate, loadMaintenance: () => require(compiled), wait });
 const deploy = () => migrateDatabase({ serverDirectory: directory, databaseUrl: `file:${active}`, logFile: path.join(directory, "migration.log") });
 
+function tableColumns(db: Database.Database) {
+  const tables = z.array(z.object({ name: z.string() })).parse(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '_prisma_migrations' ORDER BY name").all());
+  return tables.map(({ name }) => ({ name, columns: db.pragma(`table_info("${name.replaceAll('"', '""')}")`) }));
+}
+
+function assertCurrentSchema(db: Database.Database) {
+  const referencePath = path.join(directory, "current-reference.db");
+  fixture(referencePath, "reference", Infinity);
+  const reference = new Database(referencePath, { readonly: true });
+  try {
+    // Compare every application table, including Bookmark and OperationRun,
+    // against this checkout's complete migration history.
+    expect(tableColumns(db)).toEqual(tableColumns(reference));
+    expect(db.prepare("SELECT COUNT(*) FROM _prisma_migrations").pluck().get()).toBe(migrationNames.length);
+    expect(db.prepare("SELECT COUNT(*) FROM _prisma_migrations WHERE migration_name=?").pluck().get(lastMigration)).toBe(1);
+  } finally { reference.close(); }
+}
+
 function assertCurrent(id: string) {
   const db = new Database(active, { readonly: true });
   try {
     expect(db.prepare("SELECT id FROM Bookmark").pluck().get()).toBe(id);
-    expect(db.prepare("SELECT embeddingModel, embeddingDimensions, embeddingEndpoint FROM Bookmark").get()).toBeDefined();
+    assertCurrentSchema(db);
     expect(db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(fs.existsSync(`${active}.restore.json`)).toBe(false);
   } finally { db.close(); }
@@ -56,12 +79,13 @@ describe("packaged startup restore recovery", () => {
   it("recovers the old original before deploying current migrations under ownership", async () => {
     fixture(active, "replacement", Infinity);
     const recovery = `${active}.recovery-old`;
-    fixture(recovery, "original", 27);
+    fixture(recovery, "original", oldMigrationCount);
     writeRestoreJournal(active, recovery, "replaced");
     await startup(active, () => {
       const recovered = new Database(active, { readonly: true });
       expect(recovered.prepare("SELECT id FROM Bookmark").pluck().get()).toBe("original");
-      expect(() => recovered.prepare("SELECT embeddingModel FROM Bookmark")).toThrow();
+      expect(recovered.prepare("SELECT COUNT(*) FROM _prisma_migrations").pluck().get()).toBe(oldMigrationCount);
+      expect(recovered.prepare("SELECT COUNT(*) FROM _prisma_migrations WHERE migration_name=?").pluck().get(lastMigration)).toBe(0);
       recovered.close();
       const competitor = new Database(`${active}.maintenance.sqlite`, { timeout: 0 });
       expect(() => competitor.exec("BEGIN IMMEDIATE")).toThrow(/locked/);
@@ -78,15 +102,14 @@ describe("packaged startup restore recovery", () => {
     const db = new Database(active, { readonly: true });
     try {
       expect(db.prepare("SELECT COUNT(*) FROM Bookmark").pluck().get()).toBe(0);
-      expect(db.prepare("SELECT embeddingModel FROM Bookmark").all()).toEqual([]);
-      expect(db.prepare("SELECT COUNT(*) FROM _prisma_migrations").pluck().get()).toBe(fs.readdirSync(path.resolve("prisma/migrations")).filter((name) => fs.existsSync(path.join("prisma/migrations", name, "migration.sql"))).length);
+      assertCurrentSchema(db);
     } finally { db.close(); }
   });
 
   it("retains a committed replacement and then migrates it", async () => {
-    fixture(active, "replacement", 27);
+    fixture(active, "replacement", oldMigrationCount);
     const recovery = `${active}.recovery-old`;
-    fixture(recovery, "original", 27);
+    fixture(recovery, "original", oldMigrationCount);
     writeRestoreJournal(active, recovery, "committed");
     await startup(active, deploy);
     assertCurrent("replacement");
