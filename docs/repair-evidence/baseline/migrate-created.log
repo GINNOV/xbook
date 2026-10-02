@@ -1,0 +1,97 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": SQLite database "dev.db" at "file:./dev.db"
+
+28 migrations found in prisma/migrations
+
+Applying migration `20260128145510_init`
+Applying migration `20260128145727_settings`
+Applying migration `20260128151016_oauth_folders_usage`
+Applying migration `20260128151047_bookmark_folders`
+Applying migration `20260128171034_delta_sync`
+Applying migration `20260128171303_llm_prompt`
+Applying migration `20260128172552_enrich_batch_size`
+Applying migration `20260128174226_edited_at`
+Applying migration `20260128174702_read_state`
+Applying migration `20260220023216_youtube_support`
+Applying migration `20260420052000_processing_logs`
+Applying migration `20260422083000_llm_concurrency`
+Applying migration `20260422221828_add_llm_max_tokens`
+Applying migration `20260423015322_add_sound_settings`
+Applying migration `20260424031731_add_media_fields`
+Applying migration `20260424235749_add_target_language`
+Applying migration `20260425000154_add_embedding_field`
+Applying migration `20260426032846_update_default_batch_size`
+Applying migration `20260506030004_add_llm_system_prompt`
+Applying migration `20260506030659_add_llm_limits`
+Applying migration `20260506202741_lower_default_concurrency`
+Applying migration `20260513020201_add_enrichment_failure_tracking`
+Applying migration `20260616120000_add_llm_thinking_enabled`
+Applying migration `20260805000000_add_llm_embedding_model`
+Applying migration `20260805120000_add_llm_embedding_base_url`
+Applying migration `20260805140000_add_operation_run_config`
+Applying migration `20260817000000_folder_last_activity`
+Applying migration `20261002110652_embedding_freshness`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260128145510_init/
+    └─ migration.sql
+  └─ 20260128145727_settings/
+    └─ migration.sql
+  └─ 20260128151016_oauth_folders_usage/
+    └─ migration.sql
+  └─ 20260128151047_bookmark_folders/
+    └─ migration.sql
+  └─ 20260128171034_delta_sync/
+    └─ migration.sql
+  └─ 20260128171303_llm_prompt/
+    └─ migration.sql
+  └─ 20260128172552_enrich_batch_size/
+    └─ migration.sql
+  └─ 20260128174226_edited_at/
+    └─ migration.sql
+  └─ 20260128174702_read_state/
+    └─ migration.sql
+  └─ 20260220023216_youtube_support/
+    └─ migration.sql
+  └─ 20260420052000_processing_logs/
+    └─ migration.sql
+  └─ 20260422083000_llm_concurrency/
+    └─ migration.sql
+  └─ 20260422221828_add_llm_max_tokens/
+    └─ migration.sql
+  └─ 20260423015322_add_sound_settings/
+    └─ migration.sql
+  └─ 20260424031731_add_media_fields/
+    └─ migration.sql
+  └─ 20260424235749_add_target_language/
+    └─ migration.sql
+  └─ 20260425000154_add_embedding_field/
+    └─ migration.sql
+  └─ 20260426032846_update_default_batch_size/
+    └─ migration.sql
+  └─ 20260506030004_add_llm_system_prompt/
+    └─ migration.sql
+  └─ 20260506030659_add_llm_limits/
+    └─ migration.sql
+  └─ 20260506202741_lower_default_concurrency/
+    └─ migration.sql
+  └─ 20260513020201_add_enrichment_failure_tracking/
+    └─ migration.sql
+  └─ 20260616120000_add_llm_thinking_enabled/
+    └─ migration.sql
+  └─ 20260805000000_add_llm_embedding_model/
+    └─ migration.sql
+  └─ 20260805120000_add_llm_embedding_base_url/
+    └─ migration.sql
+  └─ 20260805140000_add_operation_run_config/
+    └─ migration.sql
+  └─ 20260817000000_folder_last_activity/
+    └─ migration.sql
+  └─ 20261002110652_embedding_freshness/
+    └─ migration.sql
+
+All migrations have been successfully applied.

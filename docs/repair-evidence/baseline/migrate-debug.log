@@ -1,0 +1,33 @@
+prisma:config:defineConfig [default]: '{\n  "loadedFromFile": null\n}' +187ms
+prisma:config:defineConfig [config.schema]: 'prisma/schema.prisma' +1ms
+prisma:config:defineConfig [config.datasource]: '{\n  "url": "file:./dev.db"\n}' +0ms
+prisma:config:defineConfig [config.migrations]: '{\n  "path": "prisma/migrations"\n}' +0ms
+prisma:config:loadConfigFromFile Config file loaded in 22.05ms +0ms
+prisma:config:PrismaConfig Parsing PrismaConfigInternal: '{\n' +
+  '  "loadedFromFile": null,\n' +
+  '  "schema": "prisma/schema.prisma",\n' +
+  '  "datasource": {\n' +
+  '    "url": "file:./dev.db"\n' +
+  '  },\n' +
+  '  "migrations": {\n' +
+  '    "path": "prisma/migrations"\n' +
+  '  }\n' +
+  '}' +1ms
+prisma:config:PrismaConfig Short-circuit: input is already a PrismaConfigInternal object +0ms
+Loaded Prisma config from prisma.config.ts.
+
+prisma:engines binaries to download schema-engine +269ms
+prisma:getSchema Reading schema from single file /Users/joseph/.codex/worktrees/complete-repairs/xbook/prisma/schema.prisma +275ms
+prisma:getSchema Reading schema from single file /Users/joseph/.codex/worktrees/complete-repairs/xbook/prisma/schema.prisma +0ms
+prisma:getConfig Using getConfig Wasm +1ms
+prisma:getConfig config data retrieved without errors in getConfig Wasm +7ms
+prisma:cli:checkpoint runCheckpointClientCheck(): Execution time for getting info: 12.925874999999962 ms +0ms
+prisma:cli:checkpoint runCheckpointClientCheck(): Execution time for "await checkpoint.check(data)": 16.423915999999963 ms +17ms
+prisma:getSchema Reading schema from single file /Users/joseph/.codex/worktrees/complete-repairs/xbook/prisma/schema.prisma +20ms
+Prisma schema loaded from prisma/schema.prisma.
+prisma:getConfig Using getConfig Wasm +0ms
+prisma:getConfig config data retrieved without errors in getConfig Wasm +1ms
+Datasource "db": SQLite database "dev.db" at "file:./dev.db"
+
+Error: Schema engine error:
+

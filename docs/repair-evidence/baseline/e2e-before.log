@@ -1,0 +1,112 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test --workers=1
+
+[2m[WebServer] [22m(node:4015) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:4032) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:4045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:4111) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4111) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › tests/e2e/operations.spec.ts:48:7 › Operations & Logs › Source filtering works correctly (11.3s)
+(node:4180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [chromium] › tests/e2e/operations.spec.ts:70:7 › Operations & Logs › Stop all operations button appears and works (497ms)
+  ✓  3 [chromium] › tests/e2e/operations.spec.ts:86:7 › Operations & Logs › Clear all logs button works (641ms)
+  ✘  4 [chromium] › tests/e2e/operations.spec.ts:109:7 › Operations & Logs › Multi-batch enrichment consolidates into a single run (10.5s)
+(node:4274) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4274) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  5 [chromium] › tests/e2e/operations.spec.ts:146:7 › Operations & Logs › Stopping a run aborts the in-flight LLM request (507ms)
+  ✘  6 [chromium] › tests/e2e/ui.spec.ts:101:5 › dashboard, libraries, folders, processing, and settings routes render (30.0s)
+
+
+  1) [chromium] › tests/e2e/operations.spec.ts:48:7 › Operations & Logs › Source filtering works correctly 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).not.[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  getByTitle('YouTube')
+    Expected: not visible
+    Received: visible
+    Timeout:  10000ms
+
+    Call log:
+    [2m  - Expect "not toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByTitle('YouTube')[22m
+    [2m    14 × locator resolved to <a title="YouTube" aria-label="YouTube" href="/processing?source=yt" class="rounded-md px-3 py-1.5 text-xs font-semibold bg-surface-container-high inline-flex items-center justify-center">…</a>[22m
+    [2m       - unexpected value "visible"[22m
+
+
+      58 |     
+      59 |     // Check that X items are visible (by title) and YT items are not
+    > 60 |     await expect(page.getByTitle("YouTube")).not.toBeVisible();
+         |                                                  ^
+      61 |
+      62 |     // Filter by YouTube
+      63 |     await page.getByRole("link", { name: "YouTube", exact: true }).click();
+        at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/e2e/operations.spec.ts:60:50
+
+    Error Context: test-results/operations-Operations-Logs-Source-filtering-works-correctly-chromium/error-context.md
+
+  2) [chromium] › tests/e2e/operations.spec.ts:109:7 › Operations & Logs › Multi-batch enrichment consolidates into a single run 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('button', { name: /Enrich all X/ })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('button', { name: /Enrich all X/ })[22m
+
+
+      133 | await page.goto("/");
+      134 | const enrichBtn = page.getByRole("button", { name: /Enrich all X/ });
+    > 135 | await expect(enrichBtn).toBeVisible();
+          |                         ^
+      136 |
+      137 | await enrichBtn.click();
+      138 |
+        at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/e2e/operations.spec.ts:135:25
+
+    Error Context: test-results/operations-Operations-Logs-924a9-solidates-into-a-single-run-chromium/error-context.md
+
+  3) [chromium] › tests/e2e/ui.spec.ts:101:5 › dashboard, libraries, folders, processing, and settings routes render 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByText('LLM configuration')[22m
+
+
+      139 |   await page.goto("/settings");
+      140 |   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    > 141 |   await page.getByText("LLM configuration").click();
+          |                                             ^
+      142 |   await expect(page.getByText("Store LLM technical logs")).toBeVisible();
+      143 |   await expect(page.getByRole("button", { name: "Clear processing history" })).toBeVisible();
+      144 | });
+        at /Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/e2e/ui.spec.ts:141:45
+
+    Error Context: test-results/ui-dashboard-libraries-fol-a5d14--and-settings-routes-render-chromium/error-context.md
+
+    Error Context: test-results/ui-dashboard-libraries-fol-a5d14--and-settings-routes-render-chromium/error-context.md
+
+  3 failed
+    [chromium] › tests/e2e/operations.spec.ts:48:7 › Operations & Logs › Source filtering works correctly 
+    [chromium] › tests/e2e/operations.spec.ts:109:7 › Operations & Logs › Multi-batch enrichment consolidates into a single run 
+    [chromium] › tests/e2e/ui.spec.ts:101:5 › dashboard, libraries, folders, processing, and settings routes render 
+  3 passed (1.0m)

@@ -44,8 +44,11 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 - Linting: ESLint via `eslint-config-next`.
 
 ## Testing Guidelines
-- Unit tests use Vitest in `tests/unit/`; run `npm test`. Database export regression tests use real temporary SQLite databases: `npm test -- tests/unit/db-export.test.ts`.
-- Backup download naming coverage: `npm test -- tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
+- Vitest runs unit and disposable-SQLite integration tests in `tests/unit`: `npm test`, or `npx vitest run tests/unit/<file>.test.ts` for focused checks.
+- Database export regression: `npm test -- tests/unit/db-export.test.ts`. Backup naming: `npm test -- tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
+- Playwright runs Chromium workflow checks in `tests/e2e`: `npm run test:e2e`. Playwright creates, migrates, and deletes a temporary database automatically. Use Node 24 for native SQLite checks.
+- TypeScript: `npx tsc --noEmit`. Production verification: `npm run build`. Tests use synthetic data and mock providers by default.
+
 
 ## Commit & Pull Request Guidelines
 - Commit messages in history are short, imperative sentences (e.g., "added hash system"). Follow that pattern unless you introduce a formal convention.

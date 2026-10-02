@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useActions } from "../../hooks/useActions";
 
 type Props = {
@@ -38,16 +38,9 @@ export function EnrichmentSummary({
   );
   const syncing = loading.embeddings;
 
-  // Live counters while syncing so "missing" and "done" stay consistent.
-  const [liveIndexed, setLiveIndexed] = useState(indexed);
-  const [liveUnindexed, setLiveUnindexed] = useState(unindexed);
-
-  useEffect(() => {
-    if (!syncing) {
-      setLiveIndexed(indexed);
-      setLiveUnindexed(unindexed);
-    }
-  }, [indexed, unindexed, syncing]);
+  const [progress, setProgress] = useState({ indexed, unindexed });
+  const liveIndexed = syncing ? progress.indexed : indexed;
+  const liveUnindexed = syncing ? progress.unindexed : unindexed;
 
   const indexable = liveIndexed + liveUnindexed;
   const coverage = indexable > 0 ? Math.min(100, (liveIndexed / indexable) * 100) : 0;
@@ -55,11 +48,11 @@ export function EnrichmentSummary({
   const sourceLabel = source === "yt" ? "YouTube" : "X";
 
   const handleSync = () => {
+    setProgress({ indexed, unindexed });
     void runSyncEmbeddings({
       source,
       onProgress: ({ done, remaining }) => {
-        setLiveIndexed(indexed + done);
-        setLiveUnindexed(remaining);
+        setProgress({ indexed: indexed + done, unindexed: remaining });
       },
     });
   };

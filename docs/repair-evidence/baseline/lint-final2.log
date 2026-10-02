@@ -1,0 +1,18 @@
+
+> xbook@0.4.3 lint
+> eslint
+
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/scripts/build-desktop.js
+  54:10  warning  'copyPackageToServer' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/start-server.js
+  28:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  38:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  45:12  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/joseph/.codex/worktrees/complete-repairs/xbook/tests/unit/database-restore.test.ts
+  10:31  warning  'writeRestoreJournal' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (0 errors, 5 warnings)
+

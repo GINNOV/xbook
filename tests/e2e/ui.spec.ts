@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-const adapter = new PrismaBetterSqlite3({ url: "./dev.db" });
+const databaseUrl = process.env.XBOOK_E2E_DATABASE_URL;
+if (!databaseUrl) throw new Error("Missing disposable E2E database");
+const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
 test.beforeAll(async () => {
@@ -138,7 +140,8 @@ test("dashboard, libraries, folders, processing, and settings routes render", as
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-  await page.getByText("LLM configuration").click();
+  await page.getByRole("tab", { name: /^AI / }).click();
+  await page.getByRole("button", { name: /Show advanced/ }).click();
   await expect(page.getByText("Store LLM technical logs")).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear processing history" })).toBeVisible();
 });
