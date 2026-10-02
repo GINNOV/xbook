@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { prisma } from "@/lib/db";
-import { createOAuthUrl, oauthCallback, OAUTH_SESSION_TTL_MS } from "@/lib/oauth-flow";
+import { createOAuthUrl, oauthStart, oauthCallback, OAUTH_SESSION_TTL_MS } from "@/lib/oauth-flow";
 import { getAuthContext as xAuth } from "@/lib/x";
 import { getAuthContext as ytAuth } from "@/lib/youtube";
 import { getSettings } from "@/lib/settings";
@@ -40,6 +40,19 @@ afterAll(async () => { vi.unstubAllGlobals(); await prisma.$disconnect(); rmSync
 
 for (const provider of ["x", "yt"] as const) {
   describe(`${provider} OAuth`, () => {
+    it("uses the browser origin for state binding and callback return when listening on a wildcard address", async () => {
+      const headers = { host: "localhost:3100", "x-forwarded-proto": "http" };
+      const started = await oauthStart(provider, new Request(`http://0.0.0.0:3100/api/${provider}/oauth/start`, { headers }));
+      const authorization = new URL(started.headers.get("location")!);
+      expect(authorization.searchParams.get("redirect_uri")).toContain("http://localhost:3100/");
+      const state = authorization.searchParams.get("state")!;
+      vi.stubGlobal("fetch", vi.fn(async (url) => String(url).endsWith("users/me") ? Response.json({ data: { id: "new-user" } }) : Response.json(valid)));
+      const response = await oauthCallback(provider, new Request(`http://0.0.0.0:3100/api/${provider}/oauth/callback?state=${encodeURIComponent(state)}&code=fixture`, { headers }));
+      expect(response.status).toBe(307);
+      expect(new URL(response.headers.get("location")!).origin).toBe("http://localhost:3100");
+      expect(await prisma.oAuthSession.findUnique({ where: { state } })).toBeNull();
+      expect((await credentials(provider))[0]).toBe("new-access");
+    });
     it("rejects missing, foreign and expired states without a provider call", async () => {
       const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
       const state = await pending(provider);
@@ -201,4 +214,11 @@ it("token HTTP redirect is rejected without following a second origin or alterin
     await expect(xAuth()).rejects.toThrow(); expect(requests).toEqual(["/2/oauth2/token"]);
     expect((await credentials("x")).slice(0, 2)).toEqual(["old-access", "old-refresh"]);
   } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
+});
+
+it("generated YouTube URL uses the browser host rather than the wildcard bind address", async () => {
+  const response = await generateUrl(new Request("http://0.0.0.0:3100/api/youtube/oauth/url", { method: "POST", headers: { host: "localhost:3100", "Content-Type": "application/json" }, body: "{}" }));
+  expect(response.status).toBe(200);
+  const body = await response.json();
+  expect(new URL(body.url).searchParams.get("redirect_uri")).toBe("http://localhost:3100/api/oauth/youtube/callback");
 });
