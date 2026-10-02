@@ -110,8 +110,11 @@ describe("generic durable operations", () => {
   });
   it("retains committed checkpoints across worker failure and retries only pending items", async () => {
     const runId = await submit(); let attempts = 0;
-    await expect(runOperationJob(prisma, { runId, leaseMs: 25, renewLease: false, adapter: { execute: async (id, job, signal) => {
-      attempts++; if (id === "b") { await pause(40); throw new Error("Worker ended"); }
+    await expect(runOperationJob(prisma, { runId, renewLease: false, adapter: { execute: async (id, job, signal) => {
+      attempts++; if (id === "b") {
+        await prisma.operationRun.update({ where: { id: runId }, data: { leaseUntil: new Date(0) } });
+        throw new Error("Worker ended");
+      }
       return adapter.execute(id, job, signal, runId);
     } } })).resolves.toMatchObject({ status: "running", updated: 1 });
     expect(attempts).toBe(2);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { z } from "zod";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { BookmarkTextMode } from "@/lib/bookmark-query";
 import type { FilterCategory, FilterCounts, FilterFolder } from "@/lib/bookmarks";
@@ -126,7 +126,13 @@ export function FilterControls({
   const askRequest = useRef<AbortController | null>(null);
   const [answeredQuestion, setAnsweredQuestion] = useState("");
   useEffect(() => { askRequest.current?.abort(); setAskBusy(false); }, [query, source, mode]);
-  useEffect(() => { setAskAnswer(null); setAskCitations([]); setAskError(null); setQuery(q); }, [source, q]);
+  const previousScope = useRef({ source, q });
+  useLayoutEffect(() => {
+    if (previousScope.current.source === source && previousScope.current.q === q) return;
+    previousScope.current = { source, q };
+    askRequest.current?.abort();
+    setAskAnswer(null); setAskCitations([]); setAskError(null); setQuery(q);
+  }, [source, q]);
   useEffect(() => () => askRequest.current?.abort(), []);
 
   const clearHref = (() => {

@@ -61,10 +61,15 @@ test("exact word and phrase controls preserve scope and explicit sort", async ({
   await page.getByLabel("Text matching").selectOption("phrase");
   await page.getByLabel("Search bookmarks").fill("embedding nomic");
   await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/q=embedding(?:%20|\+)nomic/);
+  await expect(page.getByText("No bookmarks match the current filters.", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Search bookmarks")).toHaveValue("embedding nomic");
   await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toHaveCount(0);
   await page.getByLabel("Search bookmarks").fill("nomic embedding");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByRole("button", { name: new RegExp(`^Read bookmark: ${matching}`) })).toBeVisible();
+  await expect(page).toHaveURL(/q=nomic(?:%20|\+)embedding/);
+  await expect(page.getByLabel("Search bookmarks")).toHaveValue("nomic embedding");
   await page.screenshot({ path: "docs/repair-evidence/r2-exact-search.png", fullPage: true });
 });
 
