@@ -18,7 +18,7 @@ PRIMARY="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 if [[ "$PRIMARY" == "$ROOT" ]]; then
   echo "note: this is the primary checkout (integration tree)."
   echo "      Prefer running this script inside a linked worktree after:"
-  echo "        git worktree add -b <task> ../xbook-<task> main"
+  echo "        git worktree add -b <task> /Volumes/AIWork/code/worktrees/Xbook/<task> main"
 fi
 
 echo "==> Worktree:  $ROOT"
