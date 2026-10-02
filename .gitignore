@@ -80,3 +80,13 @@ worktrees/
 
 # Desktop release packaging output
 dist-release/
+
+# Local database maintenance and crash recovery files
+*.maintenance.sqlite*
+*.maintenance-generation*
+*.restore.json*
+*.recovery-*
+*.rollback
+.restore-*/
+*.db.generation*
+*.sqlite.generation*
