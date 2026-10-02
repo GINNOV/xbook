@@ -141,7 +141,7 @@ Each numbered requirement is tracked below; acceptance criteria are reproduced i
 - [PR #4](https://github.com/GINNOV/xbook/pull/4) merged at [1da4309a4799feaa27f752ef9ec86b994786c67c](https://github.com/GINNOV/xbook/commit/1da4309a4799feaa27f752ef9ec86b994786c67c). [Issue #1](https://github.com/GINNOV/xbook/issues/1) is closed; [resolution comment](https://github.com/GINNOV/xbook/issues/1#issuecomment-5954727468) confirmed.
 - [PR #5](https://github.com/GINNOV/xbook/pull/5) merged at [bfddbc17092b811af07cf7e4cda7c503a11c6dde](https://github.com/GINNOV/xbook/commit/bfddbc17092b811af07cf7e4cda7c503a11c6dde). [Issue #3](https://github.com/GINNOV/xbook/issues/3) is closed; [resolution comment](https://github.com/GINNOV/xbook/issues/3#issuecomment-5954727840) confirmed.
 - #2 Windows binary is closed externally and remains outside the repair findings. PR #6 is separate Windows work requiring Windows desktop acceptance; this audit neither changes its state nor authorizes a desktop release.
-- Nine calibration repairs copied into this isolated worktree, original files untouched. PR #60 now contains overlapping calibration repairs; their default-branch acceptance still requires verification.
+- Nine calibration repairs copied into this isolated worktree, original files untouched. PR #60 contains overlapping calibration repairs, reconciled and verified in PR #62; final acceptance and live exceptions are recorded below.
 - N1/N2 personal notes and Markdown export are conditional additions requiring separate post-repair approval, excluded. Broader backlog remains excluded.
 
 ## Current integration acceptance

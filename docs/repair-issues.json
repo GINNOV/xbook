@@ -100,12 +100,26 @@
       {
         "number": 1,
         "status": "closed",
-        "resolutionComment": "https://github.com/GINNOV/xbook/issues/1#issuecomment-5954727468"
+        "resolutionComment": "https://github.com/GINNOV/xbook/issues/1#issuecomment-5954727468",
+        "url": "https://github.com/GINNOV/xbook/issues/1",
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T14:32:41Z",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/1#issuecomment-5957972739",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227"
       },
       {
         "number": 3,
         "status": "closed",
-        "resolutionComment": "https://github.com/GINNOV/xbook/issues/3#issuecomment-5954727840"
+        "resolutionComment": "https://github.com/GINNOV/xbook/issues/3#issuecomment-5954727840",
+        "url": "https://github.com/GINNOV/xbook/issues/3",
+        "observedGitHubState": "closed",
+        "closedAt": "2026-10-02T14:33:12Z",
+        "resolutionNote": "https://github.com/GINNOV/xbook/issues/3#issuecomment-5957973279",
+        "finalAcceptance": "Acceptance satisfied on main; issue confirmed closed",
+        "fixPullRequest": "https://github.com/GINNOV/xbook/pull/62",
+        "fixMergeCommit": "5fe432090825eb680e1b796da13610d2097be227"
       }
     ],
     "observedGitHubState": "closed",
