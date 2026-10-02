@@ -1,0 +1,89 @@
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+ ❯ tests/unit/filter-draft-hydration.test.tsx (2 tests | 1 failed) 35ms
+     × preserves text entered after form commit but before passive mount effects 25ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  19:31:51
+   Duration  553ms (transform 47ms, setup 39ms, import 106ms, tests 35ms, environment 293ms)
+
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+stderr | tests/unit/filter-draft-hydration.test.tsx > filter draft lifecycle > preserves text entered after form commit but before passive mount effects
+An update to FilterControls inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FilterControls inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FilterControls inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FilterControls inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FilterControls inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | tests/unit/filter-draft-hydration.test.tsx > filter draft lifecycle > preserves text entered after form commit but before passive mount effects
+A component suspended inside an `act` scope, but the `act` call was not awaited. When testing React components that depend on asynchronous data, you must await the result:
+
+await act(() => ...)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/filter-draft-hydration.test.tsx > filter draft lifecycle > preserves text entered after form commit but before passive mount effects
+Error: expect(element).toHaveValue(nomic embedding)
+
+Expected the element to have value:
+  nomic embedding
+Received:
+  nomic
+ ❯ tests/unit/filter-draft-hydration.test.tsx:14:55
+     12|     }
+     13|     render(<EarlyInput />);
+     14|     expect(screen.getByLabelText("Search bookmarks")).toHaveValue("nom…
+       |                                                       ^
+     15|   });
+     16|   it("retains drafts across identical scope renders but resets for act…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

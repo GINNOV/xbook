@@ -1,0 +1,252 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": SQLite database "dev.db" at "file:/var/folders/df/xg5769hn485fb3fl5bvhghqm0000gn/T/xbook-build-check-GcBwU1/dev.db"
+
+31 migrations found in prisma/migrations
+
+Applying migration `20260128145510_init`
+Applying migration `20260128145727_settings`
+Applying migration `20260128151016_oauth_folders_usage`
+Applying migration `20260128151047_bookmark_folders`
+Applying migration `20260128171034_delta_sync`
+Applying migration `20260128171303_llm_prompt`
+Applying migration `20260128172552_enrich_batch_size`
+Applying migration `20260128174226_edited_at`
+Applying migration `20260128174702_read_state`
+Applying migration `20260220023216_youtube_support`
+Applying migration `20260420052000_processing_logs`
+Applying migration `20260422083000_llm_concurrency`
+Applying migration `20260422221828_add_llm_max_tokens`
+Applying migration `20260423015322_add_sound_settings`
+Applying migration `20260424031731_add_media_fields`
+Applying migration `20260424235749_add_target_language`
+Applying migration `20260425000154_add_embedding_field`
+Applying migration `20260426032846_update_default_batch_size`
+Applying migration `20260506030004_add_llm_system_prompt`
+Applying migration `20260506030659_add_llm_limits`
+Applying migration `20260506202741_lower_default_concurrency`
+Applying migration `20260513020201_add_enrichment_failure_tracking`
+Applying migration `20260616120000_add_llm_thinking_enabled`
+Applying migration `20260805000000_add_llm_embedding_model`
+Applying migration `20260805120000_add_llm_embedding_base_url`
+Applying migration `20260805140000_add_operation_run_config`
+Applying migration `20260817000000_folder_last_activity`
+Applying migration `20261002110652_embedding_freshness`
+Applying migration `20261002120000_repair_metadata`
+Applying migration `20261002170000_embedding_identity`
+Applying migration `20261002180000_durable_operation_jobs`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260128145510_init/
+    └─ migration.sql
+  └─ 20260128145727_settings/
+    └─ migration.sql
+  └─ 20260128151016_oauth_folders_usage/
+    └─ migration.sql
+  └─ 20260128151047_bookmark_folders/
+    └─ migration.sql
+  └─ 20260128171034_delta_sync/
+    └─ migration.sql
+  └─ 20260128171303_llm_prompt/
+    └─ migration.sql
+  └─ 20260128172552_enrich_batch_size/
+    └─ migration.sql
+  └─ 20260128174226_edited_at/
+    └─ migration.sql
+  └─ 20260128174702_read_state/
+    └─ migration.sql
+  └─ 20260220023216_youtube_support/
+    └─ migration.sql
+  └─ 20260420052000_processing_logs/
+    └─ migration.sql
+  └─ 20260422083000_llm_concurrency/
+    └─ migration.sql
+  └─ 20260422221828_add_llm_max_tokens/
+    └─ migration.sql
+  └─ 20260423015322_add_sound_settings/
+    └─ migration.sql
+  └─ 20260424031731_add_media_fields/
+    └─ migration.sql
+  └─ 20260424235749_add_target_language/
+    └─ migration.sql
+  └─ 20260425000154_add_embedding_field/
+    └─ migration.sql
+  └─ 20260426032846_update_default_batch_size/
+    └─ migration.sql
+  └─ 20260506030004_add_llm_system_prompt/
+    └─ migration.sql
+  └─ 20260506030659_add_llm_limits/
+    └─ migration.sql
+  └─ 20260506202741_lower_default_concurrency/
+    └─ migration.sql
+  └─ 20260513020201_add_enrichment_failure_tracking/
+    └─ migration.sql
+  └─ 20260616120000_add_llm_thinking_enabled/
+    └─ migration.sql
+  └─ 20260805000000_add_llm_embedding_model/
+    └─ migration.sql
+  └─ 20260805120000_add_llm_embedding_base_url/
+    └─ migration.sql
+  └─ 20260805140000_add_operation_run_config/
+    └─ migration.sql
+  └─ 20260817000000_folder_last_activity/
+    └─ migration.sql
+  └─ 20261002110652_embedding_freshness/
+    └─ migration.sql
+  └─ 20261002120000_repair_metadata/
+    └─ migration.sql
+  └─ 20261002170000_embedding_identity/
+    └─ migration.sql
+  └─ 20261002180000_durable_operation_jobs/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+        Warn --no-sign flag detected: Signing will be skipped.
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build:desktop`
+
+> xbook@0.4.3 build:desktop
+> node scripts/build-desktop.js
+
+1. Running production next build...
+
+> xbook@0.4.3 build
+> next build
+
+▲ Next.js 16.2.12 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Turbopack build encountered 2 warnings:
+./src/app/api/version/route.ts:10:88
+The file pattern ('/ROOT/' <dynamic> | '/ROOT' <dynamic>) matches 13016 files in [project]/
+  [90m 8 |[0m ...
+  [90m 9 |[0m ...
+[31m[1m>[0m [90m10 |[0m ...rse([33mJSON[0m.parse(readFileSync(path.join(process.cwd(), file), [32m"utf8"[0m)));
+  [90m   |[0m                                [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m11 |[0m ...
+  [90m12 |[0m ...
+  [90m13 |[0m ...
+
+Overly broad patterns can lead to build performance issues and over bundling.
+
+Import trace:
+  App Route:
+    ./src/app/api/version/route.ts
+    ./src/app/api/version/route.ts
+
+
+./next.config.ts
+Encountered unexpected file in NFT list
+A file was traced that indicates that the whole project was traced unintentionally. Somewhere in the import trace below, there are:
+- filesystem operations (like path.join, path.resolve or fs.readFile), or
+- very dynamic requires (like require('./' + foo)).
+To resolve this, you can
+- remove them if possible, or
+- only use them in development, or
+- make sure they are statically scoped to some subfolder: path.join(process.cwd(), 'data', bar), or
+- add ignore comments: path.join(/*turbopackIgnore: true*/ process.cwd(), bar)
+
+Import trace:
+  App Route:
+    ./next.config.ts
+    ./src/app/api/version/route.ts
+
+
+✓ Compiled successfully in 3.9s
+  Running TypeScript ...
+  Finished TypeScript in 4.1s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/33) ...
+  Generating static pages using 9 workers (8/33) 
+  Generating static pages using 9 workers (16/33) 
+  Generating static pages using 9 workers (24/33) 
+✓ Generating static pages using 9 workers (33/33) in 144ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/agent
+├ ƒ /api/bookmarks/[id]
+├ ƒ /api/bookmarks/ask
+├ ƒ /api/bookmarks/embeddings/sync
+├ ƒ /api/bookmarks/read
+├ ƒ /api/bookmarks/search
+├ ƒ /api/bookmarks/translate
+├ ƒ /api/enrich
+├ ƒ /api/enrich/edit
+├ ƒ /api/enrich/one
+├ ƒ /api/folders/import
+├ ƒ /api/folders/sync
+├ ƒ /api/import
+├ ƒ /api/oauth/youtube/callback
+├ ƒ /api/oauth/youtube/start
+├ ƒ /api/processing/active
+├ ƒ /api/processing/clear
+├ ƒ /api/processing/events
+├ ƒ /api/processing/runs
+├ ƒ /api/processing/runs/[id]
+├ ƒ /api/processing/runs/cleanup
+├ ƒ /api/processing/runs/stop-all
+├ ƒ /api/settings
+├ ƒ /api/settings/database/backup
+├ ƒ /api/settings/database/backups
+├ ƒ /api/settings/database/clear
+├ ƒ /api/settings/database/restore
+├ ƒ /api/settings/mark-latest
+├ ƒ /api/settings/models
+├ ƒ /api/settings/reset-baseline
+├ ƒ /api/settings/test
+├ ƒ /api/version
+├ ƒ /api/x/diagnostics
+├ ƒ /api/x/oauth/callback
+├ ƒ /api/x/oauth/start
+├ ƒ /api/x/user-lookup
+├ ƒ /api/youtube/diagnostics
+├ ƒ /api/youtube/folders/sync
+├ ƒ /api/youtube/metadata/repair
+├ ƒ /api/youtube/oauth/callback
+├ ƒ /api/youtube/oauth/start
+├ ƒ /api/youtube/oauth/url
+├ ƒ /bookmarks
+├ ○ /docs
+├ ○ /docs/agent-api
+├ ○ /docs/connections
+├ ○ /docs/library
+├ ○ /docs/llm
+├ ○ /docs/process-inbox
+├ ○ /docs/scenarios
+├ ○ /docs/settings
+├ ○ /docs/setup
+├ ƒ /folders
+├ ƒ /oauth/done
+├ ƒ /processing
+├ ƒ /settings
+├ ○ /xbooks
+└ ○ /ybooks
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+2. Copying standalone files to Tauri resources...
+3. Copying public assets to Tauri resources...
+4. Copying next static assets to Tauri resources...
+5. Copying prisma schema and migrations to Tauri resources...
+6. Copying prisma migration runtime and its dependencies to Tauri resources...
+7. Copying start-server.js to Tauri resources...
+8. Copying node binary to Tauri resources...
+Copied node binary from /Users/joseph/.npm/_npx/387698761821791d/node_modules/node/bin/node to /Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri/resources/bin/node
+Standalone desktop build complete! Location: src-tauri/resources/
+   Compiling app v0.4.3 (/Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri)
+    Finished `release` profile [optimized] target(s) in 20.85s
+       Built application at: /Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri/target/release/app
+    Bundling xbook.app (/Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri/target/release/bundle/macos/xbook.app)
+        Warn Skipping signing due to --no-sign flag.
+    Finished 1 bundle at:
+        /Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri/target/release/bundle/macos/xbook.app
+

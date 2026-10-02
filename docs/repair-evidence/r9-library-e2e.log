@@ -1,0 +1,53 @@
+[1A[2K[2m[WebServer] [22mLoaded Prisma config from prisma.config.ts.
+[2m[WebServer] [22m
+
+[1A[2K[2m[WebServer] [22mPrisma schema loaded from prisma/schema.prisma.
+
+[1A[2K[2m[WebServer] [22m(node:39492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39493) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39510) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 6 tests using 1 worker
+
+[1A[2K(node:39512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:39512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/6] [chromium] › tests/e2e/dashboard-health.spec.ts:19:5 › dashboard coverage includes every saved entry and metric links open matching source/state
+[1A[2K[2/6] [chromium] › tests/e2e/docs-navigation.spec.ts:3:5 › seven linked guides render and return to Docs; recovery links select the right Settings tab
+[1A[2K[3/6] [chromium] › tests/e2e/library-interactions.spec.ts:36:37 › reader and editor preserve focus and separate state at 390px
+[1A[2K[4/6] [chromium] › tests/e2e/library-interactions.spec.ts:36:37 › reader and editor preserve focus and separate state at 900px
+[1A[2K[5/6] [chromium] › tests/e2e/library-interactions.spec.ts:50:5 › single enrichment, saved capture and Ask use actual local HTTP providers
+[1A[2K[2m[WebServer] [22m(node:39521) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39522) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[6/6] [chromium] › tests/e2e/library-interactions.spec.ts:67:5 › Process inbox imports then summarizes and indexes each entry once
+[1A[2K[2m[WebServer] [22m(node:39533) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39534) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39535) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39536) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[2m[WebServer] [22m(node:39548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K  6 passed (18.9s)

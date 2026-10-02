@@ -1,0 +1,14 @@
+[
+  {
+    "provider": "x",
+    "redirectOrigin": "http://localhost:3116",
+    "cancelStatus": 307,
+    "destination": "/settings"
+  },
+  {
+    "provider": "yt",
+    "redirectOrigin": "http://localhost:3116",
+    "cancelStatus": 307,
+    "destination": "/oauth/done"
+  }
+]

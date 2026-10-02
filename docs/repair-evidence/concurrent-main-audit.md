@@ -75,3 +75,7 @@ All PR #60 paths below are relative to its exact merge. The isolated replacement
 ## Acceptance actions retained for root
 
 Keep all existing plan units and attach these scoped issues to their owners. Review actual delivered behavior before deciding whether externally closed umbrella/scoped issues should be reopened; this audit makes no GitHub state changes. In particular #19/#8 remain unsafe on main despite closure, #35–38 retain index/worker safety gaps, #41/#43/#46/#47 retain source-evidence gaps, and #48/#50–52/#54/#55 retain settings/reader/metric defects. Preserve useful PR #60 repairs when integrating verified work. R11 remains pending until independent lint, unit, E2E, production and isolated desktop workflow checks pass or an explicitly approved deferral is recorded.
+
+## Later state observation
+
+A subsequent read-only GitHub state refresh on 2026-10-02 shows #7, #9–18, #25 and #26 open after root review. #8, #19–24 and #27–29 are closed; #30–59 remain open. The table above preserves the initial audit snapshot. Current states are in `repair-issues.json` and the coverage record. This agent did not mutate GitHub states.

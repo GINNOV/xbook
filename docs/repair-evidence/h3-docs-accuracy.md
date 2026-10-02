@@ -1,0 +1,15 @@
+# H3 documentation accuracy
+
+Reviewed October 2, 2026 against the complete-repairs runtime source, including the shared bookmark query contract, durable import/operation APIs, Settings draft UI, captured-source/Ask helpers, vector health predicates, SQLite export/restore helpers, technical request logs, and backend version identity.
+
+Updated the seven existing guides linked from Docs, plus Docs landing/scenario copy, README, developer.md, and AGENTS.md. No new feature or guide page was added. Existing valid setup, release, and Agent write examples remain intact.
+
+The guides now describe source-scoped navigation and filters; substring, whole-word, and ordered phrase text modes; filter-before-ranking semantics, the 50-result limit, and scoped keyword recovery. They distinguish captured source, generated digests, human edits, evidence completeness, timed YouTube sections, availability, upload dates, and playlist-added dates. Ask documentation describes source scope, retrieved evidence, citations, and insufficient evidence rather than promising full-video comprehension.
+
+Inbox documentation describes one durable import → summarize → index run, navigation/reconnect, cumulative counts, checkpointed Stop/Resume, cap recovery, partial folder outcomes, local entry counts versus unique videos, and preserved IDs/manual edits. Dashboard guidance uses usable vectors/all items in the selected source; missing, stale, and pending work remain separate. Unindexed describes summarized build/rebuild work, matching the current health.rebuildIds predicate.
+
+Settings documentation covers separate exact-draft tests, configured versus tested/expired/unavailable states, result invalidation, tab/dirty preservation, save feedback, integer validation, and sign-in observation cancellation. Batch size means selected items per operation batch; each item has its own model call. Response tokens and concurrency are separate. English remains the default enrichment language unless a custom prompt changes it; Target language controls Translate.
+
+Privacy guidance distinguishes local/LAN/remote destinations and sent text. Full payload logging controls full prompt/response storage, while previews remain stored with logging off. Credential-redacted downloads differ from full local backups that preserve secrets/logs. Restore validation, recovery, conflict blocking, and rollback are described without running destructive actions. Developer guidance includes backend PID/port/commit/start identity and explains that a checkout/build does not update an installed app. AGENTS explains disposable E2E SQLite and default environment/provider isolation.
+
+Validation: TypeScript passed; lint had no errors and one warning in another worker's in-progress library hook. Scoped git diff whitespace check passed. `tests/e2e/docs-navigation.spec.ts` is prepared to navigate all seven linked guides and the Settings Connections recovery link; its browser run is pending shared-port coordination with the R9/final acceptance batch.
