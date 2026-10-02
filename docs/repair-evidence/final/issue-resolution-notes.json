@@ -1,0 +1,403 @@
+[
+  {
+    "number": 1,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/1#issuecomment-5957972739",
+    "error": ""
+  },
+  {
+    "number": 3,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/3#issuecomment-5957973279",
+    "error": ""
+  },
+  {
+    "number": 7,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/7#issuecomment-5957973803",
+    "error": ""
+  },
+  {
+    "number": 8,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/8#issuecomment-5957974266",
+    "error": ""
+  },
+  {
+    "number": 9,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/9#issuecomment-5957974626",
+    "error": ""
+  },
+  {
+    "number": 10,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/10#issuecomment-5957974970",
+    "error": ""
+  },
+  {
+    "number": 11,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/11#issuecomment-5957975297",
+    "error": ""
+  },
+  {
+    "number": 12,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/12#issuecomment-5957975604",
+    "error": ""
+  },
+  {
+    "number": 13,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/13#issuecomment-5957976018",
+    "error": ""
+  },
+  {
+    "number": 14,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/14#issuecomment-5957976464",
+    "error": ""
+  },
+  {
+    "number": 15,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/15#issuecomment-5957976787",
+    "error": ""
+  },
+  {
+    "number": 16,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/16#issuecomment-5957977148",
+    "error": ""
+  },
+  {
+    "number": 17,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/17#issuecomment-5957977565",
+    "error": ""
+  },
+  {
+    "number": 18,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/18#issuecomment-5957977973",
+    "error": ""
+  },
+  {
+    "number": 19,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/19#issuecomment-5957978428",
+    "error": ""
+  },
+  {
+    "number": 20,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/20#issuecomment-5957978841",
+    "error": ""
+  },
+  {
+    "number": 21,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/21#issuecomment-5957979245",
+    "error": ""
+  },
+  {
+    "number": 22,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/22#issuecomment-5957979736",
+    "error": ""
+  },
+  {
+    "number": 23,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/23#issuecomment-5957980163",
+    "error": ""
+  },
+  {
+    "number": 24,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/24#issuecomment-5957980541",
+    "error": ""
+  },
+  {
+    "number": 25,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/25#issuecomment-5957980932",
+    "error": ""
+  },
+  {
+    "number": 26,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/26#issuecomment-5957981317",
+    "error": ""
+  },
+  {
+    "number": 27,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/27#issuecomment-5957981682",
+    "error": ""
+  },
+  {
+    "number": 28,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/28#issuecomment-5957982147",
+    "error": ""
+  },
+  {
+    "number": 29,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/29#issuecomment-5957982664",
+    "error": ""
+  },
+  {
+    "number": 30,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/30#issuecomment-5957983105",
+    "error": ""
+  },
+  {
+    "number": 31,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/31#issuecomment-5957983535",
+    "error": ""
+  },
+  {
+    "number": 32,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/32#issuecomment-5957983970",
+    "error": ""
+  },
+  {
+    "number": 33,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/33#issuecomment-5957984343",
+    "error": ""
+  },
+  {
+    "number": 34,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/34#issuecomment-5957984670",
+    "error": ""
+  },
+  {
+    "number": 35,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/35#issuecomment-5957985001",
+    "error": ""
+  },
+  {
+    "number": 36,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/36#issuecomment-5957985383",
+    "error": ""
+  },
+  {
+    "number": 37,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/37#issuecomment-5957985773",
+    "error": ""
+  },
+  {
+    "number": 38,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/38#issuecomment-5957986187",
+    "error": ""
+  },
+  {
+    "number": 39,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/39#issuecomment-5957986586",
+    "error": ""
+  },
+  {
+    "number": 40,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/40#issuecomment-5957986992",
+    "error": ""
+  },
+  {
+    "number": 41,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/41#issuecomment-5957987481",
+    "error": ""
+  },
+  {
+    "number": 42,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/42#issuecomment-5957987882",
+    "error": ""
+  },
+  {
+    "number": 43,
+    "action": "comment",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/43#issuecomment-5957988261",
+    "error": ""
+  },
+  {
+    "number": 44,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/44#issuecomment-5957997350",
+    "error": "! Issue GINNOV/xbook#44 (Successful single-item reprocessing leaves the bookmark's old enrichment failure state) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 45,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/45#issuecomment-5957997709",
+    "error": "! Issue GINNOV/xbook#45 (Ordinary reprocessing overwrites human summary corrections and clears editedAt) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 46,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/46#issuecomment-5957998078",
+    "error": "! Issue GINNOV/xbook#46 (Article extraction fetches saved destinations without public-web protocol or redirect validation) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 47,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/47#issuecomment-5957998450",
+    "error": "! Issue GINNOV/xbook#47 (Article extraction reads the entire response before applying its size limit) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 48,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/48#issuecomment-5957998759",
+    "error": "! Issue GINNOV/xbook#48 (Connection tests silently replace empty displayed draft values with saved settings) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 49,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/49#issuecomment-5957999098",
+    "error": "! Issue GINNOV/xbook#49 (Settings batch-size help incorrectly describes bookmarks per LLM request) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 50,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/50#issuecomment-5957999407",
+    "error": "! Issue GINNOV/xbook#50 (Enrichment accepts nonfinite and fractional limit values without validating the operation query) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 51,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/51#issuecomment-5957999704",
+    "error": "! Issue GINNOV/xbook#51 (The Edited badge hides a bookmark's enrichment failure status) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 52,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/52#issuecomment-5958000048",
+    "error": "! Issue GINNOV/xbook#52 (Late bookmark-action responses can change another selected item's reader) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 53,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/53#issuecomment-5958000315",
+    "error": "! Issue GINNOV/xbook#53 (Saving enrichment edits sends id while the API requires bookmarkId) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 54,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/54#issuecomment-5958000708",
+    "error": "! Issue GINNOV/xbook#54 (Bookmark reader close and edit dialog lack accessible naming and keyboard dismissal behavior) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 55,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/55#issuecomment-5958001002",
+    "error": "! Issue GINNOV/xbook#55 (Dashboard last-sync time is taken from the latest import across both sources) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 56,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/56#issuecomment-5958001356",
+    "error": "! Issue GINNOV/xbook#56 (Desktop update-check failures are only logged and provide no in-app retry status) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 57,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/57#issuecomment-5958001724",
+    "error": "! Issue GINNOV/xbook#57 (Normal active processing makes the Processing navigation blink red) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 58,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/58#issuecomment-5958002043",
+    "error": "! Issue GINNOV/xbook#58 (README promises that nothing is shared despite supporting remote AI endpoints) is already closed",
+    "commentOk": true
+  },
+  {
+    "number": 59,
+    "action": "close",
+    "ok": true,
+    "output": "https://github.com/GINNOV/xbook/issues/59#issuecomment-5958002358",
+    "error": "! Issue GINNOV/xbook#59 (AGENTS.md says no automated tests exist although Vitest and Playwright are configured) is already closed",
+    "commentOk": true
+  }
+]

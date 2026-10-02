@@ -4,7 +4,7 @@ This record covers the complete repair branch, including the externally merged r
 
 ## Verification
 
-The final gate logs are in this directory. Final source commit `4aead0f` passes 574 unit/integration tests in 68 files, all 22 Chromium workflows, TypeScript and ESLint with zero errors, the Next production/standalone desktop build, and the unsigned native build. The two Rust ownership/port tests pass. The subsequent merge of `f028b1c` changes worktree documentation and its setup-message example only; application code is identical to the verified source. Focused reports elsewhere in `repair-evidence` retain their original timestamps and scope; their passing counts do not replace the final integration gates.
+The final gate logs are in this directory. Final source commit `4aead0f` passes 574 unit/integration tests in 68 files, all 22 Chromium workflows, TypeScript and ESLint with zero errors, the Next production/standalone desktop build, and the unsigned native build. The two Rust ownership/port tests pass. The subsequent merge of `f028b1c` changes worktree documentation and its setup-message example only; application behavior is unchanged from the verified source. Focused reports elsewhere in `repair-evidence` retain their original timestamps and scope; their passing counts do not replace the final integration gates.
 
 - Real migrated SQLite tests cover scope before semantic ranking, exact text modes, vector identity/freshness/validation, atomic job claims/checkpoints, cancellation, bounded retries, SIGKILL recovery, import buffers/caps/partial-folder recovery, metadata repair, source capture, concurrent human edits, and OAuth sessions/refresh/disconnect.
 - Browser journeys cover all seven panes, 390/900 px reader/editor focus, original-ID import continuation, partial failure, cap resume, independent Settings drafts and tests, saved timed source evidence, Ask citations, translation repair, model failure/resume, exact/fallback search, Dashboard health links, and Docs navigation.
@@ -40,7 +40,7 @@ Verification now keeps its launcher alive, selects the app by its distinct bundl
 
 T1 remains unavailable. Both local model-list endpoints, `127.0.0.1:1234/v1/models` and `127.0.0.1:11434/v1/models`, refused connections. No alternative endpoint/model pair was explicitly approved for live acceptance. Controlled tail-fact, unsupported-question, partial/description-only evidence, citation/timestamp, and translation tests pass; they do not establish a live model's answer quality.
 
-Issues #14, #43, and #18 must remain open until an approved chat/embedding endpoint is available and the fixed live evaluation passes. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code, controlled verification, merge, and issue-resolution work continues before handoff.
+Issues #14, #43, and #18 must remain open until an approved chat/embedding endpoint is available and the fixed live evaluation passes. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code and controlled verification reached main in PR #62 at `5fe4320`. GitHub confirms 52 corresponding bug issues closed; #14/#43/#18 remain open with blocker notes. The full 55-issue coverage table and resolution-note links are in `docs/repair-coverage.md`.
 
 ## Concurrent worktree guidance
 
