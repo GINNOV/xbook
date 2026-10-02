@@ -86,6 +86,17 @@ describe("safe database restore", () => {
     expect(fs.existsSync(`${active}.restore.json`)).toBe(false);
   });
 
+  it("recovers the previously deployed fixed-name restore journal before guarded queries", async () => {
+    const recovery = `${active}.recovery`;
+    fs.copyFileSync(active, recovery);
+    fs.copyFileSync(backup, active);
+    fs.writeFileSync(`${active}.restore.json`, JSON.stringify({ version: 1, recovery, stage: "replaced" }));
+    await db.disconnectDatabase();
+    expect(await db.prisma.bookmark.findMany()).toMatchObject([{ id: "original" }]);
+    expect(fs.existsSync(`${active}.restore.json`)).toBe(false);
+    expect(fs.existsSync(recovery)).toBe(false);
+  });
+
   it("migrates an older known backup only in its staged copy", async () => {
     const count = fs.readdirSync(path.resolve("prisma/migrations")).filter((name) => /^\d/.test(name)).length;
     fs.unlinkSync(backup); fixture(backup, "legacy", count - 1);
