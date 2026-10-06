@@ -1,4 +1,4 @@
-# Final integration acceptance
+# October 2 integration acceptance (historical)
 
 This record covers the complete repair branch, including the externally merged restore PR #61 and the public-origin OAuth fix from `3ec1ecf`. The primary checkout and its untracked planning/calibration material remain preserved. No desktop release, version bump, signing-key access, tag, updater installation, or published installer was performed.
 
@@ -36,12 +36,16 @@ An early verification launcher exited. Selecting the app through computer use su
 
 Verification now keeps its launcher alive, selects the app by its distinct bundle identifier, and verifies the dedicated port/ownership before interaction. The strengthened native check probes an existing listener before binding, including wildcard listeners on macOS. These protections passed the controlled warning/no-database test and default-port rejection. Computer-use inspection after quitting can automatically relaunch an app; shutdown is therefore confirmed through the owned process identities, without requesting another app inspection.
 
-## Outstanding live acceptance
+## Historical live acceptance blocker — resolved October 6
 
-T1 remains unavailable. Both local model-list endpoints, `127.0.0.1:1234/v1/models` and `127.0.0.1:11434/v1/models`, refused connections. No alternative endpoint/model pair was explicitly approved for live acceptance. Controlled tail-fact, unsupported-question, partial/description-only evidence, citation/timestamp, and translation tests pass; they do not establish a live model's answer quality.
+At the October 2 checkpoint, T1 was unavailable. Both local model-list endpoints, `127.0.0.1:1234/v1/models` and `127.0.0.1:11434/v1/models`, refused connections. No alternative endpoint/model pair was explicitly approved for live acceptance. Controlled tail-fact, unsupported-question, partial/description-only evidence, citation/timestamp, and translation tests pass; they do not establish a live model's answer quality.
 
-Issues #14, #43, and #18 must remain open until an approved chat/embedding endpoint is available and the fixed live evaluation passes. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code and controlled verification reached main in PR #62 at `5fe4320`. GitHub confirms 52 corresponding bug issues closed; #14/#43/#18 remain open with blocker notes. The full 55-issue coverage table and resolution-note links are in `docs/repair-coverage.md`.
+At that checkpoint, issues #14, #43, and #18 remained open pending an approved endpoint and fixed live evaluation. A pre-launch database snapshot would also be needed to reconstruct the two import notes or compare every original Settings field affected by the incident. All independent code and controlled verification reached main in PR #62 at `5fe4320`. At that checkpoint, GitHub confirmed 52 corresponding bug issues closed; #14/#43/#18 remained open with blocker notes. The full 55-issue coverage table and resolution-note links are in `docs/repair-coverage.md`.
 
 ## Concurrent worktree guidance
 
 Default branch commit `f028b1c` changed the worktree rule during verification to `/Volumes/AIWork/code/worktrees/Xbook/<name>`. That volume is not mounted here. The new guidance is preserved; no new worktree was created, and the already-running isolated checkout was retained rather than moving or modifying unrelated checkouts. Future worktrees require that volume.
+
+## October 6 completion
+
+[PR #64](https://github.com/GINNOV/xbook/pull/64) merged the Qwen corrections and completed the approved live evaluation. All 55 bug issues are now confirmed closed. Latest verification passes 579 unit/integration tests, 22 Chromium workflows, five real Qwen/Ollama cases, type/lint checks, production/unsigned native builds, two Rust tests, and packaged HTTP/native acceptance including actual Ask and Translate UI. See [the current acceptance record](../live-model-acceptance/acceptance.md). The historical native incident and missing pre-launch snapshot above remain disclosed; successful isolated acceptance cannot reconstruct those prior notes/settings.
