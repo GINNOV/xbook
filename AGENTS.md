@@ -54,6 +54,7 @@ Do not confuse this with a desktop release — the trailer is marketing source c
 - Database export regression: `npm test -- tests/unit/db-export.test.ts`. Backup naming: `npm test -- tests/unit/backup-download-name.test.ts tests/unit/database-backup-download.test.ts tests/unit/DatabaseSettings.test.tsx`.
 - Playwright runs Chromium workflow checks in `tests/e2e`: `npm run test:e2e`. Playwright creates, migrates, and deletes a temporary database automatically. Use Node 24 for native SQLite checks.
 - Durable operation acceptance: `npm test -- tests/unit/operation-job-real-db.test.ts tests/unit/import-job-real-db.test.ts`. UI workflows: `npx playwright test tests/e2e/operation-observer.spec.ts tests/e2e/folder-import.spec.ts tests/e2e/settings-draft.spec.ts`. These use isolated SQLite databases and loopback or mocked providers.
+- Optional live-model acceptance is separate from default tests: see `tests/live/README.md` and `vitest.live.config.ts`. It requires explicit endpoint/model authorization and uses a newly migrated disposable SQLite fixture.
 - TypeScript: `npx tsc --noEmit`. Production verification: `npm run build`. Tests use synthetic data and mock providers by default. The Playwright server explicitly blanks account/model environment keys and uses closed loopback provider defaults, so copied .env files cannot enable real account or model calls. Provider workflows configure their loopback fixtures in the disposable database.
 
 
