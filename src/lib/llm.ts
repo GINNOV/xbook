@@ -237,6 +237,23 @@ async function callLlm(params: {
 }) {
   const { prompt, temperature, maxTokens, signal, processing, type = "enrichment" } = params;
   const config = await getLlmConfig(params.connection);
+  const defaultSystemPrompt = applyThinkingPreference(DEFAULT_SYSTEM_PROMPT, config.thinking);
+  const systemPrompt = type === "translation" && config.systemPrompt === defaultSystemPrompt
+    ? applyThinkingPreference("Return only the requested translated text. Do not include JSON, markdown, explanations, or reasoning.", config.thinking)
+    : config.systemPrompt;
+  let chatTemplateOptions: { chat_template_kwargs?: { enable_thinking: boolean } } = {};
+  if (/qwen[\/_-]?3(?:[.\/_-]|$)/i.test(config.model)) {
+    try {
+      const models = await config.client.models.list({ signal, timeout: 10000 });
+      const provider = models.data.find((model) => model.id === config.model)?.owned_by?.toLowerCase();
+      if (provider === "sglang" || provider === "vllm") {
+        chatTemplateOptions = { chat_template_kwargs: { enable_thinking: config.thinking } };
+      }
+    } catch {
+      signal?.throwIfAborted();
+      // Other providers may allow chat without exposing a model registry.
+    }
+  }
 
   await logProcessingEvent({
     runId: processing?.runId,
@@ -255,11 +272,12 @@ async function callLlm(params: {
     const completion = await config.client.chat.completions.create({
       model: config.model,
       messages: [
-        { role: "system", content: config.systemPrompt },
+        { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
       ],
       temperature,
       max_tokens: finalMaxTokens,
+      ...chatTemplateOptions,
     }, { signal });
 
     content = completion.choices[0]?.message?.content ?? "";

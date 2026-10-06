@@ -1,0 +1,47 @@
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+ ❯ tests/live/model-acceptance.test.ts (5 tests | 2 failed) 294718ms
+     × answers a retained tail fact through the actual Ask route, embeddings and timestamped source citations 12942ms
+     × honors the documented target language in on-demand translation 93441ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/live/model-acceptance.test.ts > approved live-model acceptance using synthetic data > answers a retained tail fact through the actual Ask route, embeddings and timestamped source citations
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/live/model-acceptance.test.ts:81:137
+     79|     expect(answer.answer).toMatch(/lavender-seven/i);
+     80|     expect(answer.citations.length).toBeGreaterThan(0);
+     81|     expect(answer.citations.every((c) => c.id === "live-tail" && c.exc…
+       |                                                                                                                                         ^
+     82|     expect(await prisma.llmRequestLog.count()).toBeGreaterThan(0);
+     83|     report.cases.tail = { dimensions: generated.vector.length, ...answ…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/live/model-acceptance.test.ts > approved live-model acceptance using synthetic data > honors the documented target language in on-demand translation
+Error: LLM returned an empty response for translation.
+ ❯ callLlm src/lib/llm.ts:267:13
+    265|     content = completion.choices[0]?.message?.content ?? "";
+    266|     if (!content || !content.trim()) {
+    267|       throw new InvalidEnrichmentResponseError(`LLM returned an empty …
+       |             ^
+    268|     }
+    269|
+ ❯ Module.translateText src/lib/llm.ts:471:18
+ ❯ tests/live/model-acceptance.test.ts:112:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 3 passed (5)
+   Start at  11:21:21
+   Duration  295.55s (transform 106ms, setup 0ms, import 734ms, tests 294.72s, environment 0ms)

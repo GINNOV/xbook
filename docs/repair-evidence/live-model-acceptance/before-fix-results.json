@@ -1,0 +1,38 @@
+{
+  "model": "qwen3.8-27b-sglang",
+  "embeddingModel": "nomic-embed-text",
+  "cases": {
+    "unsupported": {
+      "ok": true,
+      "answer": "Insufficient evidence. The saved sources do not support an answer to this question.",
+      "citations": [],
+      "semanticError": null
+    },
+    "partial": {
+      "answer": {
+        "ok": true,
+        "answer": "The harborstone video description announces a blue waterproof notebook. This is NOT based on the full video — the capture is partial; only the video description was captured and the transcript is unavailable, so no demonstration content was captured.",
+        "citations": [
+          {
+            "id": "live-description",
+            "excerpt": "The harborstone video description announces a blue waterproof notebook. No demonstration transcript is available.",
+            "timestampSeconds": null,
+            "captureStatus": "partial"
+          }
+        ],
+        "semanticError": null
+      },
+      "missing": {
+        "ok": true,
+        "answer": "Insufficient evidence. The saved sources do not support an answer to this question.",
+        "citations": [],
+        "semanticError": null
+      }
+    },
+    "summary": {
+      "summary": "A partial article about an Amberlake emergency access research note. It consists mostly of placeholder text describing general background for a fictional research note. The only concrete detail is a claimed access code, lavender-seven, in the final section. Because the source is incomplete and lacks verification, numbers, or timestamps, the code should be treated as unconfirmed. This is useful only as a placeholder or test item for tracking partial-source limits.",
+      "category": "Other",
+      "requests": 4
+    }
+  }
+}

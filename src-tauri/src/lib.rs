@@ -188,7 +188,15 @@ mod tests {
       let port = listener.local_addr().unwrap().port();
       let responder = thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
-        let mut request = [0; 1024]; stream.read(&mut request).unwrap();
+        let mut request = Vec::new();
+        let mut buffer = [0; 1024];
+        while !request.ends_with(b"\r\n\r\n") {
+          let count = stream.read(&mut buffer).unwrap();
+          assert!(count > 0);
+          request.extend_from_slice(&buffer[..count]);
+          assert!(request.len() < 8192);
+        }
+        assert!(request.starts_with(b"GET /api/version HTTP/1.1\r\n"));
         let body = format!("{{\"backend\":{{\"owner\":\"{}\"}}}}", reported);
         write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", body.len(), body).unwrap();
       });

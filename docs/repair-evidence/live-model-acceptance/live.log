@@ -1,0 +1,8 @@
+
+ RUN  v4.1.5 /Users/joseph/.codex/worktrees/complete-repairs/xbook
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  11:29:48
+   Duration  51.07s (transform 95ms, setup 0ms, import 450ms, tests 50.54s, environment 0ms)

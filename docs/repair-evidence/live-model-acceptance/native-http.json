@@ -1,0 +1,30 @@
+{
+  "identity": {
+    "httpStatus": 200,
+    "app": "0.4.3",
+    "desktop": "0.4.3",
+    "match": true,
+    "runtime": "node v24.21.0",
+    "database": "sqlite",
+    "backend": {
+      "pid": 76634,
+      "port": "3116",
+      "commit": "95cde612f15865d7e198b85ee4307976953893ca",
+      "startedAt": "2026-10-06T09:34:13.731Z",
+      "owner": "76605-1791279253698481000"
+    }
+  },
+  "pages": 7,
+  "backupRestore": "passed",
+  "duplicateName": 409,
+  "traversal": 400,
+  "postRestoreWrites": "passed",
+  "processing": {
+    "runId": "cmuwhf68600004qobcspffrel",
+    "status": "completed",
+    "chats": 1,
+    "embeddings": 1,
+    "idempotency": "passed"
+  },
+  "originalManualSummaryPreserved": true
+}

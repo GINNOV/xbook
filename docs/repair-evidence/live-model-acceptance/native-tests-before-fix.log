@@ -1,0 +1,25 @@
+   Compiling app v0.4.3 (/Users/joseph/.codex/worktrees/complete-repairs/xbook/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.58s
+     Running unittests src/lib.rs (src-tauri/target/debug/deps/app_lib-f2b8aed303bc7541)
+
+running 2 tests
+test tests::verifies_owned_backend_instead_of_accepting_any_open_socket ... FAILED
+test tests::refuses_invalid_or_occupied_ports ... ok
+
+failures:
+
+---- tests::verifies_owned_backend_instead_of_accepting_any_open_socket stdout ----
+
+thread 'tests::verifies_owned_backend_instead_of_accepting_any_open_socket' (6870108) panicked at src/lib.rs:195:7:
+assertion `left == right` failed
+  left: false
+ right: true
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::verifies_owned_backend_instead_of_accepting_any_open_socket
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
