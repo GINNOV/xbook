@@ -1,0 +1,32 @@
+{
+  "commit": "95cde612f15865d7e198b85ee4307976953893ca",
+  "model": "qwen3.8-27b-sglang",
+  "embeddingModel": "nomic-embed-text",
+  "answer": {
+    "answer": "The copperfield inspection token is violet-eight.",
+    "citations": [
+      {
+        "id": "native-live-x",
+        "reason": "Directly states the value of the token.",
+        "source": "x",
+        "tweetUrl": "https://x.test/synthetic-copperfield",
+        "summary": "Synthetic note",
+        "text": "The copperfield inspection token is violet-eight. The backup completed successfully at 03:15.",
+        "category": null,
+        "authorUsername": null,
+        "excerpt": "The copperfield inspection token is violet-eight.",
+        "timestampSeconds": null,
+        "captureStatus": null
+      }
+    ]
+  },
+  "unsupported": {
+    "answer": "Insufficient evidence. The saved sources do not support an answer to this question.",
+    "citations": []
+  },
+  "translation": {
+    "ok": true,
+    "translatedText": "Il token di ispezione di Copperfield è violetto-otto. Il backup si è completato con successo alle 03:15.",
+    "runId": "cmuwhgv6u00054qoblk47gnc0"
+  }
+}

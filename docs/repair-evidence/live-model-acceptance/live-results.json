@@ -1,0 +1,56 @@
+{
+  "model": "qwen3.8-27b-sglang",
+  "embeddingModel": "nomic-embed-text",
+  "cases": {
+    "tail": {
+      "dimensions": 768,
+      "ok": true,
+      "answer": "The amberlake emergency access code is lavender-seven.",
+      "citations": [
+        {
+          "id": "live-tail",
+          "excerpt": "The amberlake emergency access code is lavender-seven.",
+          "timestampSeconds": 2970,
+          "captureStatus": "partial"
+        }
+      ],
+      "semanticError": null
+    },
+    "unsupported": {
+      "ok": true,
+      "answer": "Insufficient evidence. The saved sources do not support an answer to this question.",
+      "citations": [],
+      "semanticError": null
+    },
+    "partial": {
+      "answer": {
+        "ok": true,
+        "answer": "The Harborstone video description announces a blue waterproof notebook. This is not based on the full video, as only the description was captured and the transcript is unavailable.",
+        "citations": [
+          {
+            "id": "live-description",
+            "excerpt": "The harborstone video description announces a blue waterproof notebook. No demonstration transcript is available.",
+            "timestampSeconds": null,
+            "captureStatus": "partial"
+          }
+        ],
+        "semanticError": null
+      },
+      "missing": {
+        "ok": true,
+        "answer": "Insufficient evidence. The saved sources do not support an answer to this question.",
+        "citations": [],
+        "semanticError": null
+      }
+    },
+    "summary": {
+      "summary": "This source is a partial and largely placeholder document labeled as 'Amberlake emergency access research.' It consists of repeated generic text describing 'General background for a fictional research note' without providing specific names, numbers, or timestamps. The only concrete data point identified is the statement that the 'amberlake emergency access code is lavender-seven.' Due to the sparse and repetitive nature of the content, no substantive insights, evidence, or tradeoffs can be extracted. This item appears to be a low-value or test entry with no practical utility for a knowledge base.",
+      "category": "Other",
+      "requests": 4
+    },
+    "translation": {
+      "language": "Italian",
+      "translation": "Il backup è stato completato con successo alle 03:15."
+    }
+  }
+}

@@ -1,0 +1,102 @@
+
+> xbook@0.4.3 test:e2e
+> playwright test
+
+[2m[WebServer] [22mLoaded Prisma config from prisma.config.ts.
+[2m[WebServer] [22m
+[2m[WebServer] [22mPrisma schema loaded from prisma/schema.prisma.
+[2m[WebServer] [22m(node:75696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75697) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m⚠ Slow filesystem detected. The benchmark took 295ms. If /Users/joseph/.codex/worktrees/complete-repairs/xbook/.next/dev is a network drive, consider moving it to a local folder.
+[2m[WebServer] [22mSee more: https://nextjs.org/docs/app/guides/local-development
+[2m[WebServer] [22m(node:75779) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 22 tests using 1 worker
+
+(node:75799) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75799) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/e2e/dashboard-health.spec.ts:19:5 › dashboard coverage includes every saved entry and metric links open matching source/state (4.4s)
+  ✓   2 [chromium] › tests/e2e/docs-navigation.spec.ts:3:5 › seven linked guides render and return to Docs; recovery links select the right Settings tab (2.2s)
+  ✓   3 [chromium] › tests/e2e/folder-import.spec.ts:64:5 › folder names and local counts open exact scopes including a useful empty state (1.8s)
+[2m[WebServer] [22m(node:75839) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [chromium] › tests/e2e/folder-import.spec.ts:84:5 › Import all continues after navigation and a failed folder, preserving manual edits (4.8s)
+[2m[WebServer] [22m(node:75861) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 [chromium] › tests/e2e/folder-import.spec.ts:106:5 › cap pause explains buffered work and resumes the same page without duplicate import (3.3s)
+  ✓   6 [chromium] › tests/e2e/library-interactions.spec.ts:36:37 › reader and editor preserve focus and separate state at 390px (785ms)
+  ✓   7 [chromium] › tests/e2e/library-interactions.spec.ts:36:37 › reader and editor preserve focus and separate state at 900px (846ms)
+[2m[WebServer] [22m(node:75868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75869) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75870) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 [chromium] › tests/e2e/library-interactions.spec.ts:50:5 › single enrichment, saved capture and Ask use actual local HTTP providers (3.4s)
+[2m[WebServer] [22m(node:75874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75875) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75903) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 [chromium] › tests/e2e/library-interactions.spec.ts:67:5 › Process inbox imports then summarizes and indexes each entry once (4.4s)
+  ✓  10 [chromium] › tests/e2e/metadata-repair.spec.ts:36:5 › repairs historical metadata through bounded batches and preserves existing user data (1.1s)
+  ✓  11 [chromium] › tests/e2e/metadata-repair.spec.ts:57:5 › explains active ownership rejection without changing metadata (554ms)
+[2m[WebServer] [22m(node:75922) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75923) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75924) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75925) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75926) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75927) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75928) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  12 [chromium] › tests/e2e/operation-observer.spec.ts:47:5 › server continues across navigation; remount observes, stops and resumes the same operation (10.3s)
+[2m[WebServer] [22m(node:75929) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75931) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75933) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75934) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75956) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75957) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75958) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75959) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:75960) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 [chromium] › tests/e2e/operation-observer.spec.ts:83:5 › failed model preflight has a repair link and resumes its frozen checkpoint (10.5s)
+  ✓  14 [chromium] › tests/e2e/operations.spec.ts:54:7 › Operations & Logs › Source filtering works correctly (815ms)
+  ✓  15 [chromium] › tests/e2e/operations.spec.ts:76:7 › Operations & Logs › Stop all operations button appears and works (725ms)
+  ✓  16 [chromium] › tests/e2e/operations.spec.ts:92:7 › Operations & Logs › Clear all logs button works (713ms)
+  ✓  17 [chromium] › tests/e2e/operations.spec.ts:112:7 › Operations & Logs › Stopping active runs persists the stopped status (651ms)
+  ✓  18 [chromium] › tests/e2e/search.spec.ts:43:5 › exact word and phrase controls preserve scope and explicit sort (2.0s)
+  ✓  19 [chromium] › tests/e2e/search.spec.ts:76:5 › unavailable embeddings keeps scoped exact results and a Settings recovery link (475ms)
+  ✓  20 [chromium] › tests/e2e/settings-draft.spec.ts:32:5 › tests the displayed chat and embedding drafts independently without saving or secret disclosure (1.5s)
+  ✓  21 [chromium] › tests/e2e/settings-draft.spec.ts:67:5 › presets and numbers remain drafts until visible save success; failed saves retain edits (952ms)
+  ✓  22 [chromium] › tests/e2e/ui.spec.ts:103:5 › dashboard, libraries, folders, processing, and settings routes render (2.5s)
+
+  22 passed (1.2m)
